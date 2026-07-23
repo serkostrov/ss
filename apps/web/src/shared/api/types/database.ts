@@ -783,6 +783,30 @@ export type Database = {
         }
         Returns: Database['public']['Tables']['representatives']['Row']
       }
+      list_member_assign_candidates: {
+        Args: {
+          p_company_id: string
+          p_search?: string | null
+        }
+        Returns: {
+          user_id: string
+          email: string
+          full_name: string | null
+          status: UserStatus
+          representative_id: string | null
+          current_company_id: string | null
+          current_company_name: string | null
+        }[]
+      }
+      assign_member_to_company: {
+        Args: {
+          p_user_id: string
+          p_company_id: string
+          p_is_primary?: boolean
+          p_position?: string | null
+        }
+        Returns: Database['public']['Tables']['representatives']['Row']
+      }
       reorder_material_sections: {
         Args: { p_ordered_ids: string[] }
         Returns: Database['public']['Tables']['material_sections']['Row'][]

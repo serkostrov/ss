@@ -89,6 +89,8 @@ export type {
   RepresentativeInput,
   RepresentativeCompanyRef,
   RepresentativesListFilters,
+  MemberAssignCandidate,
+  AssignMemberToCompanyInput,
   MaterialSection,
   MaterialSectionInput,
   MaterialLevelRef,

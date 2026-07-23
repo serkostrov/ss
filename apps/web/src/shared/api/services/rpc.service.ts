@@ -51,6 +51,11 @@ const RPC_AUDIT: Partial<Record<RpcName, RpcAuditSpec>> = {
     entity_type: 'representatives',
     entityId: (args) => (args.p_id != null ? String(args.p_id) : null),
   },
+  assign_member_to_company: {
+    action: 'representatives.assign_member',
+    entity_type: 'companies',
+    entityId: (args) => String(args.p_company_id ?? ''),
+  },
   reorder_material_sections: {
     action: 'material_sections.reorder',
     entity_type: 'material_sections',

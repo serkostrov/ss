@@ -124,8 +124,7 @@ function PromoteStaffDialog({
   onOpenChange: (open: boolean) => void
   actorIsCeo: boolean
 }) {
-  const [search, setSearch] = useState('')
-  const candidates = useStaffPromoteCandidates(search)
+  const candidates = useStaffPromoteCandidates('')
   const promoteMutation = usePromoteStaffMutation()
   const [userId, setUserId] = useState<string>()
   const [position, setPosition] = useState('')
@@ -138,7 +137,6 @@ function PromoteStaffDialog({
     setPosition('')
     setIsCeo(false)
     setCanManageGroups(true)
-    setSearch('')
   }, [open])
 
   const submit = async () => {
@@ -175,13 +173,6 @@ function PromoteStaffDialog({
       }
     >
       <div className="space-y-3">
-        <FormField label="Поиск пользователя">
-          <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="ФИО или email"
-          />
-        </FormField>
         <FormField label="Пользователь" required>
           <Select value={userId} onValueChange={setUserId}>
             <SelectTrigger>

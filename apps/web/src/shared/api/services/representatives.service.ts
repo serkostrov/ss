@@ -34,6 +34,23 @@ export type RepresentativesListFilters = {
   primary?: 'all' | 'primary' | 'secondary'
 }
 
+export type MemberAssignCandidate = {
+  user_id: string
+  email: string
+  full_name: string | null
+  status: TableRow<'users'>['status']
+  representative_id: string | null
+  current_company_id: string | null
+  current_company_name: string | null
+}
+
+export type AssignMemberToCompanyInput = {
+  userId: string
+  companyId: string
+  isPrimary?: boolean
+  position?: string | null
+}
+
 /** Narrow select — avoid over-fetching company columns. */
 const REPRESENTATIVE_SELECT = `
   id,
@@ -184,6 +201,39 @@ export const representativesService = {
 
   async listByCompany(companyId: string): Promise<Representative[]> {
     return this.list({ companyId, active: 'all' })
+  },
+
+  async listAssignCandidates(
+    companyId: string,
+    search?: string,
+  ): Promise<MemberAssignCandidate[]> {
+    const rows = await rpcService.call('list_member_assign_candidates', {
+      p_company_id: companyId,
+      p_search: search?.trim() || null,
+    })
+    return (rows ?? []).map((row) => ({
+      user_id: row.user_id,
+      email: row.email,
+      full_name: row.full_name,
+      status: row.status,
+      representative_id: row.representative_id,
+      current_company_id: row.current_company_id,
+      current_company_name: row.current_company_name,
+    }))
+  },
+
+  async assignMember(input: AssignMemberToCompanyInput): Promise<Representative> {
+    const row = await rpcService.call('assign_member_to_company', {
+      p_user_id: input.userId,
+      p_company_id: input.companyId,
+      p_is_primary: input.isPrimary ?? false,
+      p_position: input.position ?? null,
+    })
+    const full = await this.getById(row.id)
+    if (!full) {
+      throw new ApiError('Участник назначен, но представитель не найден', { code: 'unknown' })
+    }
+    return full
   },
 
   async getById(id: string): Promise<Representative | null> {

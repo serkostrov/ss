@@ -105,6 +105,40 @@ export function useDeleteRepresentativeMutation() {
   })
 }
 
+export function useMemberAssignCandidates(companyId: string | undefined, search = '') {
+  return useSupabaseQuery(
+    [...queryKeys.representatives.byCompany(companyId ?? 'none'), 'assign-candidates', search] as const,
+    () => {
+      if (!companyId) return Promise.resolve([])
+      return representativesService.listAssignCandidates(companyId, search)
+    },
+    {
+      enabled: Boolean(companyId),
+      ensureFreshSession: true,
+      staleTime: 15_000,
+      meta: { suppressErrorToast: true },
+    },
+  )
+}
+
+export function useAssignMemberToCompanyMutation(companyId: string) {
+  return useSupabaseMutation(
+    (input: { userId: string; isPrimary?: boolean; position?: string | null }) =>
+      representativesService.assignMember({
+        userId: input.userId,
+        companyId,
+        isPrimary: input.isPrimary,
+        position: input.position,
+      }),
+    {
+      ensureFreshSession: true,
+      invalidateKeys: invalidateAll,
+      onSuccess: () => notify.success('Участник добавлен в компанию'),
+      onError: (error) => notify.fromError(error, 'Не удалось добавить участника'),
+    },
+  )
+}
+
 export function toRepresentativeInput(
   values: {
     companyId: string

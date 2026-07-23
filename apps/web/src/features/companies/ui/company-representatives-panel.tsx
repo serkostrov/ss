@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Star } from 'lucide-react'
+import { Plus, Star, UserRoundPlus } from 'lucide-react'
 
 import {
-  useRepresentativesByCompany,
+  AssignExistingMemberDialog,
   RepresentativeFormDialog,
+  useRepresentativesByCompany,
 } from '@features/representatives'
 import { routes } from '@shared/config'
 import {
@@ -30,6 +31,7 @@ export function CompanyRepresentativesPanel({
   companyName,
 }: CompanyRepresentativesPanelProps) {
   const [formOpen, setFormOpen] = useState(false)
+  const [assignOpen, setAssignOpen] = useState(false)
   const query = useRepresentativesByCompany(companyId)
   const representatives = query.data ?? []
 
@@ -44,10 +46,16 @@ export function CompanyRepresentativesPanel({
               {query.isSuccess ? ` · ${representatives.length}` : null}
             </CardDescription>
           </div>
-          <Button type="button" size="sm" onClick={() => setFormOpen(true)}>
-            <Plus className="size-4" />
-            Добавить
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant="outline" onClick={() => setAssignOpen(true)}>
+              <UserRoundPlus className="size-4" />
+              Существующий
+            </Button>
+            <Button type="button" size="sm" onClick={() => setFormOpen(true)}>
+              <Plus className="size-4" />
+              Новый
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {query.isLoading ? (
@@ -61,12 +69,18 @@ export function CompanyRepresentativesPanel({
           ) : representatives.length === 0 ? (
             <EmptyState
               title="Представителей нет"
-              description="Добавьте первого представителя этой компании."
+              description="Создайте контакт или привяжите уже зарегистрированного участника."
               action={
-                <Button type="button" onClick={() => setFormOpen(true)}>
-                  <Plus className="size-4" />
-                  Добавить
-                </Button>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Button type="button" variant="outline" onClick={() => setAssignOpen(true)}>
+                    <UserRoundPlus className="size-4" />
+                    Существующий
+                  </Button>
+                  <Button type="button" onClick={() => setFormOpen(true)}>
+                    <Plus className="size-4" />
+                    Новый
+                  </Button>
+                </div>
               }
             />
           ) : (
@@ -110,6 +124,13 @@ export function CompanyRepresentativesPanel({
         open={formOpen}
         onOpenChange={setFormOpen}
         defaultCompanyId={companyId}
+      />
+
+      <AssignExistingMemberDialog
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+        companyId={companyId}
+        companyName={companyName}
       />
     </>
   )

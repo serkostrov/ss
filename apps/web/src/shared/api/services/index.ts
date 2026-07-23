@@ -46,6 +46,8 @@ export type {
   RepresentativeInput,
   RepresentativeCompanyRef,
   RepresentativesListFilters,
+  MemberAssignCandidate,
+  AssignMemberToCompanyInput,
 } from './representatives.service'
 export { materialsService, slugifyTitle } from './materials.service'
 export type {
