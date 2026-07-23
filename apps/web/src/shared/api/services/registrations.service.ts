@@ -10,7 +10,20 @@ export type RegistrationRepresentative = Pick<
   company: Pick<TableRow<'companies'>, 'id' | 'name' | 'access_status'> | null
 }
 
-export type RegistrationApplication = TableRow<'users'> & {
+export type RegistrationApplication = Pick<
+  TableRow<'users'>,
+  | 'id'
+  | 'email'
+  | 'role'
+  | 'representative_id'
+  | 'status'
+  | 'full_name'
+  | 'phone'
+  | 'company_name_hint'
+  | 'company_inn_hint'
+  | 'pd_consent_at'
+  | 'created_at'
+> & {
   representative: RegistrationRepresentative | null
 }
 

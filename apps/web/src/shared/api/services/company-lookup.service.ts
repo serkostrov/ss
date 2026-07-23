@@ -1,4 +1,4 @@
-import { ApiError } from '@shared/lib/errors'
+import { ApiError, type ApiErrorCode } from '@shared/lib/errors'
 
 import { supabaseClient } from '../lib/client'
 
@@ -24,6 +24,21 @@ type LookupErrorBody = {
   message?: string
 }
 
+function toLookupErrorCode(raw?: string): ApiErrorCode {
+  switch (raw) {
+    case 'not_found':
+      return 'not_found'
+    case 'invalid_inn':
+      return 'validation'
+    case 'timeout':
+    case 'captcha_required':
+    case 'lookup_failed':
+      return 'server'
+    default:
+      return 'unknown'
+  }
+}
+
 async function parseLookupResponse(response: Response): Promise<CompanyByInn> {
   const body = (await response.json().catch(() => null)) as
     | (CompanyByInn & LookupErrorBody)
@@ -32,13 +47,13 @@ async function parseLookupResponse(response: Response): Promise<CompanyByInn> {
 
   if (!response.ok) {
     throw new ApiError(body?.message || 'Не удалось найти организацию', {
-      code: body?.error || 'lookup_failed',
+      code: toLookupErrorCode(body?.error),
       details: body,
     })
   }
 
   if (!body || typeof body !== 'object' || !('name' in body) || typeof body.name !== 'string') {
-    throw new ApiError('Некорректный ответ сервиса поиска', { code: 'lookup_failed' })
+    throw new ApiError('Некорректный ответ сервиса поиска', { code: 'server' })
   }
 
   return {
@@ -64,20 +79,20 @@ async function lookupViaEdgeFunction(inn: string): Promise<CompanyByInn> {
 
   if (error) {
     let message = error.message || 'Не удалось найти организацию'
-    let code = 'lookup_failed'
+    let rawCode: string | undefined
 
     const context = (error as { context?: Response }).context
     if (context && typeof context.json === 'function') {
       try {
         const body = (await context.json()) as LookupErrorBody
         if (body?.message) message = body.message
-        if (body?.error) code = body.error
+        if (body?.error) rawCode = body.error
       } catch {
         // ignore parse errors from error context
       }
     }
 
-    throw new ApiError(message, { code, cause: error })
+    throw new ApiError(message, { code: toLookupErrorCode(rawCode), cause: error })
   }
 
   if (!data || typeof data !== 'object' || !('name' in data) || typeof data.name !== 'string') {
@@ -85,11 +100,12 @@ async function lookupViaEdgeFunction(inn: string): Promise<CompanyByInn> {
       data && typeof data === 'object' && 'message' in data && typeof data.message === 'string'
         ? data.message
         : 'Организация по ИНН не найдена'
+    const rawCode =
+      data && typeof data === 'object' && 'error' in data && typeof data.error === 'string'
+        ? data.error
+        : 'not_found'
     throw new ApiError(message, {
-      code:
-        data && typeof data === 'object' && 'error' in data && typeof data.error === 'string'
-          ? data.error
-          : 'not_found',
+      code: toLookupErrorCode(rawCode),
       details: data,
     })
   }
@@ -114,7 +130,7 @@ export const companyLookupService = {
   async lookupByInn(innInput: string): Promise<CompanyByInn> {
     const inn = normalizeInnDigits(innInput)
     if (!isCompleteInn(inn)) {
-      throw new ApiError('ИНН: 10 или 12 цифр', { code: 'invalid_inn' })
+      throw new ApiError('ИНН: 10 или 12 цифр', { code: 'validation' })
     }
 
     if (import.meta.env.DEV) {

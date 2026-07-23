@@ -3,18 +3,40 @@
  * Mirrors supabase/functions/lookup-company-by-inn for local `npm run dev`.
  */
 
-function normalizeInn(value) {
+import type { Connect } from 'vite'
+import type { IncomingMessage, ServerResponse } from 'node:http'
+
+type FnsSearchStart = {
+  t?: string
+  captchaRequired?: boolean
+}
+
+type FnsRow = {
+  i?: string
+  n?: string
+  c?: string
+  o?: string
+  p?: string
+  k?: string
+}
+
+type FnsSearchResult = {
+  rows?: FnsRow[]
+  status?: string
+}
+
+function normalizeInn(value: unknown): string | null {
   if (value == null) return null
   const digits = String(value).replace(/\D/g, '')
   if (!/^\d{10}(\d{2})?$/.test(digits)) return null
   return digits
 }
 
-function sleep(ms) {
+function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function lookupByInn(inn) {
+async function lookupByInn(inn: string) {
   const startRes = await fetch('https://egrul.nalog.ru/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
@@ -25,7 +47,7 @@ async function lookupByInn(inn) {
     throw new Error(`fns_start_${startRes.status}`)
   }
 
-  const start = await startRes.json()
+  const start = (await startRes.json()) as FnsSearchStart
   if (start.captchaRequired) throw new Error('captcha_required')
   if (!start.t) throw new Error('fns_no_token')
 
@@ -34,7 +56,7 @@ async function lookupByInn(inn) {
     const resultRes = await fetch(`https://egrul.nalog.ru/search-result/${start.t}`)
     if (!resultRes.ok) throw new Error(`fns_result_${resultRes.status}`)
 
-    const result = await resultRes.json()
+    const result = (await resultRes.json()) as FnsSearchResult
     if (result.status === 'wait') continue
 
     const row = result.rows?.[0]
@@ -58,16 +80,21 @@ async function lookupByInn(inn) {
   throw new Error('timeout')
 }
 
-function sendJson(res, status, body) {
+function sendJson(res: ServerResponse, status: number, body: unknown) {
   res.statusCode = status
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
   res.end(JSON.stringify(body))
 }
 
-/**
- * @param {import('vite').Connect.Server} middlewares
- */
-export function attachInnLookupMiddleware(middlewares) {
+async function readRequestBody(req: IncomingMessage): Promise<string> {
+  const chunks: Buffer[] = []
+  for await (const chunk of req) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+  }
+  return Buffer.concat(chunks).toString('utf8')
+}
+
+export function attachInnLookupMiddleware(middlewares: Connect.Server) {
   middlewares.use(async (req, res, next) => {
     const url = req.url ? new URL(req.url, 'http://localhost') : null
     if (!url || url.pathname !== '/api/company-by-inn') {
@@ -81,14 +108,12 @@ export function attachInnLookupMiddleware(middlewares) {
     }
 
     try {
-      let innRaw = url.searchParams.get('inn')
+      let innRaw: unknown = url.searchParams.get('inn')
       if (!innRaw && req.method === 'POST') {
-        const chunks = []
-        for await (const chunk of req) chunks.push(chunk)
-        const raw = Buffer.concat(chunks).toString('utf8')
+        const raw = await readRequestBody(req)
         if (raw) {
           try {
-            innRaw = JSON.parse(raw)?.inn ?? null
+            innRaw = (JSON.parse(raw) as { inn?: unknown }).inn ?? null
           } catch {
             innRaw = null
           }
