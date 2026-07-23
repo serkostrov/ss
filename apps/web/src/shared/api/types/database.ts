@@ -765,6 +765,18 @@ export type Database = {
         Args: { p_ordered_ids: string[] }
         Returns: Database['public']['Tables']['participation_levels']['Row'][]
       }
+      get_work_group_category_usage: {
+        Args: { p_category_id: string }
+        Returns: Json
+      }
+      delete_work_group_category: {
+        Args: { p_category_id: string }
+        Returns: null
+      }
+      reorder_work_group_categories: {
+        Args: { p_ordered_ids: string[] }
+        Returns: Database['public']['Tables']['work_group_categories']['Row'][]
+      }
       set_primary_representative: {
         Args: { p_representative_id: string }
         Returns: Database['public']['Tables']['representatives']['Row']

@@ -72,7 +72,12 @@ export type {
   WorkGroupCategoryRef,
 } from './work-groups.service'
 export { workGroupCategoriesService } from './work-group-categories.service'
-export type { WorkGroupCategory } from './work-group-categories.service'
+export type {
+  WorkGroupCategory,
+  WorkGroupCategoryInput,
+  WorkGroupCategoryUsage,
+  WorkGroupCategoriesListFilters,
+} from './work-group-categories.service'
 export { workGroupMembersService } from './work-group-members.service'
 export type {
   WorkGroupMemberCandidate,

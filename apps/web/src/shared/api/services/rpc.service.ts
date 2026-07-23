@@ -41,6 +41,15 @@ const RPC_AUDIT: Partial<Record<RpcName, RpcAuditSpec>> = {
     action: 'participation_levels.reorder',
     entity_type: 'participation_levels',
   },
+  delete_work_group_category: {
+    action: 'work_group_categories.delete',
+    entity_type: 'work_group_categories',
+    entityId: (args) => String(args.p_category_id ?? ''),
+  },
+  reorder_work_group_categories: {
+    action: 'work_group_categories.reorder',
+    entity_type: 'work_group_categories',
+  },
   set_primary_representative: {
     action: 'representatives.set_primary',
     entity_type: 'representatives',
