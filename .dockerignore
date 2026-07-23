@@ -1,0 +1,30 @@
+# Git / IDE
+.git
+.github
+.cursor
+.vscode
+.idea
+**/*.md
+!README.md
+
+# Dependencies & builds
+**/node_modules
+**/dist
+**/.vite
+**/*.tsbuildinfo
+coverage
+.turbo
+.cache
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# Local / OS
+*.log
+.DS_Store
+Thumbs.db
+
+# Supabase local (not needed in web image)
+supabase/.temp

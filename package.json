@@ -1,0 +1,42 @@
+{
+  "name": "severnoe-siyanie",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "АПСС «Северное сияние» — информационная система ассоциации",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @apss/web",
+    "dev:web": "npm run dev -w @apss/web",
+    "dev:messenger": "npm run dev -w @apss/messenger",
+    "build": "npm run build -w @apss/web",
+    "build:web": "npm run build -w @apss/web",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "typecheck": "npm run typecheck -w @apss/web",
+    "preview": "npm run preview -w @apss/web"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.29.0",
+    "eslint": "^9.29.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.2.0",
+    "prettier": "^3.5.3",
+    "prettier-plugin-tailwindcss": "^0.6.12",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.34.1"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "esbuild@0.25.12": true
+  }
+}
