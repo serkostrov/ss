@@ -27,4 +27,14 @@ envsubst '${VITE_SUPABASE_URL} ${VITE_SUPABASE_ANON_KEY} ${VITE_APP_URL}' \
   < "$TEMPLATE" > "$TARGET"
 
 echo "Wrote runtime env to $TARGET"
+
+# FNS INN lookup (same-origin /api/company-by-inn via nginx)
+node /opt/inn-lookup-server.mjs &
+INN_LOOKUP_PID=$!
+
+cleanup() {
+  kill "$INN_LOOKUP_PID" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
 exec nginx -g 'daemon off;'

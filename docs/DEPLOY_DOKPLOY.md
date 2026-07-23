@@ -20,13 +20,11 @@ Messenger worker пока scaffold — в Dokploy можно не деплоит
 ## 1. Перед деплоем
 
 1. Примените миграции из `supabase/migrations/` к проекту Supabase.
-2. Задеплойте Edge Function поиска по ИНН (нужна для автозаполнения названия на регистрации в production):
+2. Автозаполнение по ИНН в production идёт через **same-origin** `/api/company-by-inn` внутри Docker-образа (Node sidecar + nginx). Edge Function **не обязательна**. Опционально:
 
 ```bash
 supabase functions deploy lookup-company-by-inn --no-verify-jwt
 ```
-
-В `supabase/config.toml` для этой функции уже стоит `verify_jwt = false` (форма регистрации вызывается без логина).
 
 3. В Supabase → Authentication → URL Configuration:
    - **Site URL** = `https://your-domain`
@@ -79,3 +77,4 @@ docker run --rm -p 8080:80 \
 | `/env.js` с `${VITE_...}` | Entrypoint не отработал / env пустые при старте |
 | 404 на `/admin/...` | SPA `try_files` (см. `deploy/nginx.conf`) |
 | Auth redirect не туда | `VITE_APP_URL` / Site URL в Supabase |
+| Автозаполнение по ИНН недоступно | Старый образ без Node sidecar — **Redeploy** с актуальным `Dockerfile` |

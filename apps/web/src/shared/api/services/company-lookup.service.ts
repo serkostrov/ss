@@ -106,9 +106,22 @@ async function parseLookupResponse(response: Response): Promise<CompanyByInn> {
   }
 }
 
-async function lookupViaDevProxy(inn: string): Promise<CompanyByInn> {
+/** Same-origin proxy: Vite middleware in DEV, nginx→Node in production image. */
+async function lookupViaSameOriginProxy(inn: string): Promise<CompanyByInn> {
   const response = await fetch(`/api/company-by-inn?inn=${encodeURIComponent(inn)}`)
   return parseLookupResponse(response)
+}
+
+function isMissingProxyError(error: unknown): boolean {
+  if (!(error instanceof ApiError)) return true
+  // Structured JSON from our proxy (or edge) — treat as final answer
+  const details = error.details as LookupErrorBody | null | undefined
+  if (details && typeof details === 'object' && typeof details.error === 'string') {
+    return false
+  }
+  if (error.code === 'not_found' || error.code === 'validation') return false
+  // Missing route / HTML SPA fallback / network → try Edge Function
+  return true
 }
 
 async function lookupViaEdgeFunction(inn: string): Promise<CompanyByInn> {
@@ -178,7 +191,8 @@ async function lookupViaFunctionsHttp(inn: string): Promise<CompanyByInn> {
 
 /**
  * Resolve organization name by INN (FNS EGRUL).
- * Dev: Vite middleware. Prod: Edge Function `lookup-company-by-inn`.
+ * Primary: same-origin `/api/company-by-inn` (dev middleware / prod Node sidecar).
+ * Fallback: Edge Function `lookup-company-by-inn`.
  */
 export const companyLookupService = {
   isCompleteInn,
@@ -190,11 +204,11 @@ export const companyLookupService = {
     }
 
     try {
-      if (import.meta.env.DEV) {
-        try {
-          return await lookupViaDevProxy(inn)
-        } catch {
-          // fall through to edge function (e.g. vite preview without middleware)
+      try {
+        return await lookupViaSameOriginProxy(inn)
+      } catch (proxyError) {
+        if (!isMissingProxyError(proxyError)) {
+          throw proxyError
         }
       }
 

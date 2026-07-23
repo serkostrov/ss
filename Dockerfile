@@ -20,10 +20,11 @@ RUN npm run build
 
 FROM nginx:1.27-alpine AS runtime
 
-RUN apk add --no-cache gettext
+RUN apk add --no-cache gettext nodejs
 
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY deploy/env.template.js /etc/nginx/templates-custom/env.template.js
+COPY deploy/inn-lookup-server.mjs /opt/inn-lookup-server.mjs
 COPY deploy/docker-entrypoint.sh /docker-entrypoint.sh
 RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
 

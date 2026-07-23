@@ -28,8 +28,7 @@ npm run dev
 
 Приложение: http://localhost:5173
 
-> Автозаполнение компании по ИНН на регистрации в `npm run dev` идёт через локальный `/api/company-by-inn`.
-> В production нужна Edge Function: `supabase functions deploy lookup-company-by-inn`.
+> Автозаполнение компании по ИНН идёт через `/api/company-by-inn` (в dev — Vite middleware, в Docker — Node sidecar).
 
 ## Деплой (Dokploy)
 
