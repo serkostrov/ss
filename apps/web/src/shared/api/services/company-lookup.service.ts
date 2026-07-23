@@ -1,6 +1,7 @@
-import { ApiError, type ApiErrorCode } from '@shared/lib/errors'
+import { ApiError, toApiError, type ApiErrorCode } from '@shared/lib/errors'
 
 import { supabaseClient } from '../lib/client'
+import { env } from '@shared/config'
 
 export type CompanyByInn = {
   inn: string
@@ -39,6 +40,45 @@ function toLookupErrorCode(raw?: string): ApiErrorCode {
   }
 }
 
+function isCompanyPayload(value: unknown): value is CompanyByInn {
+  return Boolean(
+    value &&
+      typeof value === 'object' &&
+      'name' in value &&
+      typeof (value as { name: unknown }).name === 'string' &&
+      (value as { name: string }).name.trim().length > 0,
+  )
+}
+
+function friendlyLookupFailure(error: unknown, fallbackMessage?: string): ApiError {
+  const api = toApiError(error)
+  const blob = `${api.message} ${String(api.cause ?? '')}`
+
+  if (api.code === 'not_found' || /не найден/i.test(api.message)) {
+    return new ApiError(api.message || 'Организация по ИНН не найдена', {
+      code: 'not_found',
+      cause: error,
+      details: api.details,
+    })
+  }
+
+  if (
+    /edge function|non-2xx|FunctionsHttpError|FunctionsFetchError|Failed to send a request|404|502|503|504/i.test(
+      blob,
+    )
+  ) {
+    return new ApiError(
+      'Автозаполнение по ИНН временно недоступно. Укажите название компании вручную.',
+      { code: 'server', cause: error, details: api.details },
+    )
+  }
+
+  return new ApiError(
+    fallbackMessage || api.message || 'Не удалось найти организацию. Укажите название вручную.',
+    { code: api.code === 'unknown' ? 'server' : api.code, cause: error, details: api.details },
+  )
+}
+
 async function parseLookupResponse(response: Response): Promise<CompanyByInn> {
   const body = (await response.json().catch(() => null)) as
     | (CompanyByInn & LookupErrorBody)
@@ -52,7 +92,7 @@ async function parseLookupResponse(response: Response): Promise<CompanyByInn> {
     })
   }
 
-  if (!body || typeof body !== 'object' || !('name' in body) || typeof body.name !== 'string') {
+  if (!isCompanyPayload(body)) {
     throw new ApiError('Некорректный ответ сервиса поиска', { code: 'server' })
   }
 
@@ -77,14 +117,34 @@ async function lookupViaEdgeFunction(inn: string): Promise<CompanyByInn> {
     { body: { inn } },
   )
 
+  // Supabase often puts JSON body into `data` even when status is non-2xx.
+  if (isCompanyPayload(data)) {
+    return {
+      inn: typeof data.inn === 'string' ? data.inn : inn,
+      name: data.name,
+      fullName: typeof data.fullName === 'string' ? data.fullName : null,
+      ogrn: typeof data.ogrn === 'string' ? data.ogrn : null,
+      kpp: typeof data.kpp === 'string' ? data.kpp : null,
+      kind: typeof data.kind === 'string' ? data.kind : null,
+    }
+  }
+
+  if (data && typeof data === 'object' && 'message' in data && typeof data.message === 'string') {
+    throw new ApiError(data.message, {
+      code: toLookupErrorCode('error' in data && typeof data.error === 'string' ? data.error : undefined),
+      details: data,
+    })
+  }
+
   if (error) {
     let message = error.message || 'Не удалось найти организацию'
     let rawCode: string | undefined
 
     const context = (error as { context?: Response }).context
-    if (context && typeof context.json === 'function') {
+    if (context) {
       try {
-        const body = (await context.json()) as LookupErrorBody
+        const cloned = context.clone?.() ?? context
+        const body = (await cloned.json()) as LookupErrorBody
         if (body?.message) message = body.message
         if (body?.error) rawCode = body.error
       } catch {
@@ -95,34 +155,30 @@ async function lookupViaEdgeFunction(inn: string): Promise<CompanyByInn> {
     throw new ApiError(message, { code: toLookupErrorCode(rawCode), cause: error })
   }
 
-  if (!data || typeof data !== 'object' || !('name' in data) || typeof data.name !== 'string') {
-    const message =
-      data && typeof data === 'object' && 'message' in data && typeof data.message === 'string'
-        ? data.message
-        : 'Организация по ИНН не найдена'
-    const rawCode =
-      data && typeof data === 'object' && 'error' in data && typeof data.error === 'string'
-        ? data.error
-        : 'not_found'
-    throw new ApiError(message, {
-      code: toLookupErrorCode(rawCode),
-      details: data,
-    })
-  }
+  throw new ApiError('Организация по ИНН не найдена', { code: 'not_found' })
+}
 
-  return {
-    inn: typeof data.inn === 'string' ? data.inn : inn,
-    name: data.name,
-    fullName: typeof data.fullName === 'string' ? data.fullName : null,
-    ogrn: typeof data.ogrn === 'string' ? data.ogrn : null,
-    kpp: typeof data.kpp === 'string' ? data.kpp : null,
-    kind: typeof data.kind === 'string' ? data.kind : null,
-  }
+/**
+ * Direct HTTP call to the edge function (works for guests on registration).
+ * Prefer when Functions SDK wraps errors poorly on some self-hosted setups.
+ */
+async function lookupViaFunctionsHttp(inn: string): Promise<CompanyByInn> {
+  const url = `${env.supabaseUrl.replace(/\/$/, '')}/functions/v1/lookup-company-by-inn`
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: env.supabaseAnonKey,
+      Authorization: `Bearer ${env.supabaseAnonKey}`,
+    },
+    body: JSON.stringify({ inn }),
+  })
+  return parseLookupResponse(response)
 }
 
 /**
  * Resolve organization name by INN (FNS EGRUL).
- * Dev: Vite middleware. Prod: Supabase Edge Function `lookup-company-by-inn`.
+ * Dev: Vite middleware. Prod: Edge Function `lookup-company-by-inn`.
  */
 export const companyLookupService = {
   isCompleteInn,
@@ -133,10 +189,26 @@ export const companyLookupService = {
       throw new ApiError('ИНН: 10 или 12 цифр', { code: 'validation' })
     }
 
-    if (import.meta.env.DEV) {
-      return lookupViaDevProxy(inn)
-    }
+    try {
+      if (import.meta.env.DEV) {
+        try {
+          return await lookupViaDevProxy(inn)
+        } catch {
+          // fall through to edge function (e.g. vite preview without middleware)
+        }
+      }
 
-    return lookupViaEdgeFunction(inn)
+      try {
+        return await lookupViaEdgeFunction(inn)
+      } catch (primaryError) {
+        try {
+          return await lookupViaFunctionsHttp(inn)
+        } catch {
+          throw friendlyLookupFailure(primaryError)
+        }
+      }
+    } catch (error) {
+      throw friendlyLookupFailure(error)
+    }
   },
 }

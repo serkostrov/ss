@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { type ColumnDef } from '@tanstack/react-table'
-import { Plus } from 'lucide-react'
+import { FileSpreadsheet, Plus } from 'lucide-react'
 
 import type { Company } from '@shared/api'
 import { routes } from '@shared/config'
@@ -18,6 +18,7 @@ import {
 import { accessStatusLabel, type CompanyAccessFilter } from '../model/schemas'
 import { useActiveLevelsForSelect, useCompanies } from '../model/use-companies'
 import { CompanyFormDialog } from './company-form-dialog'
+import { CompanyImportDialog } from './company-import-dialog'
 
 export function CompaniesPanel() {
   const navigate = useNavigate()
@@ -25,6 +26,7 @@ export function CompaniesPanel() {
   const [accessStatus, setAccessStatus] = useState<CompanyAccessFilter>('all')
   const [levelId, setLevelId] = useState('all')
   const [formOpen, setFormOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
 
   const levels = useActiveLevelsForSelect()
   const query = useCompanies({
@@ -97,7 +99,16 @@ export function CompaniesPanel() {
       {
         accessorKey: 'access_status',
         header: 'Статус',
-        cell: ({ row }) => <StatusBadge status={row.original.access_status} />,
+        cell: ({ row }) => (
+          <StatusBadge
+            status={row.original.access_status}
+            label={
+              row.original.access_status === 'archived'
+                ? 'Вышедшая'
+                : undefined
+            }
+          />
+        ),
       },
       {
         accessorKey: 'email',
@@ -117,12 +128,18 @@ export function CompaniesPanel() {
     <div className="space-y-6">
       <PageHeader
         title="Компании"
-        description="Организации — участники ассоциации: уровни, доступ и служебные заметки."
+        description="Организации ассоциации: активные, приостановленные и вышедшие. Можно импортировать из Excel бухгалтерии."
         actions={
-          <PageHeaderAction type="button" onClick={() => setFormOpen(true)}>
-            <Plus className="size-4" />
-            Добавить
-          </PageHeaderAction>
+          <>
+            <PageHeaderAction type="button" variant="outline" onClick={() => setImportOpen(true)}>
+              <FileSpreadsheet className="size-4" />
+              Импорт Excel
+            </PageHeaderAction>
+            <PageHeaderAction type="button" onClick={() => setFormOpen(true)}>
+              <Plus className="size-4" />
+              Добавить
+            </PageHeaderAction>
+          </>
         }
       />
 
@@ -143,7 +160,7 @@ export function CompaniesPanel() {
           data={query.data ?? []}
           loading={query.isLoading}
           emptyTitle="Компаний нет"
-          emptyDescription="Создайте первую компанию или измените фильтры."
+          emptyDescription="Импортируйте Excel или создайте первую компанию."
           getRowId={(row) => row.id}
           onRowClick={(row) => navigate(routes.admin.company(row.id))}
         />
@@ -154,6 +171,7 @@ export function CompaniesPanel() {
         onOpenChange={setFormOpen}
         onCreated={(created) => navigate(routes.admin.company(created.id))}
       />
+      <CompanyImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
   )
 }

@@ -168,7 +168,7 @@ export function CompanyFormDialog({
             <SelectContent>
               <SelectItem value="active">Активна</SelectItem>
               <SelectItem value="suspended">Приостановлена</SelectItem>
-              <SelectItem value="archived">В архиве</SelectItem>
+              <SelectItem value="archived">Вышедшая</SelectItem>
             </SelectContent>
           </Select>
         </FormField>

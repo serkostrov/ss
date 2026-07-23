@@ -22,16 +22,18 @@ import {
   workGroupStatusLabel,
   type WorkGroupStatusFilter,
 } from '../model/schemas'
-import { useWorkGroups } from '../model/use-work-groups'
+import { useWorkGroupCategories, useWorkGroups } from '../model/use-work-groups'
 import { WorkGroupFormDialog } from './work-group-form-dialog'
 
 export function WorkGroupsPanel() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<WorkGroupStatusFilter>('all')
+  const [categoryId, setCategoryId] = useState('all')
   const [formOpen, setFormOpen] = useState(false)
 
-  const query = useWorkGroups({ search, status })
+  const categories = useWorkGroupCategories()
+  const query = useWorkGroups({ search, status, categoryId })
 
   const filterFields: FilterFieldConfig[] = [
     {
@@ -41,6 +43,20 @@ export function WorkGroupsPanel() {
       placeholder: 'Название или описание…',
       value: search,
       onChange: setSearch,
+    },
+    {
+      id: 'category',
+      label: 'Направление',
+      type: 'select',
+      value: categoryId,
+      onChange: setCategoryId,
+      options: [
+        { value: 'all', label: 'Все направления' },
+        ...(categories.data ?? []).map((category) => ({
+          value: category.id,
+          label: category.name,
+        })),
+      ],
     },
     {
       id: 'status',
@@ -72,6 +88,15 @@ export function WorkGroupsPanel() {
         ),
       },
       {
+        id: 'category',
+        header: 'Направление',
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">
+            {row.original.category?.name ?? '—'}
+          </span>
+        ),
+      },
+      {
         id: 'responsible',
         header: 'Ответственный',
         cell: ({ row }) => {
@@ -90,7 +115,18 @@ export function WorkGroupsPanel() {
       {
         accessorKey: 'status',
         header: 'Статус',
-        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+        cell: ({ row }) => (
+          <StatusBadge
+            status={row.original.status}
+            label={
+              row.original.status === 'archived'
+                ? 'Завершена'
+                : row.original.status === 'paused'
+                  ? 'Пауза'
+                  : undefined
+            }
+          />
+        ),
       },
       {
         id: 'members',
@@ -130,7 +166,7 @@ export function WorkGroupsPanel() {
     <div className="space-y-6">
       <PageHeader
         title="Рабочие группы"
-        description="Группы представителей с ответственным, статусом и каналами Telegram / Max."
+        description="Группы по направлениям (технические, мероприятия, правление и др.) со статусом и каналами."
         actions={
           <PageHeaderAction type="button" onClick={() => setFormOpen(true)}>
             <Plus className="size-4" />
@@ -144,6 +180,7 @@ export function WorkGroupsPanel() {
         onReset={() => {
           setSearch('')
           setStatus('all')
+          setCategoryId('all')
         }}
       />
 

@@ -8,7 +8,7 @@ const STATUS_PRESETS: Record<string, { label: string; tone: StatusTone }> = {
   blocked: { label: 'Заблокирован', tone: 'destructive' },
   active: { label: 'Активен', tone: 'success' },
   suspended: { label: 'Приостановлен', tone: 'warning' },
-  archived: { label: 'В архиве', tone: 'muted' },
+  archived: { label: 'Архив', tone: 'muted' },
   paused: { label: 'Пауза', tone: 'warning' },
   draft: { label: 'Черновик', tone: 'muted' },
   closed: { label: 'Закрыто', tone: 'secondary' },

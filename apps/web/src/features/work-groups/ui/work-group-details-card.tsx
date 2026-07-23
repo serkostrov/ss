@@ -74,7 +74,18 @@ export function WorkGroupDetailsCard() {
         backTo={routes.admin.workGroups}
         title={group.name}
         description={group.description || 'Карточка рабочей группы.'}
-        status={<StatusBadge status={group.status} />}
+        status={
+          <StatusBadge
+            status={group.status}
+            label={
+              group.status === 'archived'
+                ? 'Завершена'
+                : group.status === 'paused'
+                  ? 'Пауза'
+                  : undefined
+            }
+          />
+        }
       >
         <IconButton label="Изменить" onClick={() => setEditOpen(true)}>
           <Pencil />
@@ -142,6 +153,7 @@ export function WorkGroupDetailsCard() {
           </CardHeader>
           <CardContent>
             <dl className="space-y-4">
+              <Field label="Направление" value={group.category?.name ?? 'Не указано'} />
               <Field label="Участников" value={String(group.members_count)} />
               <Field label="Создана" value={formatWorkGroupDate(group.created_at)} />
               <Field label="Обновлена" value={formatWorkGroupDate(group.updated_at)} />

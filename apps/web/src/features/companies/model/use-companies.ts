@@ -82,7 +82,7 @@ export function useSetCompanyStatusMutation() {
         const labels: Record<CompanyAccessStatus, string> = {
           active: 'Компания активирована',
           suspended: 'Доступ приостановлен',
-          archived: 'Компания в архиве',
+          archived: 'Компания отмечена как вышедшая',
         }
         notify.success(labels[variables.status])
       },

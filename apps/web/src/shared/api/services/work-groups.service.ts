@@ -29,8 +29,14 @@ export type WorkGroupMessengerConnection = Pick<
   'id' | 'platform' | 'chat_id' | 'chat_title' | 'bot_status' | 'connected_at' | 'last_error' | 'created_at'
 >
 
+export type WorkGroupCategoryRef = Pick<
+  TableRow<'work_group_categories'>,
+  'id' | 'name' | 'slug'
+>
+
 export type WorkGroup = TableRow<'work_groups'> & {
   responsible: WorkGroupRepresentativeRef | null
+  category: WorkGroupCategoryRef | null
   members_count: number
   messenger_connections: WorkGroupMessengerConnection[]
 }
@@ -39,12 +45,14 @@ export type WorkGroupInput = {
   name: string
   description?: string | null
   responsible_representative_id?: string | null
+  category_id?: string | null
   status?: WorkGroupStatus
 }
 
 export type WorkGroupsListFilters = {
   search?: string
   status?: WorkGroupStatus | 'all'
+  categoryId?: string | 'all'
 }
 
 const RESPONSIBLE_EMBED = `
@@ -67,9 +75,15 @@ const LIST_SELECT = `
   name,
   description,
   responsible_representative_id,
+  category_id,
   status,
   created_at,
   updated_at,
+  category:work_group_categories (
+    id,
+    name,
+    slug
+  ),
   ${RESPONSIBLE_EMBED},
   work_group_members ( count ),
   messenger_connections (
@@ -93,6 +107,7 @@ type QueryResult<T> = {
 
 type RawWorkGroup = TableRow<'work_groups'> & {
   responsible: WorkGroupRepresentativeRef | WorkGroupRepresentativeRef[] | null
+  category: WorkGroupCategoryRef | WorkGroupCategoryRef[] | null
   work_group_members: Array<{ count: number }> | null
   messenger_connections: WorkGroupMessengerConnection[] | WorkGroupMessengerConnection | null
 }
@@ -148,10 +163,12 @@ function normalize(row: RawWorkGroup): WorkGroup {
     name: row.name,
     description: row.description,
     responsible_representative_id: row.responsible_representative_id,
+    category_id: row.category_id,
     status: row.status,
     created_at: row.created_at,
     updated_at: row.updated_at,
     responsible: normalizeResponsible(row.responsible),
+    category: firstRelation(row.category),
     members_count: countRow?.count ?? 0,
     messenger_connections: normalizeMessenger(row.messenger_connections),
   }
@@ -170,6 +187,10 @@ export const workGroupsService = {
 
     if (filters.status && filters.status !== 'all') {
       query = query.eq('status', filters.status)
+    }
+
+    if (filters.categoryId && filters.categoryId !== 'all') {
+      query = query.eq('category_id', filters.categoryId)
     }
 
     const search = filters.search?.trim()
@@ -203,6 +224,7 @@ export const workGroupsService = {
       name: input.name.trim(),
       description: input.description?.trim() || null,
       responsible_representative_id: input.responsible_representative_id || null,
+      category_id: input.category_id || null,
       status: input.status ?? 'active',
     }
 
@@ -217,6 +239,7 @@ export const workGroupsService = {
       name: input.name.trim(),
       description: input.description?.trim() || null,
       responsible_representative_id: input.responsible_representative_id || null,
+      category_id: input.category_id || null,
       status: input.status,
       updated_at: new Date().toISOString(),
     }

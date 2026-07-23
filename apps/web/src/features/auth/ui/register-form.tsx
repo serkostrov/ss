@@ -79,7 +79,12 @@ export function RegisterForm() {
         } catch (error) {
           if (seq !== lookupSeq.current) return
           setInnLookupStatus('error')
-          setInnLookupMessage(getErrorMessage(error, 'Не удалось найти организацию'))
+          setInnLookupMessage(
+            getErrorMessage(
+              error,
+              'Автозаполнение недоступно. Укажите название компании вручную.',
+            ),
+          )
         }
       })()
     }, 450)
@@ -157,7 +162,7 @@ export function RegisterForm() {
                 />
               </FormControl>
               <FormDescription>
-                Необязательно. По ИНН подставим название из ЕГРЮЛ.
+                Необязательно. По ИНН попробуем подставить название из ЕГРЮЛ — при сбое укажите вручную.
               </FormDescription>
               {innLookupStatus === 'loading' ? (
                 <p className="flex items-center gap-1.5 text-sm text-muted-foreground">

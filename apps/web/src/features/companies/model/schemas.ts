@@ -65,7 +65,7 @@ export function accessStatusLabel(status: CompanyAccessStatus | 'all'): string {
     case 'suspended':
       return 'Приостановленные'
     case 'archived':
-      return 'В архиве'
+      return 'Вышедшие'
     default:
       return 'Все статусы'
   }

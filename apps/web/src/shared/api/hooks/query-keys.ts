@@ -41,13 +41,14 @@ export const queryKeys = {
   },
   workGroups: {
     all: ['apss', 'work-groups'] as const,
-    list: (filters: { search?: string; status?: string }) =>
+    list: (filters: { search?: string; status?: string; categoryId?: string }) =>
       ['apss', 'work-groups', 'list', filters] as const,
     detail: (id: string) => ['apss', 'work-groups', id] as const,
     members: (id: string) => ['apss', 'work-groups', id, 'members'] as const,
     messengers: (id: string) => ['apss', 'work-groups', id, 'messengers'] as const,
     messages: (id: string) => ['apss', 'work-groups', id, 'messages'] as const,
     links: (id: string) => ['apss', 'work-groups', id, 'links'] as const,
+    categories: ['apss', 'work-groups', 'categories'] as const,
   },
   messages: {
     all: ['apss', 'messages'] as const,

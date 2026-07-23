@@ -21,6 +21,7 @@ import {
   useCreateWorkGroupMutation,
   useRepresentativesForWorkGroupSelect,
   useUpdateWorkGroupMutation,
+  useWorkGroupCategories,
 } from '../model/use-work-groups'
 
 type WorkGroupFormDialogProps = {
@@ -35,6 +36,7 @@ function toFormValues(workGroup?: WorkGroup | null): WorkGroupFormValues {
     name: workGroup?.name ?? '',
     description: workGroup?.description ?? '',
     responsibleRepresentativeId: workGroup?.responsible_representative_id ?? '',
+    categoryId: workGroup?.category_id ?? '',
     status: workGroup?.status ?? 'active',
   }
 }
@@ -47,6 +49,7 @@ export function WorkGroupFormDialog({
 }: WorkGroupFormDialogProps) {
   const isEdit = Boolean(workGroup)
   const representatives = useRepresentativesForWorkGroupSelect()
+  const categories = useWorkGroupCategories()
   const createMutation = useCreateWorkGroupMutation()
   const updateMutation = useUpdateWorkGroupMutation()
   const [values, setValues] = useState<WorkGroupFormValues>(() => toFormValues(workGroup))
@@ -99,7 +102,7 @@ export function WorkGroupFormDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={isEdit ? 'Редактировать группу' : 'Новая рабочая группа'}
-      description="Ответственный представитель и статус. Каналы Telegram/Max подключаются отдельно."
+      description="Направление (категория), ответственный и статус. Каналы Telegram/Max подключаются отдельно."
       footer={
         <>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -126,6 +129,24 @@ export function WorkGroupFormDialog({
             onChange={(event) => patch('description', event.target.value)}
             rows={3}
           />
+        </FormField>
+        <FormField label="Направление" error={errors.categoryId}>
+          <Select
+            value={values.categoryId || 'none'}
+            onValueChange={(value) => patch('categoryId', value === 'none' ? '' : value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Выберите направление" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Не указано</SelectItem>
+              {(categories.data ?? []).map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </FormField>
         <FormField label="Ответственный представитель" error={errors.responsibleRepresentativeId}>
           <Select
@@ -161,7 +182,7 @@ export function WorkGroupFormDialog({
             <SelectContent>
               <SelectItem value="active">Активна</SelectItem>
               <SelectItem value="paused">На паузе</SelectItem>
-              <SelectItem value="archived">В архиве</SelectItem>
+              <SelectItem value="archived">Завершена</SelectItem>
             </SelectContent>
           </Select>
         </FormField>

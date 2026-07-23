@@ -18,6 +18,7 @@ export const workGroupFormSchema = z.object({
     .optional()
     .or(z.literal('')),
   responsibleRepresentativeId: z.string().uuid().optional().or(z.literal('')),
+  categoryId: z.string().uuid().optional().or(z.literal('')),
   status: z.enum(['active', 'paused', 'archived'] satisfies [
     WorkGroupStatus,
     ...WorkGroupStatus[],
@@ -33,7 +34,7 @@ export function workGroupStatusLabel(status: WorkGroupStatus | 'all'): string {
     case 'paused':
       return 'На паузе'
     case 'archived':
-      return 'В архиве'
+      return 'Завершённые'
     default:
       return 'Все статусы'
   }
@@ -46,7 +47,7 @@ export function workGroupStatusActionLabel(status: WorkGroupStatus): string {
     case 'paused':
       return 'Пауза'
     case 'archived':
-      return 'В архив'
+      return 'Завершить'
   }
 }
 

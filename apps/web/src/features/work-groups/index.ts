@@ -13,6 +13,7 @@ export {
   useSetWorkGroupStatusMutation,
   useDeleteWorkGroupMutation,
   useRepresentativesForWorkGroupSelect,
+  useWorkGroupCategories,
   toWorkGroupInput,
 } from './model/use-work-groups'
 

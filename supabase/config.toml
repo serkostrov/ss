@@ -1,0 +1,6 @@
+# Supabase local / CLI project config (minimal).
+# Used when deploying Edge Functions.
+
+[functions.lookup-company-by-inn]
+# Public: called from registration form before login.
+verify_jwt = false

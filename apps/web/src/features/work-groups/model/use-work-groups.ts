@@ -3,6 +3,7 @@ import {
   representativesService,
   useSupabaseMutation,
   useSupabaseQuery,
+  workGroupCategoriesService,
   workGroupsService,
   type WorkGroup,
   type WorkGroupInput,
@@ -15,6 +16,7 @@ function listKey(filters: WorkGroupsListFilters) {
   return queryKeys.workGroups.list({
     search: filters.search?.trim() || '',
     status: filters.status ?? 'all',
+    categoryId: filters.categoryId ?? 'all',
   })
 }
 
@@ -34,6 +36,14 @@ export function useWorkGroup(id: string | undefined) {
       return workGroupsService.getById(id)
     },
     { enabled: Boolean(id), ensureFreshSession: true },
+  )
+}
+
+export function useWorkGroupCategories() {
+  return useSupabaseQuery(
+    queryKeys.workGroups.categories,
+    () => workGroupCategoriesService.listActive(),
+    { ensureFreshSession: true, staleTime: 60_000 },
   )
 }
 
@@ -78,7 +88,7 @@ export function useSetWorkGroupStatusMutation() {
         const labels: Record<WorkGroupStatus, string> = {
           active: 'Группа активирована',
           paused: 'Группа на паузе',
-          archived: 'Группа в архиве',
+          archived: 'Группа завершена',
         }
         notify.success(labels[variables.status])
       },
@@ -100,12 +110,14 @@ export function toWorkGroupInput(values: {
   name: string
   description?: string
   responsibleRepresentativeId?: string
+  categoryId?: string
   status: WorkGroupStatus
 }): WorkGroupInput {
   return {
     name: values.name,
     description: values.description || null,
     responsible_representative_id: values.responsibleRepresentativeId || null,
+    category_id: values.categoryId || null,
     status: values.status,
   }
 }

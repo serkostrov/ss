@@ -102,7 +102,7 @@ export function CompanyDetailsCard() {
         ) : null}
         {company.access_status !== 'archived' ? (
           <IconButton
-            label="В архив"
+            label="Вышедшая"
             disabled={statusMutation.isPending}
             onClick={() => setStatusTarget('archived')}
           >

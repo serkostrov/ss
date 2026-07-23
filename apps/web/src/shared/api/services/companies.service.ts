@@ -235,4 +235,30 @@ export const companiesService = {
   async delete(id: string): Promise<void> {
     await dataService.deleteById('companies', id)
   },
+
+  async importRows(rows: Array<Record<string, unknown>>): Promise<{
+    created: number
+    updated: number
+    skipped: number
+    errors: Array<{ row?: number; error?: string; message?: string; inn?: string }>
+  }> {
+    const { data, error } = await supabaseClient.rpc('import_companies', {
+      p_rows: rows as never,
+    })
+    if (error) {
+      throw new ApiError(error.message, { code: 'unknown', cause: error })
+    }
+    const result = data as {
+      created?: number
+      updated?: number
+      skipped?: number
+      errors?: Array<{ row?: number; error?: string; message?: string; inn?: string }>
+    } | null
+    return {
+      created: result?.created ?? 0,
+      updated: result?.updated ?? 0,
+      skipped: result?.skipped ?? 0,
+      errors: result?.errors ?? [],
+    }
+  },
 }

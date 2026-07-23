@@ -23,8 +23,10 @@ Messenger worker пока scaffold — в Dokploy можно не деплоит
 2. Задеплойте Edge Function поиска по ИНН (нужна для автозаполнения названия на регистрации в production):
 
 ```bash
-supabase functions deploy lookup-company-by-inn
+supabase functions deploy lookup-company-by-inn --no-verify-jwt
 ```
+
+В `supabase/config.toml` для этой функции уже стоит `verify_jwt = false` (форма регистрации вызывается без логина).
 
 3. В Supabase → Authentication → URL Configuration:
    - **Site URL** = `https://your-domain`

@@ -226,12 +226,38 @@ export type Database = {
           },
         ]
       }
+      work_group_categories: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          sort_order: number
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          name?: string
+          slug?: string
+          sort_order?: number
+          is_active?: boolean
+        }
+        Relationships: []
+      }
       work_groups: {
         Row: {
           id: string
           name: string
           description: string | null
           responsible_representative_id: string | null
+          category_id: string | null
           status: WorkGroupStatus
           created_at: string
           updated_at: string
@@ -241,6 +267,7 @@ export type Database = {
           name: string
           description?: string | null
           responsible_representative_id?: string | null
+          category_id?: string | null
           status?: WorkGroupStatus
           created_at?: string
           updated_at?: string
@@ -249,10 +276,19 @@ export type Database = {
           name?: string
           description?: string | null
           responsible_representative_id?: string | null
+          category_id?: string | null
           status?: WorkGroupStatus
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'work_groups_category_id_fkey'
+            columns: ['category_id']
+            isOneToOne: false
+            referencedRelation: 'work_group_categories'
+            referencedColumns: ['id']
+          },
+        ]
       }
       work_group_members: {
         Row: {
@@ -815,6 +851,10 @@ export type Database = {
       }
       get_cabinet_poll_access_hint: {
         Args: Record<string, never>
+        Returns: Json
+      }
+      import_companies: {
+        Args: { p_rows: Json }
         Returns: Json
       }
     }
