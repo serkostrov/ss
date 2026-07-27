@@ -22,7 +22,7 @@ function assertResult<T>(result: QueryResult<T>): T {
 }
 
 /**
- * Channels where the APSS bot is present (filled by messenger worker).
+ * Chats where the APSS bot is present (channel / group / DM) — filled by messenger worker.
  */
 export const messengerBotChannelsService = {
   async listActiveChannels(platform: MessengerPlatform): Promise<MessengerBotChannel[]> {
@@ -44,7 +44,6 @@ export const messengerBotChannelsService = {
       )
       .eq('platform', platform)
       .eq('is_active', true)
-      .eq('chat_kind', 'channel')
       .order('title', { ascending: true, nullsFirst: false })
       .order('external_chat_id', { ascending: true })) as QueryResult<MessengerBotChannel[]>
 

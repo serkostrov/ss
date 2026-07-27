@@ -138,7 +138,7 @@ export const messengerConnectionsService = {
       return row
     } catch (error) {
       if (error instanceof ApiError && error.code === 'conflict') {
-        throw new ApiError('Для этой платформы канал уже привязан', {
+        throw new ApiError('Для этой платформы чат уже привязан', {
           code: 'conflict',
           cause: error,
         })

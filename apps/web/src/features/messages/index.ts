@@ -1,4 +1,5 @@
 export { MessagesFeedPanel } from './ui/messages-feed-panel'
+export { ChatThreadPanel } from './ui/chat-thread-panel'
 export { MessagesHistoryPanel } from './ui/messages-history-panel'
 export { WorkGroupMessagesPanel } from './ui/work-group-messages-panel'
 export { MessageDetailSheet } from './ui/message-detail-sheet'

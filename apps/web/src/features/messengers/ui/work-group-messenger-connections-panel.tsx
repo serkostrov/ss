@@ -58,9 +58,9 @@ function ConnectionsList({
     return (
       <EmptyState
         title={`${messengerPlatformLabel(platform)} не привязан`}
-        description={`Выберите канал ${messengerPlatformLabel(platform)}, в котором уже есть бот АПСС.`}
+        description={`Выберите канал, группу или ЛС ${messengerPlatformLabel(platform)}, где уже есть бот АПСС.`}
         className="py-10"
-        actionLabel={canAdd ? 'Привязать канал' : undefined}
+        actionLabel={canAdd ? 'Привязать чат' : undefined}
         onAction={canAdd ? onCreate : undefined}
       />
     )
@@ -185,7 +185,7 @@ export function WorkGroupMessengerConnectionsPanel({
   const bindButton = (
     <Button type="button" size="sm" className="shrink-0" disabled={!canAdd} onClick={openCreate}>
       <Plus className="size-4" />
-      Привязать канал
+      Привязать чат
     </Button>
   )
 
@@ -258,8 +258,8 @@ export function WorkGroupMessengerConnectionsPanel({
             ? `${messengerPlatformLabel(deleteItem.platform)} · ${deleteItem.chat_title || deleteItem.chat_id}`
             : undefined
         }
-        title="Отвязать канал?"
-        description="Запись будет удалена. Worker перестанет использовать этот канал."
+        title="Отвязать чат?"
+        description="Запись будет удалена. Worker перестанет использовать этот чат."
         loading={deleteMutation.isPending}
         onConfirm={async () => {
           if (!deleteItem) return

@@ -11,6 +11,7 @@ function listKey(filters: MessagesListFilters) {
     search: filters.search?.trim() || '',
     workGroupId: filters.workGroupId ?? 'all',
     source: filters.source ?? 'all',
+    externalChatId: filters.externalChatId ?? 'all',
     deliveryStatus: filters.deliveryStatus ?? 'all',
     page: filters.page ?? 1,
     pageSize: filters.pageSize ?? 20,

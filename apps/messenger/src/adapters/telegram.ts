@@ -13,6 +13,8 @@ type TelegramChat = {
   type: string
   title?: string
   username?: string
+  first_name?: string
+  last_name?: string
 }
 
 type TelegramUser = {
@@ -51,6 +53,8 @@ type TelegramChatMemberUpdated = {
 
 export type TelegramUpdate = {
   update_id: number
+  message?: TelegramMessage
+  edited_message?: TelegramMessage
   channel_post?: TelegramMessage
   edited_channel_post?: TelegramMessage
   my_chat_member?: TelegramChatMemberUpdated
@@ -60,7 +64,16 @@ function mapChatKind(type: string): ChatKind {
   if (type === 'channel') return 'channel'
   if (type === 'group') return 'group'
   if (type === 'supergroup') return 'supergroup'
+  if (type === 'private') return 'private'
   return 'other'
+}
+
+function chatTitle(chat: TelegramChat): string | null {
+  if (chat.title?.trim()) return chat.title.trim()
+  const name = [chat.first_name, chat.last_name].filter(Boolean).join(' ').trim()
+  if (name) return name
+  if (chat.username?.trim()) return `@${chat.username.trim()}`
+  return null
 }
 
 function detectContentType(message: TelegramMessage): MessageContentType {
@@ -97,23 +110,24 @@ function resolveAuthor(message: TelegramMessage): {
       externalId: String(message.from.id),
     }
   }
-  return { name: message.chat.title ?? null, externalId: String(message.chat.id) }
+  return { name: chatTitle(message.chat), externalId: String(message.chat.id) }
 }
 
-async function handleChannelPost(
+async function handleIncomingMessage(
   db: DbClient,
   message: TelegramMessage,
   isEdit: boolean,
 ): Promise<void> {
-  if (message.chat.type !== 'channel') return
+  const kind = mapChatKind(message.chat.type)
+  if (kind === 'other') return
 
   const chatId = String(message.chat.id)
   await upsertBotChannel(db, {
     platform: 'telegram',
     externalChatId: chatId,
-    title: message.chat.title ?? null,
+    title: chatTitle(message.chat),
     username: message.chat.username ?? null,
-    chatKind: 'channel',
+    chatKind: kind,
     isActive: true,
   })
 
@@ -129,6 +143,7 @@ async function handleChannelPost(
     contentType,
     payload: {
       telegram: {
+        chat_kind: kind,
         has_photo: Boolean(message.photo?.length),
         has_video: Boolean(message.video || message.animation),
         has_document: Boolean(message.document),
@@ -138,8 +153,9 @@ async function handleChannelPost(
     isEdit,
   })
 
-  log('info', 'Telegram channel post processed', {
+  log('info', 'Telegram message processed', {
     chatId,
+    kind,
     messageId: message.message_id,
     result,
     isEdit,
@@ -153,43 +169,49 @@ async function handleMyChatMember(
   const kind = mapChatKind(update.chat.type)
   const chatId = String(update.chat.id)
   const status = update.new_chat_member.status
-  const active = status === 'member' || status === 'administrator' || status === 'restricted'
 
-  if (kind === 'channel') {
-    if (active) {
-      await upsertBotChannel(db, {
-        platform: 'telegram',
-        externalChatId: chatId,
-        title: update.chat.title ?? null,
-        username: update.chat.username ?? null,
-        chatKind: 'channel',
-        isActive: true,
-      })
-    } else {
-      await markBotChannelInactive(db, 'telegram', chatId)
-    }
-  } else if (kind === 'group' || kind === 'supergroup') {
-    // Track membership for visibility, but ingest remains channel-only.
+  if (kind === 'other') {
+    log('info', 'Telegram my_chat_member ignored', { chatId, kind, status })
+    return
+  }
+
+  // Private: user opened/restarted the bot; groups/channels: member/admin/restricted.
+  const isActive =
+    kind === 'private'
+      ? status !== 'kicked' && status !== 'left'
+      : status === 'member' || status === 'administrator' || status === 'restricted'
+
+  if (isActive) {
     await upsertBotChannel(db, {
       platform: 'telegram',
       externalChatId: chatId,
-      title: update.chat.title ?? null,
+      title: chatTitle(update.chat),
       username: update.chat.username ?? null,
       chatKind: kind,
-      isActive: active,
+      isActive: true,
     })
+  } else {
+    await markBotChannelInactive(db, 'telegram', chatId)
   }
 
-  log('info', 'Telegram my_chat_member', { chatId, kind, status, active })
+  log('info', 'Telegram my_chat_member', { chatId, kind, status, active: isActive })
 }
 
 export async function handleTelegramUpdate(db: DbClient, update: TelegramUpdate): Promise<void> {
+  if (update.message) {
+    await handleIncomingMessage(db, update.message, false)
+    return
+  }
+  if (update.edited_message) {
+    await handleIncomingMessage(db, update.edited_message, true)
+    return
+  }
   if (update.channel_post) {
-    await handleChannelPost(db, update.channel_post, false)
+    await handleIncomingMessage(db, update.channel_post, false)
     return
   }
   if (update.edited_channel_post) {
-    await handleChannelPost(db, update.edited_channel_post, true)
+    await handleIncomingMessage(db, update.edited_channel_post, true)
     return
   }
   if (update.my_chat_member) {
@@ -205,7 +227,13 @@ export async function registerTelegramWebhook(
   const url = `${baseUrl}/webhooks/telegram`
   const body: Record<string, unknown> = {
     url,
-    allowed_updates: ['channel_post', 'edited_channel_post', 'my_chat_member'],
+    allowed_updates: [
+      'message',
+      'edited_message',
+      'channel_post',
+      'edited_channel_post',
+      'my_chat_member',
+    ],
     drop_pending_updates: false,
   }
   if (secret) body.secret_token = secret

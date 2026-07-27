@@ -1,4 +1,5 @@
 ﻿export { WorkGroupMessengerConnectionsPanel } from './ui/work-group-messenger-connections-panel'
+export { WorkGroupMessengerWorkspace } from './ui/work-group-messenger-workspace'
 export { MessengerConnectionFormDialog } from './ui/messenger-connection-form-dialog'
 
 export {

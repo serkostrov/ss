@@ -15,6 +15,7 @@ import {
 } from '@shared/ui'
 
 import {
+  messengerChatKindLabel,
   messengerConnectionFormSchema,
   messengerPlatformLabel,
   type MessengerConnectionFormValues,
@@ -52,13 +53,16 @@ function channelLabel(channel: {
   title: string | null
   username: string | null
   external_chat_id: string
+  chat_kind?: string | null
 }): string {
+  const kind = messengerChatKindLabel(channel.chat_kind)
   const title = channel.title?.trim()
   const username = channel.username?.trim()
-  if (title && username) return `${title} (@${username})`
-  if (title) return title
-  if (username) return `@${username}`
-  return channel.external_chat_id
+  const name =
+    title && username
+      ? `${title} (@${username})`
+      : title || (username ? `@${username}` : channel.external_chat_id)
+  return `${kind}: ${name}`
 }
 
 export function MessengerConnectionFormDialog({
@@ -87,7 +91,6 @@ export function MessengerConnectionFormDialog({
 
   const channelsQuery = useMessengerBotChannels(values.platform, open)
   const catalogFromApi = channelsQuery.data ?? []
-  const catalogEmpty = !channelsQuery.isLoading && catalogFromApi.length === 0
   const channels = useMemo(() => {
     const list = [...catalogFromApi]
     if (
@@ -98,9 +101,9 @@ export function MessengerConnectionFormDialog({
         id: `current-${values.chatId}`,
         platform: values.platform,
         external_chat_id: values.chatId,
-        title: values.chatTitle || 'Текущий канал',
+        title: values.chatTitle || 'Текущий чат',
         username: null,
-        chat_kind: 'channel',
+        chat_kind: 'other',
         is_active: true,
         last_seen_at: null,
         created_at: '',
@@ -109,6 +112,7 @@ export function MessengerConnectionFormDialog({
     }
     return list
   }, [catalogFromApi, values.chatId, values.chatTitle, values.platform])
+  const noChannelsFound = !channelsQuery.isLoading && channels.length === 0
 
   useEffect(() => {
     if (!open) return
@@ -184,8 +188,8 @@ export function MessengerConnectionFormDialog({
     <Modal
       open={open}
       onOpenChange={onOpenChange}
-      title={isEdit ? 'Изменить привязку' : 'Привязать канал'}
-      description="Выберите канал, в котором уже есть бот АПСС. Статус подключения обновляет worker."
+      title={isEdit ? 'Изменить привязку' : 'Привязать чат'}
+      description="Выберите канал, группу или личный чат, где уже есть бот АПСС. Статус обновляет worker."
       footer={
         <>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -193,7 +197,13 @@ export function MessengerConnectionFormDialog({
           </Button>
           <Button
             type="button"
-            disabled={pending || (!isEdit && platforms.length === 0)}
+            disabled={
+              pending ||
+              (!isEdit && platforms.length === 0) ||
+              channelsQuery.isLoading ||
+              noChannelsFound ||
+              !values.chatId.trim()
+            }
             onClick={() => void submit()}
           >
             {pending ? <Spinner size="sm" className="text-current" /> : null}
@@ -206,7 +216,7 @@ export function MessengerConnectionFormDialog({
         <FormField label="Платформа" required error={errors.platform}>
           <Select
             value={values.platform}
-            disabled={isEdit || Boolean(preferredPlatform) || platforms.length === 0}
+            disabled={isEdit || platforms.length <= 1}
             onValueChange={(value) => {
               const platform = value as MessengerConnectionFormValues['platform']
               setValues((prev) => ({
@@ -232,34 +242,35 @@ export function MessengerConnectionFormDialog({
         </FormField>
 
         <FormField
-          label="Канал"
+          label="Чат"
           required
           error={errors.chatId}
           description={
             channelsQuery.isLoading
-              ? 'Загрузка каналов…'
-              : catalogEmpty
-                ? 'Список пуст. Нужен канал (не группа): добавьте бота админом после запуска worker или введите chat_id.'
+              ? 'Загрузка чатов…'
+              : noChannelsFound
+                ? 'Добавьте бота в канал/группу или напишите ему в ЛС.'
                 : selectedChannel
                   ? `ID: ${selectedChannel.external_chat_id}`
-                  : 'Каналы, где присутствует бот.'
+                  : 'Каналы, группы и личные чаты, где есть бот АПСС.'
           }
         >
-          {catalogEmpty ? (
-            <Input
-              value={values.chatId}
-              onChange={(event) => patch('chatId', event.target.value.trim())}
-              placeholder={values.platform === 'telegram' ? '-100…' : 'chat_id'}
-              autoFocus
-            />
+          {channelsQuery.isLoading ? (
+            <div className="flex h-9 items-center gap-2 rounded-md border border-input px-3 text-sm text-muted-foreground">
+              <Spinner size="sm" />
+              Загрузка…
+            </div>
+          ) : noChannelsFound ? (
+            <div className="flex h-9 items-center rounded-md border border-dashed border-input bg-muted/30 px-3 text-sm text-muted-foreground">
+              Не найдено чатов
+            </div>
           ) : (
             <Select
               value={values.chatId || undefined}
               onValueChange={selectChannel}
-              disabled={channelsQuery.isLoading}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Выберите канал" />
+                <SelectValue placeholder="Выберите чат" />
               </SelectTrigger>
               <SelectContent>
                 {channels.map((channel) => (
@@ -276,7 +287,7 @@ export function MessengerConnectionFormDialog({
           <Input
             value={values.chatTitle ?? ''}
             onChange={(event) => patch('chatTitle', event.target.value)}
-            placeholder="Подставится из канала"
+            placeholder="Подставится из чата"
           />
         </FormField>
       </div>

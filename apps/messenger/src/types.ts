@@ -1,4 +1,4 @@
-export type ChatKind = 'channel' | 'group' | 'supergroup' | 'other'
+export type ChatKind = 'channel' | 'group' | 'supergroup' | 'private' | 'other'
 export type MessageContentType = 'text' | 'photo' | 'video' | 'document' | 'other'
 export type MessengerPlatform = 'telegram' | 'max'
 

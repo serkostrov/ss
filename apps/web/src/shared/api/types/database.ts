@@ -22,7 +22,7 @@ export type BotStatus = 'pending' | 'connected' | 'error'
 export type MessageSource = 'telegram' | 'max'
 export type DeliveryStatus = 'received' | 'stored' | 'relayed' | 'failed'
 export type RelayStatus = 'pending' | 'sent' | 'failed'
-export type MessengerChatKind = 'channel' | 'group' | 'supergroup' | 'other'
+export type MessengerChatKind = 'channel' | 'group' | 'supergroup' | 'private' | 'other'
 export type MessageContentType = 'text' | 'photo' | 'video' | 'document' | 'other'
 
 /** Payload for confirm_registration → create representative (+ optional company). */

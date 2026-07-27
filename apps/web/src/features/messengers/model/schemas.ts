@@ -1,13 +1,13 @@
 import { z } from 'zod'
 
-import type { BotStatus, MessengerPlatform } from '@shared/api'
+import type { BotStatus, MessengerChatKind, MessengerPlatform } from '@shared/api'
 
 export const messengerConnectionFormSchema = z.object({
   platform: z.enum(['telegram', 'max'] satisfies [MessengerPlatform, ...MessengerPlatform[]]),
   chatId: z
-    .string({ required_error: 'Выберите канал' })
+    .string({ required_error: 'Выберите чат' })
     .trim()
-    .min(1, 'Выберите канал')
+    .min(1, 'Выберите чат')
     .max(200, 'Слишком длинный идентификатор'),
   chatTitle: z.string().trim().max(300, 'Слишком длинное название').optional().or(z.literal('')),
 })
@@ -16,6 +16,21 @@ export type MessengerConnectionFormValues = z.infer<typeof messengerConnectionFo
 
 export function messengerPlatformLabel(platform: MessengerPlatform): string {
   return platform === 'telegram' ? 'Telegram' : 'Max'
+}
+
+export function messengerChatKindLabel(kind: MessengerChatKind | string | null | undefined): string {
+  switch (kind) {
+    case 'channel':
+      return 'Канал'
+    case 'group':
+      return 'Группа'
+    case 'supergroup':
+      return 'Супергруппа'
+    case 'private':
+      return 'Личные'
+    default:
+      return 'Чат'
+  }
 }
 
 export function botStatusLabel(status: BotStatus): string {

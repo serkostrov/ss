@@ -27,6 +27,7 @@ export type MessagesListFilters = {
   search?: string
   workGroupId?: string | 'all'
   source?: MessageSource | 'all'
+  externalChatId?: string | 'all'
   deliveryStatus?: DeliveryStatus | 'all'
   page?: number
   pageSize?: number
@@ -142,6 +143,9 @@ export const messagesService = {
     }
     if (filters.source && filters.source !== 'all') {
       query = query.eq('source', filters.source)
+    }
+    if (filters.externalChatId && filters.externalChatId !== 'all') {
+      query = query.eq('external_chat_id', filters.externalChatId)
     }
     if (filters.deliveryStatus && filters.deliveryStatus !== 'all') {
       query = query.eq('delivery_status', filters.deliveryStatus)

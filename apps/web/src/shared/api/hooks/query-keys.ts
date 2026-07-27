@@ -72,6 +72,7 @@ export const queryKeys = {
       search?: string
       workGroupId?: string
       source?: string
+      externalChatId?: string
       deliveryStatus?: string
       page?: number
       pageSize?: number

@@ -58,6 +58,14 @@ function mapChatKind(type: string | undefined): ChatKind {
   if (normalized === 'channel') return 'channel'
   if (normalized === 'chat' || normalized === 'group') return 'group'
   if (normalized === 'supergroup') return 'supergroup'
+  if (
+    normalized === 'dialog' ||
+    normalized === 'private' ||
+    normalized === 'user' ||
+    normalized === 'dm'
+  ) {
+    return 'private'
+  }
   return 'other'
 }
 
@@ -113,21 +121,22 @@ async function handleBotMembership(
   if (!chatId) return
 
   const kind = mapChatKind(chatTypeFromUpdate(update))
-  if (kind !== 'channel' && !isActive) {
+  if (!isActive) {
     await markBotChannelInactive(db, 'max', chatId)
+    log('info', 'Max bot membership', { chatId, kind, isActive: false })
     return
   }
 
   await upsertBotChannel(db, {
     platform: 'max',
     externalChatId: chatId,
-    title: update.chat?.title ?? null,
-    username: null,
-    chatKind: kind === 'other' && isActive ? 'channel' : kind,
-    isActive,
+    title: update.chat?.title ?? update.user?.name ?? update.user?.username ?? null,
+    username: update.user?.username ?? null,
+    chatKind: kind,
+    isActive: true,
   })
 
-  log('info', 'Max bot membership', { chatId, kind, isActive })
+  log('info', 'Max bot membership', { chatId, kind, isActive: true })
 }
 
 async function handleMessageCreated(db: DbClient, update: MaxUpdate, isEdit: boolean): Promise<void> {
@@ -138,25 +147,18 @@ async function handleMessageCreated(db: DbClient, update: MaxUpdate, isEdit: boo
   if (!chatId) return
 
   const kind = mapChatKind(chatTypeFromUpdate(update))
-  // Only ingest channel posts; still refresh catalog when we see a channel.
-  if (kind !== 'channel') {
-    if (kind === 'group' || kind === 'supergroup') {
-      await upsertBotChannel(db, {
-        platform: 'max',
-        externalChatId: chatId,
-        title: update.chat?.title ?? null,
-        chatKind: kind,
-        isActive: true,
-      })
-    }
-    return
-  }
+  const title =
+    update.chat?.title ??
+    message.sender?.name ??
+    message.sender?.username ??
+    null
 
   await upsertBotChannel(db, {
     platform: 'max',
     externalChatId: chatId,
-    title: update.chat?.title ?? null,
-    chatKind: 'channel',
+    title,
+    username: message.sender?.username ?? null,
+    chatKind: kind,
     isActive: true,
   })
 
@@ -180,6 +182,7 @@ async function handleMessageCreated(db: DbClient, update: MaxUpdate, isEdit: boo
     contentType,
     payload: {
       max: {
+        chat_kind: kind,
         attachment_types: (message.body?.attachments ?? []).map((item) => item.type ?? null),
       },
     },
@@ -187,13 +190,13 @@ async function handleMessageCreated(db: DbClient, update: MaxUpdate, isEdit: boo
     isEdit,
   })
 
-  log('info', 'Max channel message processed', { chatId, mid, result, isEdit })
+  log('info', 'Max message processed', { chatId, kind, mid, result, isEdit })
 }
 
 export async function handleMaxUpdate(db: DbClient, update: MaxUpdate): Promise<void> {
   const type = (update.update_type ?? '').toLowerCase()
 
-  if (type === 'bot_added') {
+  if (type === 'bot_added' || type === 'bot_started') {
     await handleBotMembership(db, update, true)
     return
   }

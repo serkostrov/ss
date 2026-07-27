@@ -56,6 +56,8 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
 
         const body = (await readJson(req)) as TelegramUpdate
         const kinds = [
+          body.message ? 'message' : null,
+          body.edited_message ? 'edited_message' : null,
           body.channel_post ? 'channel_post' : null,
           body.edited_channel_post ? 'edited_channel_post' : null,
           body.my_chat_member ? 'my_chat_member' : null,

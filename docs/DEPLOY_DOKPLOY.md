@@ -111,9 +111,9 @@ MAX_TLS_INSECURE=1
 
 ## 3. После старта ботов
 
-1. Добавьте бота АПСС **администратором** в канал Telegram / Max.
-2. В админке: **Группы → [группа] → Чаты** — выберите канал из списка.
-3. Напишите пост в канал → он появится в **История** / кабинет **Сообщения**.
+1. Добавьте бота АПСС в канал / группу / напишите ему в ЛС (Telegram или Max).
+2. В админке: **Группы → [группа] → Чаты** — выберите чат из списка.
+3. Сообщения появятся в ленте / кабинете **Сообщения**.
 
 Подробнее: [MESSENGER_CHAT_IDS.md](./MESSENGER_CHAT_IDS.md).
 
@@ -148,5 +148,5 @@ Web nginx проксирует `/webhooks/` → messenger. Домен у web о�
 | Telegram: `HTTPS URL must be provided` | `PUBLIC_WEBHOOK_BASE_URL` должен быть `https://...`, не `http://` и не localhost |
 | Max: `Malformed access token` | Токен без `Bearer `, актуальный из кабинета Max |
 | Max: `fetch failed` | TLS; `MAX_TLS_INSECURE=1` или корневой CA Минцифры |
-| Каналы не в picker | Messenger не запущен / бот не в канале / webhook не зарегистрирован |
+| Чаты не в picker | Messenger не запущен / бот не в чате / webhook не зарегистрирован |
 | `/env.js` с `${VITE_...}` | Нет runtime `VITE_*` в Environment Dokploy |
