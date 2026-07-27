@@ -34,6 +34,12 @@ const optionalUrl = z
     }
   }, { message: 'Некорректный сайт' })
 
+export const companyBalanceFilterSchema = z.enum(['all', 'positive', 'zero', 'negative'])
+export type CompanyBalanceFilterValue = z.infer<typeof companyBalanceFilterSchema>
+
+export const companySortBySchema = z.enum(['name', 'balance_asc', 'balance_desc', 'auto_id'])
+export type CompanySortByValue = z.infer<typeof companySortBySchema>
+
 export const companyFormSchema = z.object({
   name: z
     .string({ required_error: 'Укажите название' })
@@ -54,9 +60,29 @@ export const companyFormSchema = z.object({
     ...CompanyAccessStatus[],
   ]),
   notes: optionalText(4000),
+  balance: z
+    .string()
+    .trim()
+    .optional()
+    .or(z.literal(''))
+    .refine((value) => {
+      if (!value) return true
+      const normalized = value.replace(/\s/g, '').replace(',', '.')
+      return /^-?\d+(\.\d{1,2})?$/.test(normalized)
+    }, { message: 'Баланс: число с не более чем 2 знаками после запятой' }),
 })
 
 export type CompanyFormValues = z.infer<typeof companyFormSchema>
+
+export const companyCommentSchema = z.object({
+  body: z
+    .string({ required_error: 'Введите комментарий' })
+    .trim()
+    .min(1, 'Введите комментарий')
+    .max(4000, 'Не более 4000 символов'),
+})
+
+export type CompanyCommentFormValues = z.infer<typeof companyCommentSchema>
 
 export function accessStatusLabel(status: CompanyAccessStatus | 'all'): string {
   switch (status) {
@@ -79,5 +105,50 @@ export function formatCompanyDate(value: string): string {
     }).format(new Date(value))
   } catch {
     return value
+  }
+}
+
+export function formatCompanyBalance(value: number): string {
+  try {
+    return new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'RUB',
+      maximumFractionDigits: 2,
+    }).format(value)
+  } catch {
+    return String(value)
+  }
+}
+
+export function parseCompanyBalance(value: string | undefined): number {
+  if (!value?.trim()) return 0
+  const normalized = value.replace(/\s/g, '').replace(',', '.')
+  const parsed = Number(normalized)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+export function balanceFilterLabel(value: CompanyBalanceFilterValue): string {
+  switch (value) {
+    case 'positive':
+      return 'Положительный'
+    case 'zero':
+      return 'Нулевой'
+    case 'negative':
+      return 'Отрицательный'
+    default:
+      return 'Любой баланс'
+  }
+}
+
+export function sortByLabel(value: CompanySortByValue): string {
+  switch (value) {
+    case 'balance_asc':
+      return 'Баланс ↑'
+    case 'balance_desc':
+      return 'Баланс ↓'
+    case 'auto_id':
+      return 'По ID'
+    default:
+      return 'По названию'
   }
 }

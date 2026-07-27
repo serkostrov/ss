@@ -20,12 +20,13 @@ import {
   StatusBadge,
 } from '@shared/ui'
 
-import { formatCompanyDate } from '../model/schemas'
+import { formatCompanyBalance, formatCompanyDate } from '../model/schemas'
 import {
   useCompany,
   useDeleteCompanyMutation,
   useSetCompanyStatusMutation,
 } from '../model/use-companies'
+import { CompanyCommentsPanel } from './company-comments-panel'
 import { CompanyFormDialog } from './company-form-dialog'
 import { CompanyRepresentativesPanel } from './company-representatives-panel'
 import { CompanyProductsPanel } from '@features/company-products'
@@ -77,7 +78,10 @@ export function CompanyDetailsCard() {
       <PageDetailHeader
         backTo={routes.admin.companies}
         title={company.name}
-        description={company.description || 'Карточка компании — участника ассоциации.'}
+        description={
+          `ID ${company.auto_id}` +
+          (company.description ? ` · ${company.description}` : ' · Карточка компании — участника ассоциации.')
+        }
         status={<StatusBadge status={company.access_status} />}
       >
         <IconButton label="Изменить" onClick={() => setEditOpen(true)}>
@@ -127,7 +131,12 @@ export function CompanyDetailsCard() {
           </CardHeader>
           <CardContent>
             <dl className="grid gap-4 sm:grid-cols-2">
+              <Field label="ID" value={String(company.auto_id)} />
               <Field label="ИНН" value={company.inn} />
+              <Field
+                label="Баланс"
+                value={formatCompanyBalance(company.balance ?? 0)}
+              />
               <Field
                 label="Уровень участия"
                 value={company.participation_level?.name ?? 'Не назначен'}
@@ -185,6 +194,8 @@ export function CompanyDetailsCard() {
       </div>
 
       <CompanyRepresentativesPanel companyId={company.id} companyName={company.name} />
+
+      <CompanyCommentsPanel companyId={company.id} />
 
       <Card>
         <CardContent className="pt-6">

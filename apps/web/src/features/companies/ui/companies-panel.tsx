@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { type ColumnDef } from '@tanstack/react-table'
 import { FileSpreadsheet, Plus } from 'lucide-react'
 
-import type { Company } from '@shared/api'
+import type { Company, CompanyBalanceFilter, CompanySortBy } from '@shared/api'
 import { routes } from '@shared/config'
 import {
   DataTable,
@@ -15,7 +15,15 @@ import {
   type FilterFieldConfig,
 } from '@shared/ui'
 
-import { accessStatusLabel, type CompanyAccessFilter } from '../model/schemas'
+import {
+  accessStatusLabel,
+  balanceFilterLabel,
+  formatCompanyBalance,
+  sortByLabel,
+  type CompanyAccessFilter,
+  type CompanyBalanceFilterValue,
+  type CompanySortByValue,
+} from '../model/schemas'
 import { useActiveLevelsForSelect, useCompanies } from '../model/use-companies'
 import { CompanyFormDialog } from './company-form-dialog'
 import { CompanyImportDialog } from './company-import-dialog'
@@ -25,6 +33,8 @@ export function CompaniesPanel() {
   const [search, setSearch] = useState('')
   const [accessStatus, setAccessStatus] = useState<CompanyAccessFilter>('all')
   const [levelId, setLevelId] = useState('all')
+  const [balanceFilter, setBalanceFilter] = useState<CompanyBalanceFilterValue>('all')
+  const [sortBy, setSortBy] = useState<CompanySortByValue>('name')
   const [formOpen, setFormOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
 
@@ -33,6 +43,8 @@ export function CompaniesPanel() {
     search,
     accessStatus,
     levelId,
+    balanceFilter: balanceFilter as CompanyBalanceFilter,
+    sortBy: sortBy as CompanySortBy,
   })
 
   const filterFields: FilterFieldConfig[] = [
@@ -40,7 +52,7 @@ export function CompaniesPanel() {
       id: 'search',
       label: 'Поиск',
       type: 'search',
-      placeholder: 'Название, ИНН, email, телефон…',
+      placeholder: 'ID, название, ИНН, email…',
       value: search,
       onChange: setSearch,
     },
@@ -71,10 +83,43 @@ export function CompaniesPanel() {
         })),
       ],
     },
+    {
+      id: 'balance',
+      label: 'Баланс',
+      type: 'select',
+      value: balanceFilter,
+      onChange: (value) => setBalanceFilter(value as CompanyBalanceFilterValue),
+      options: [
+        { value: 'all', label: balanceFilterLabel('all') },
+        { value: 'positive', label: balanceFilterLabel('positive') },
+        { value: 'zero', label: balanceFilterLabel('zero') },
+        { value: 'negative', label: balanceFilterLabel('negative') },
+      ],
+    },
+    {
+      id: 'sort',
+      label: 'Сортировка',
+      type: 'select',
+      value: sortBy,
+      onChange: (value) => setSortBy(value as CompanySortByValue),
+      options: [
+        { value: 'name', label: sortByLabel('name') },
+        { value: 'auto_id', label: sortByLabel('auto_id') },
+        { value: 'balance_desc', label: sortByLabel('balance_desc') },
+        { value: 'balance_asc', label: sortByLabel('balance_asc') },
+      ],
+    },
   ]
 
   const columns = useMemo<ColumnDef<Company, unknown>[]>(
     () => [
+      {
+        accessorKey: 'auto_id',
+        header: 'ID',
+        cell: ({ row }) => (
+          <span className="font-mono text-sm text-muted-foreground">{row.original.auto_id}</span>
+        ),
+      },
       {
         accessorKey: 'name',
         header: 'Компания',
@@ -86,6 +131,20 @@ export function CompaniesPanel() {
             </p>
           </div>
         ),
+      },
+      {
+        accessorKey: 'balance',
+        header: 'Баланс',
+        cell: ({ row }) => {
+          const balance = row.original.balance ?? 0
+          const tone =
+            balance > 0
+              ? 'text-emerald-700 dark:text-emerald-400'
+              : balance < 0
+                ? 'text-destructive'
+                : 'text-muted-foreground'
+          return <span className={`text-sm font-medium tabular-nums ${tone}`}>{formatCompanyBalance(balance)}</span>
+        },
       },
       {
         id: 'level',
@@ -149,6 +208,8 @@ export function CompaniesPanel() {
           setSearch('')
           setAccessStatus('all')
           setLevelId('all')
+          setBalanceFilter('all')
+          setSortBy('name')
         }}
       />
 

@@ -42,6 +42,10 @@ function toFormValues(company?: Company | null): CompanyFormValues {
     participationLevelId: company?.participation_level_id ?? '',
     accessStatus: company?.access_status ?? 'active',
     notes: company?.notes ?? '',
+    balance:
+      company?.balance != null
+        ? String(company.balance).replace('.', ',')
+        : '0',
   }
 }
 
@@ -137,6 +141,16 @@ export function CompanyFormDialog({
       }
     >
       <div className="grid gap-4 sm:grid-cols-2">
+        {isEdit && company ? (
+          <FormField
+            label="ID"
+            description="Назначается автоматически"
+            className="sm:col-span-2"
+          >
+            <Input value={String(company.auto_id)} readOnly disabled />
+          </FormField>
+        ) : null}
+
         <FormField label="Название" required error={errors.name} className="sm:col-span-2">
           <Input
             value={values.name}
@@ -152,6 +166,15 @@ export function CompanyFormDialog({
             onChange={(event) => patch('inn', event.target.value.replace(/\D/g, '').slice(0, 12))}
             inputMode="numeric"
             placeholder="10 или 12 цифр"
+          />
+        </FormField>
+
+        <FormField label="Баланс" error={errors.balance}>
+          <Input
+            value={values.balance ?? ''}
+            onChange={(event) => patch('balance', event.target.value)}
+            inputMode="decimal"
+            placeholder="0"
           />
         </FormField>
 
@@ -238,7 +261,7 @@ export function CompanyFormDialog({
 
         <FormField
           label="Внутренние заметки"
-          description="Видны только админу"
+          description="Краткая служебная пометка. История — в комментариях на карточке."
           error={errors.notes}
           className="sm:col-span-2"
         >
@@ -246,7 +269,7 @@ export function CompanyFormDialog({
             value={values.notes ?? ''}
             onChange={(event) => patch('notes', event.target.value)}
             rows={3}
-            placeholder="Служебные комментарии…"
+            placeholder="Кратко…"
           />
         </FormField>
       </div>

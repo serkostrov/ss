@@ -12,11 +12,15 @@ import {
 } from '@shared/api'
 import { notify } from '@shared/lib/notify'
 
+import { parseCompanyBalance } from './schemas'
+
 function listKey(filters: CompaniesListFilters) {
   return queryKeys.companies.list({
     search: filters.search?.trim() || '',
     accessStatus: filters.accessStatus ?? 'all',
     levelId: filters.levelId ?? 'all',
+    balanceFilter: filters.balanceFilter ?? 'all',
+    sortBy: filters.sortBy ?? 'name',
   })
 }
 
@@ -34,6 +38,20 @@ export function useCompany(companyId: string | undefined) {
     () => {
       if (!companyId) return Promise.resolve(null)
       return companiesService.getById(companyId)
+    },
+    {
+      enabled: Boolean(companyId),
+      ensureFreshSession: true,
+    },
+  )
+}
+
+export function useCompanyComments(companyId: string | undefined) {
+  return useSupabaseQuery(
+    queryKeys.companies.comments(companyId ?? 'none'),
+    () => {
+      if (!companyId) return Promise.resolve([])
+      return companiesService.listComments(companyId)
     },
     {
       enabled: Boolean(companyId),
@@ -100,6 +118,30 @@ export function useDeleteCompanyMutation() {
   })
 }
 
+export function useAddCompanyCommentMutation(companyId: string) {
+  return useSupabaseMutation(
+    (body: string) => companiesService.addComment(companyId, body),
+    {
+      ensureFreshSession: true,
+      invalidateKeys: [queryKeys.companies.comments(companyId)],
+      onSuccess: () => notify.success('Комментарий добавлен'),
+      onError: (error) => notify.fromError(error, 'Не удалось добавить комментарий'),
+    },
+  )
+}
+
+export function useDeleteCompanyCommentMutation(companyId: string) {
+  return useSupabaseMutation(
+    (commentId: string) => companiesService.deleteComment(commentId),
+    {
+      ensureFreshSession: true,
+      invalidateKeys: [queryKeys.companies.comments(companyId)],
+      onSuccess: () => notify.success('Комментарий удалён'),
+      onError: (error) => notify.fromError(error, 'Не удалось удалить комментарий'),
+    },
+  )
+}
+
 export function toCompanyInput(values: {
   name: string
   inn?: string
@@ -111,6 +153,7 @@ export function toCompanyInput(values: {
   participationLevelId?: string
   accessStatus: CompanyAccessStatus
   notes?: string
+  balance?: string
 }): CompanyInput {
   return {
     name: values.name,
@@ -123,6 +166,7 @@ export function toCompanyInput(values: {
     participation_level_id: values.participationLevelId || null,
     access_status: values.accessStatus,
     notes: values.notes || null,
+    balance: parseCompanyBalance(values.balance),
   }
 }
 

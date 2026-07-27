@@ -37,9 +37,13 @@ export type {
 export { companiesService } from './companies.service'
 export type {
   Company,
+  CompanyComment,
+  CompanyCommentAuthor,
   CompanyInput,
   CompanyLevelRef,
   CompaniesListFilters,
+  CompanySortBy,
+  CompanyBalanceFilter,
 } from './companies.service'
 export { representativesService } from './representatives.service'
 export type {

@@ -14,9 +14,15 @@ export const queryKeys = {
   },
   companies: {
     all: ['apss', 'companies'] as const,
-    list: (filters: { search?: string; accessStatus?: string; levelId?: string }) =>
-      ['apss', 'companies', 'list', filters] as const,
+    list: (filters: {
+      search?: string
+      accessStatus?: string
+      levelId?: string
+      balanceFilter?: string
+      sortBy?: string
+    }) => ['apss', 'companies', 'list', filters] as const,
     detail: (id: string) => ['apss', 'companies', id] as const,
+    comments: (id: string) => ['apss', 'companies', id, 'comments'] as const,
   },
   representatives: {
     all: ['apss', 'representatives'] as const,

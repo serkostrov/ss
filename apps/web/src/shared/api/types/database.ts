@@ -141,6 +141,7 @@ export type Database = {
       companies: {
         Row: {
           id: string
+          auto_id: number
           name: string
           inn: string | null
           description: string | null
@@ -151,11 +152,13 @@ export type Database = {
           participation_level_id: string | null
           access_status: CompanyAccessStatus
           notes: string | null
+          balance: number
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
+          auto_id?: number
           name: string
           inn?: string | null
           description?: string | null
@@ -166,6 +169,7 @@ export type Database = {
           participation_level_id?: string | null
           access_status?: CompanyAccessStatus
           notes?: string | null
+          balance?: number
           created_at?: string
           updated_at?: string
         }
@@ -180,6 +184,7 @@ export type Database = {
           participation_level_id?: string | null
           access_status?: CompanyAccessStatus
           notes?: string | null
+          balance?: number
           updated_at?: string
         }
         Relationships: [
@@ -188,6 +193,41 @@ export type Database = {
             columns: ['participation_level_id']
             isOneToOne: false
             referencedRelation: 'participation_levels'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      company_comments: {
+        Row: {
+          id: string
+          company_id: string
+          author_id: string
+          body: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          author_id: string
+          body: string
+          created_at?: string
+        }
+        Update: {
+          body?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'company_comments_company_id_fkey'
+            columns: ['company_id']
+            isOneToOne: false
+            referencedRelation: 'companies'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'company_comments_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
+            referencedRelation: 'users'
             referencedColumns: ['id']
           },
         ]
