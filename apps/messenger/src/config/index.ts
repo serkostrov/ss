@@ -23,6 +23,30 @@ function optional(name: string): string | null {
   return value || null
 }
 
+function normalizeWebhookBaseUrl(raw: string | null): string | null {
+  if (!raw) return null
+  const trimmed = raw.replace(/\/+$/, '')
+  let parsed: URL
+  try {
+    parsed = new URL(trimmed)
+  } catch {
+    throw new Error(
+      `PUBLIC_WEBHOOK_BASE_URL is not a valid URL: ${JSON.stringify(raw)}. Example: https://messenger.example.com`,
+    )
+  }
+  if (parsed.protocol !== 'https:') {
+    throw new Error(
+      `PUBLIC_WEBHOOK_BASE_URL must use HTTPS (Telegram/Max require it). Got: ${parsed.href}`,
+    )
+  }
+  if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+    throw new Error(
+      `PUBLIC_WEBHOOK_BASE_URL cannot be localhost — Telegram/Max cannot reach it. Use a public HTTPS URL or a tunnel (cloudflared/ngrok).`,
+    )
+  }
+  return `${parsed.origin}${parsed.pathname === '/' ? '' : parsed.pathname.replace(/\/+$/, '')}`
+}
+
 export function loadConfig(): MessengerConfig {
   const logLevelRaw = (process.env.LOG_LEVEL ?? 'info').toLowerCase()
   const logLevel =
@@ -41,7 +65,7 @@ export function loadConfig(): MessengerConfig {
     telegramWebhookSecret: optional('TELEGRAM_WEBHOOK_SECRET'),
     maxBotToken: optional('MAX_BOT_TOKEN'),
     maxWebhookSecret: optional('MAX_WEBHOOK_SECRET'),
-    publicWebhookBaseUrl: optional('PUBLIC_WEBHOOK_BASE_URL')?.replace(/\/+$/, '') ?? null,
+    publicWebhookBaseUrl: normalizeWebhookBaseUrl(optional('PUBLIC_WEBHOOK_BASE_URL')),
     logLevel,
   }
 }

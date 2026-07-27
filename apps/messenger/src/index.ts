@@ -1,8 +1,20 @@
+import { loadEnvFiles } from './load-env.js'
+loadEnvFiles()
+
 import { registerMaxWebhook, registerTelegramWebhook } from './adapters/index.js'
 import { loadConfig } from './config/index.js'
 import { createDb } from './db.js'
 import { startHttpServer } from './http/server.js'
 import { log } from './types.js'
+
+function formatError(error: unknown): string {
+  if (!(error instanceof Error)) return String(error)
+  const parts = [error.message]
+  const cause = (error as Error & { cause?: unknown }).cause
+  if (cause instanceof Error) parts.push(cause.message)
+  else if (cause != null) parts.push(String(cause))
+  return parts.join(' | ')
+}
 
 async function main() {
   const config = loadConfig()
@@ -11,6 +23,8 @@ async function main() {
   startHttpServer(config, db)
 
   if (config.publicWebhookBaseUrl) {
+    log('info', 'Webhook base URL', { url: config.publicWebhookBaseUrl })
+
     if (config.telegramBotToken) {
       try {
         await registerTelegramWebhook(
@@ -20,7 +34,8 @@ async function main() {
         )
       } catch (error) {
         log('error', 'Telegram webhook registration failed', {
-          message: error instanceof Error ? error.message : String(error),
+          message: formatError(error),
+          webhookUrl: `${config.publicWebhookBaseUrl}/webhooks/telegram`,
         })
       }
     } else {
@@ -35,8 +50,13 @@ async function main() {
           config.maxWebhookSecret,
         )
       } catch (error) {
+        const message = formatError(error)
         log('error', 'Max webhook registration failed', {
-          message: error instanceof Error ? error.message : String(error),
+          message,
+          webhookUrl: `${config.publicWebhookBaseUrl}/webhooks/max`,
+          hint: message.toLowerCase().includes('cert')
+            ? 'Max API uses the Russian Минцифры CA — install it or set NODE_EXTRA_CA_CERTS'
+            : undefined,
         })
       }
     } else {
@@ -50,6 +70,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error('[messenger] fatal', error)
+  console.error('[messenger] fatal', formatError(error))
   process.exit(1)
 })

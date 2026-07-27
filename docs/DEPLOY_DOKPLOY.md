@@ -83,7 +83,11 @@ PORT=8787
 LOG_LEVEL=info
 ```
 
-`PUBLIC_WEBHOOK_BASE_URL` — публичный HTTPS origin worker **без** суффикса пути (worker сам добавит `/webhooks/telegram` и `/webhooks/max`). При старте регистрируются Telegram `setWebhook` и Max `POST /subscriptions`.
+`PUBLIC_WEBHOOK_BASE_URL` — публичный **HTTPS** origin, доступный из интернета (без `/webhooks/...`). Worker сам добавит пути. При старте регистрируются Telegram `setWebhook` и Max `POST /subscriptions`.
+
+Если web и messenger в одном compose: укажите домен **web** (nginx проксирует `/webhooks/` → `messenger:8787`). Пример: `https://ss-front-….sslip.io`.
+
+Локально без публичного HTTPS: `cloudflared tunnel --url http://localhost:8787` и подставьте выданный `https://….trycloudflare.com` в `PUBLIC_WEBHOOK_BASE_URL`.
 
 Эндпоинты:
 
@@ -91,7 +95,7 @@ LOG_LEVEL=info
 - `POST /webhooks/telegram`
 - `POST /webhooks/max`
 
-Домен worker должен быть доступен из интернета (HTTPS). Локально: `npm run dev -w @apss/messenger` + tunnel (ngrok/cloudflared) на `PUBLIC_WEBHOOK_BASE_URL`.
+Для Max API на Windows/Alpine может понадобиться корневой сертификат Минцифры (`NODE_EXTRA_CA_CERTS`), иначе будет `fetch failed`.
 
 Подробнее: [MESSENGER_CHAT_IDS.md](./MESSENGER_CHAT_IDS.md).
 

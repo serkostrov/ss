@@ -10,4 +10,25 @@ services:
       VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
       VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
       VITE_APP_URL: ${VITE_APP_URL:-}
+    depends_on:
+      - messenger
     # Dokploy Traefik: map domain to this service on port 80
+
+  messenger:
+    build:
+      context: .
+      dockerfile: Dockerfile.messenger
+    restart: unless-stopped
+    expose:
+      - "8787"
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:-}
+      MAX_BOT_TOKEN: ${MAX_BOT_TOKEN:-}
+      MAX_WEBHOOK_SECRET: ${MAX_WEBHOOK_SECRET:-}
+      # Public HTTPS origin that reaches nginx → /webhooks/* → this service
+      PUBLIC_WEBHOOK_BASE_URL: ${PUBLIC_WEBHOOK_BASE_URL}
+      PORT: 8787
+      LOG_LEVEL: ${LOG_LEVEL:-info}

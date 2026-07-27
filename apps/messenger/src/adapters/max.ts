@@ -232,14 +232,29 @@ export async function registerMaxWebhook(
   // Max expects the raw access token in Authorization — not "Bearer …".
   // Prefer platform-api2.max.ru (platform-api.max.ru is being retired).
   const accessToken = token.replace(/^Bearer\s+/i, '').trim()
-  const response = await fetch('https://platform-api2.max.ru/subscriptions', {
-    method: 'POST',
-    headers: {
-      Authorization: accessToken,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  })
+  const insecure = process.env.MAX_TLS_INSECURE === '1'
+  const previousTls = process.env.NODE_TLS_REJECT_UNAUTHORIZED
+  if (insecure) {
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+    log('warn', 'MAX_TLS_INSECURE=1 — TLS verification disabled for Max API')
+  }
+
+  let response: Response
+  try {
+    response = await fetch('https://platform-api2.max.ru/subscriptions', {
+      method: 'POST',
+      headers: {
+        Authorization: accessToken,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+  } finally {
+    if (insecure) {
+      if (previousTls === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
+      else process.env.NODE_TLS_REJECT_UNAUTHORIZED = previousTls
+    }
+  }
 
   if (!response.ok) {
     const text = await response.text()
