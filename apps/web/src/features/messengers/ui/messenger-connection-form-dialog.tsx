@@ -88,9 +88,9 @@ function BindDialogDescription({ platform }: { platform: MessengerPlatform }) {
 
   return (
     <span>
-      Работа с ботом в {platformLabel}: {botUrl ? (
+      Работа с ботом в {platformLabel} {botUrl ? (
         <>
-          {' '}
+          :{' '}
           <a
             href={botUrl}
             target="_blank"
@@ -100,7 +100,7 @@ function BindDialogDescription({ platform }: { platform: MessengerPlatform }) {
             {botLinkLabel(botUrl)}
           </a>
         </>
-      ) : null}
+      ) : "АПСС"}
     </span>
   )
 }
