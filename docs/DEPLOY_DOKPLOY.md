@@ -85,7 +85,9 @@ LOG_LEVEL=info
 
 `PUBLIC_WEBHOOK_BASE_URL` — публичный **HTTPS** origin, доступный из интернета (без `/webhooks/...`). Worker сам добавит пути. При старте регистрируются Telegram `setWebhook` и Max `POST /subscriptions`.
 
-Если web и messenger в одном compose: укажите домен **web** (nginx проксирует `/webhooks/` → `messenger:8787`). Пример: `https://ss-front-….sslip.io`.
+Если web и messenger в одном compose: задайте у web `MESSENGER_UPSTREAM=http://messenger:8787` (уже в `docker-compose.yml`) и укажите домен **web** в `PUBLIC_WEBHOOK_BASE_URL`.
+
+В Dokploy для **отдельного** web-приложения **не задавайте** `MESSENGER_UPSTREAM` — иначе nginx упадёт, если сервиса messenger нет в сети. Messenger деплойте отдельно со своим HTTPS-доменом и этим доменом в `PUBLIC_WEBHOOK_BASE_URL`.
 
 Локально без публичного HTTPS: `cloudflared tunnel --url http://localhost:8787` и подставьте выданный `https://….trycloudflare.com` в `PUBLIC_WEBHOOK_BASE_URL`.
 

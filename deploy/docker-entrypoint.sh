@@ -3,11 +3,13 @@ set -eu
 
 TEMPLATE="/etc/nginx/templates-custom/env.template.js"
 TARGET="/usr/share/nginx/html/env.js"
+NGINX_CONF="/etc/nginx/conf.d/default.conf"
 
 # Runtime env from Dokploy (or docker -e). Optional trailing slash strip on APP_URL not needed.
 : "${VITE_SUPABASE_URL:=}"
 : "${VITE_SUPABASE_ANON_KEY:=}"
 : "${VITE_APP_URL:=}"
+: "${MESSENGER_UPSTREAM:=}"
 
 if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
   echo "ERROR: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY as container environment variables." >&2
@@ -27,6 +29,39 @@ envsubst '${VITE_SUPABASE_URL} ${VITE_SUPABASE_ANON_KEY} ${VITE_APP_URL}' \
   < "$TEMPLATE" > "$TARGET"
 
 echo "Wrote runtime env to $TARGET"
+
+# Optional: proxy /webhooks/* to messenger worker (only when upstream is configured).
+# Uses a variable + Docker DNS resolver so nginx can start even if messenger is not up yet.
+if [ -n "$MESSENGER_UPSTREAM" ]; then
+  webhook_block=$(cat <<EOF
+  # Messenger worker webhooks (Telegram / Max)
+  location /webhooks/ {
+    resolver 127.0.0.11 valid=10s ipv6=off;
+    set \$messenger_upstream "${MESSENGER_UPSTREAM}";
+    proxy_pass \$messenger_upstream;
+    proxy_http_version 1.1;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+    proxy_read_timeout 30s;
+  }
+
+EOF
+)
+  tmp=$(mktemp)
+  awk -v block="$webhook_block" '
+    /# SPA: React Router/ && !done {
+      printf "%s", block
+      done=1
+    }
+    { print }
+  ' "$NGINX_CONF" > "$tmp"
+  mv "$tmp" "$NGINX_CONF"
+  echo "Enabled /webhooks/ proxy → $MESSENGER_UPSTREAM"
+else
+  echo "MESSENGER_UPSTREAM empty — /webhooks/ proxy disabled (set it only when messenger is on the same Docker network)."
+fi
 
 # FNS INN lookup (same-origin /api/company-by-inn via nginx)
 node /opt/inn-lookup-server.mjs &
