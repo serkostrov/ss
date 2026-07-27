@@ -229,10 +229,13 @@ export async function registerMaxWebhook(
   }
   if (secret) body.secret = secret
 
-  const response = await fetch('https://platform-api.max.ru/subscriptions', {
+  // Max expects the raw access token in Authorization — not "Bearer …".
+  // Prefer platform-api2.max.ru (platform-api.max.ru is being retired).
+  const accessToken = token.replace(/^Bearer\s+/i, '').trim()
+  const response = await fetch('https://platform-api2.max.ru/subscriptions', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: accessToken,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
