@@ -115,6 +115,11 @@ export type {
 } from './messenger-connections.service'
 export { messengerBotChannelsService } from './messenger-bot-channels.service'
 export type { MessengerBotChannel } from './messenger-bot-channels.service'
+export { messengerOutboundService } from './messenger-outbound.service'
+export type {
+  MessengerOutboundInput,
+  MessengerOutboundResult,
+} from './messenger-outbound.service'
 export { messagesService } from './messages.service'
 export type {
   Message,

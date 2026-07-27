@@ -6,12 +6,19 @@ declare global {
       VITE_SUPABASE_URL?: string
       VITE_SUPABASE_ANON_KEY?: string
       VITE_APP_URL?: string
+      VITE_TELEGRAM_BOT_URL?: string
+      VITE_MAX_BOT_URL?: string
     }
   }
 }
 
 const emptyToUndefined = (value: unknown) =>
   typeof value === 'string' && value.trim() === '' ? undefined : value
+
+const optionalUrl = z.preprocess(
+  emptyToUndefined,
+  z.string().url('must be a valid URL').optional(),
+)
 
 const clientEnvSchema = z.object({
   VITE_SUPABASE_URL: z
@@ -20,10 +27,9 @@ const clientEnvSchema = z.object({
   VITE_SUPABASE_ANON_KEY: z
     .string({ required_error: 'VITE_SUPABASE_ANON_KEY is required' })
     .min(1, 'VITE_SUPABASE_ANON_KEY must not be empty'),
-  VITE_APP_URL: z.preprocess(
-    emptyToUndefined,
-    z.string().url('VITE_APP_URL must be a valid URL').optional(),
-  ),
+  VITE_APP_URL: optionalUrl,
+  VITE_TELEGRAM_BOT_URL: optionalUrl,
+  VITE_MAX_BOT_URL: optionalUrl,
   MODE: z.enum(['development', 'production', 'test']),
   DEV: z.boolean(),
   PROD: z.boolean(),
@@ -33,6 +39,8 @@ export type ClientEnv = {
   supabaseUrl: string
   supabaseAnonKey: string
   appUrl: string
+  telegramBotUrl: string | null
+  maxBotUrl: string | null
   mode: 'development' | 'production' | 'test'
   isDev: boolean
   isProd: boolean
@@ -74,6 +82,11 @@ export function getClientEnv(): ClientEnv {
       import.meta.env.VITE_SUPABASE_ANON_KEY,
     ),
     VITE_APP_URL: pick(runtime.VITE_APP_URL, import.meta.env.VITE_APP_URL),
+    VITE_TELEGRAM_BOT_URL: pick(
+      runtime.VITE_TELEGRAM_BOT_URL,
+      import.meta.env.VITE_TELEGRAM_BOT_URL,
+    ),
+    VITE_MAX_BOT_URL: pick(runtime.VITE_MAX_BOT_URL, import.meta.env.VITE_MAX_BOT_URL),
     MODE: import.meta.env.MODE,
     DEV: import.meta.env.DEV,
     PROD: import.meta.env.PROD,
@@ -89,6 +102,8 @@ export function getClientEnv(): ClientEnv {
     supabaseUrl: data.VITE_SUPABASE_URL,
     supabaseAnonKey: data.VITE_SUPABASE_ANON_KEY,
     appUrl: data.VITE_APP_URL ?? (typeof window !== 'undefined' ? window.location.origin : ''),
+    telegramBotUrl: data.VITE_TELEGRAM_BOT_URL ?? null,
+    maxBotUrl: data.VITE_MAX_BOT_URL ?? null,
     mode: data.MODE,
     isDev: data.DEV,
     isProd: data.PROD,

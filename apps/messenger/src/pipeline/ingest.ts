@@ -1,36 +1,13 @@
 import type { DbClient } from '../db.js'
 import { log, type IngestMessageInput } from '../types.js'
 
-/**
- * Persist a channel post when the chat is bound to a work group.
- * Unbound channels update nothing here (catalog handled separately).
- */
-export async function ingestChannelMessage(
+async function persistForWorkGroup(
   db: DbClient,
+  workGroupId: string,
   input: IngestMessageInput,
-): Promise<'stored' | 'updated' | 'skipped'> {
-  const { data: connection, error: connectionError } = await db
-    .from('messenger_connections')
-    .select('id, work_group_id, bot_status')
-    .eq('platform', input.platform)
-    .eq('chat_id', input.externalChatId)
-    .maybeSingle()
-
-  if (connectionError) {
-    log('error', 'Failed to lookup messenger connection', {
-      platform: input.platform,
-      chatId: input.externalChatId,
-      message: connectionError.message,
-    })
-    throw connectionError
-  }
-
-  if (!connection) {
-    return 'skipped'
-  }
-
+): Promise<'stored' | 'updated'> {
   const row = {
-    work_group_id: connection.work_group_id as string,
+    work_group_id: workGroupId,
     source: input.platform,
     external_chat_id: input.externalChatId,
     external_message_id: input.externalMessageId,
@@ -82,21 +59,56 @@ export async function ingestChannelMessage(
     log('error', 'Failed to upsert message', {
       platform: input.platform,
       messageId: input.externalMessageId,
+      workGroupId,
       message: upsertError.message,
     })
     throw upsertError
   }
 
-  if (connection.bot_status !== 'connected') {
-    await db
-      .from('messenger_connections')
-      .update({
-        bot_status: 'connected',
-        connected_at: new Date().toISOString(),
-        last_error: null,
-      })
-      .eq('id', connection.id)
+  return input.isEdit ? 'updated' : 'stored'
+}
+
+/**
+ * Persist a message for every work group that has this chat bound.
+ */
+export async function ingestChannelMessage(
+  db: DbClient,
+  input: IngestMessageInput,
+): Promise<'stored' | 'updated' | 'skipped'> {
+  const { data: connections, error: connectionError } = await db
+    .from('messenger_connections')
+    .select('id, work_group_id, bot_status')
+    .eq('platform', input.platform)
+    .eq('chat_id', input.externalChatId)
+
+  if (connectionError) {
+    log('error', 'Failed to lookup messenger connection', {
+      platform: input.platform,
+      chatId: input.externalChatId,
+      message: connectionError.message,
+    })
+    throw connectionError
   }
 
-  return input.isEdit ? 'updated' : 'stored'
+  if (!connections?.length) {
+    return 'skipped'
+  }
+
+  let last: 'stored' | 'updated' = 'stored'
+  for (const connection of connections) {
+    last = await persistForWorkGroup(db, connection.work_group_id as string, input)
+
+    if (connection.bot_status !== 'connected') {
+      await db
+        .from('messenger_connections')
+        .update({
+          bot_status: 'connected',
+          connected_at: new Date().toISOString(),
+          last_error: null,
+        })
+        .eq('id', connection.id)
+    }
+  }
+
+  return last
 }

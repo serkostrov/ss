@@ -35,6 +35,14 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    proxy: {
+      // Messenger outbound API (local worker on :8787)
+      '/api/messenger': {
+        target: 'http://127.0.0.1:8787',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/messenger/, ''),
+      },
+    },
   },
   preview: {
     port: 4173,

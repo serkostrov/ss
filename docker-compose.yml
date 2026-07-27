@@ -10,6 +10,8 @@ services:
       VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
       VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
       VITE_APP_URL: ${VITE_APP_URL:-}
+      VITE_TELEGRAM_BOT_URL: ${VITE_TELEGRAM_BOT_URL:-}
+      VITE_MAX_BOT_URL: ${VITE_MAX_BOT_URL:-}
       # Set only when messenger is reachable on this Docker network, e.g. http://messenger:8787
       MESSENGER_UPSTREAM: ${MESSENGER_UPSTREAM:-}
     # Dokploy Traefik: map domain to this service on port 80

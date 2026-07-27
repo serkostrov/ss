@@ -9,6 +9,8 @@ NGINX_CONF="/etc/nginx/conf.d/default.conf"
 : "${VITE_SUPABASE_URL:=}"
 : "${VITE_SUPABASE_ANON_KEY:=}"
 : "${VITE_APP_URL:=}"
+: "${VITE_TELEGRAM_BOT_URL:=}"
+: "${VITE_MAX_BOT_URL:=}"
 : "${MESSENGER_UPSTREAM:=}"
 
 if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
@@ -22,15 +24,15 @@ if [ -z "$VITE_APP_URL" ]; then
   VITE_APP_URL=""
 fi
 
-export VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY VITE_APP_URL
+export VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY VITE_APP_URL VITE_TELEGRAM_BOT_URL VITE_MAX_BOT_URL
 
 # Only substitute our vars so `$` elsewhere is untouched
-envsubst '${VITE_SUPABASE_URL} ${VITE_SUPABASE_ANON_KEY} ${VITE_APP_URL}' \
+envsubst '${VITE_SUPABASE_URL} ${VITE_SUPABASE_ANON_KEY} ${VITE_APP_URL} ${VITE_TELEGRAM_BOT_URL} ${VITE_MAX_BOT_URL}' \
   < "$TEMPLATE" > "$TARGET"
 
 echo "Wrote runtime env to $TARGET"
 
-# Optional: proxy /webhooks/* to messenger worker (only when upstream is configured).
+# Optional: proxy /webhooks/* and /api/messenger/* to messenger worker (only when upstream is configured).
 # Uses a variable + Docker DNS resolver so nginx can start even if messenger is not up yet.
 if [ -n "$MESSENGER_UPSTREAM" ]; then
   webhook_block=$(cat <<EOF
@@ -45,6 +47,22 @@ if [ -n "$MESSENGER_UPSTREAM" ]; then
     proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto \$scheme;
     proxy_read_timeout 30s;
+  }
+
+  # Messenger outbound API (admin send from SPA)
+  location /api/messenger/ {
+    resolver 127.0.0.11 valid=10s ipv6=off;
+    set \$messenger_upstream "${MESSENGER_UPSTREAM}";
+    rewrite ^/api/messenger/(.*) /\$1 break;
+    proxy_pass \$messenger_upstream;
+    proxy_http_version 1.1;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+    proxy_set_header Authorization \$http_authorization;
+    client_max_body_size 12m;
+    proxy_read_timeout 60s;
   }
 
 EOF

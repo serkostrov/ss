@@ -42,6 +42,8 @@ flowchart LR
 VITE_SUPABASE_URL=https://xxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
 VITE_APP_URL=https://app.example.com
+VITE_TELEGRAM_BOT_URL=https://t.me/YourBot
+VITE_MAX_BOT_URL=https://max.ru/YourBot
 ```
 
 6. **Не добавляйте** `MESSENGER_UPSTREAM`.
@@ -129,6 +131,8 @@ MAX_TLS_INSECURE=1
 # web
 MESSENGER_UPSTREAM=http://messenger:8787
 VITE_APP_URL=https://app.example.com
+VITE_TELEGRAM_BOT_URL=https://t.me/YourBot
+VITE_MAX_BOT_URL=https://max.ru/YourBot
 
 # messenger
 PUBLIC_WEBHOOK_BASE_URL=https://app.example.com

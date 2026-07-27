@@ -13,6 +13,7 @@ import {
   messageSourceLabel,
 } from '../model/schemas'
 import { useMessages } from '../model/use-messages'
+import { ChatComposer } from './chat-composer'
 
 type ChatThreadPanelProps = {
   workGroupId: string
@@ -22,6 +23,8 @@ type ChatThreadPanelProps = {
   className?: string
   /** When true, omit the built-in header (parent provides chrome). */
   hideHeader?: boolean
+  /** Show message composer at the bottom (admin outbound). */
+  showComposer?: boolean
 }
 
 type DayGroup = {
@@ -58,6 +61,12 @@ function AttachmentBlock({ type }: { type: MessageContentType }) {
 }
 
 function MessageBubble({ message }: { message: Message }) {
+  const isOutbound = Boolean(
+    message.payload &&
+      typeof message.payload === 'object' &&
+      !Array.isArray(message.payload) &&
+      (message.payload as { outbound?: boolean }).outbound,
+  )
   const isTelegram = message.source === 'telegram'
   const hasMedia = message.content_type !== 'text'
   const textLooksLikePlaceholder = /^\[.+\]$/.test(message.text.trim())
@@ -66,20 +75,26 @@ function MessageBubble({ message }: { message: Message }) {
     <article
       className={cn(
         'max-w-[min(100%,28rem)] rounded-2xl px-3.5 py-2.5 shadow-sm',
-        isTelegram
-          ? 'rounded-bl-md bg-sky-100 text-sky-950 dark:bg-sky-950/50 dark:text-sky-50'
-          : 'rounded-bl-md bg-violet-100 text-violet-950 dark:bg-violet-950/50 dark:text-violet-50',
+        isOutbound
+          ? 'ml-auto rounded-br-md bg-primary text-primary-foreground'
+          : isTelegram
+            ? 'rounded-bl-md bg-sky-100 text-sky-950 dark:bg-sky-950/50 dark:text-sky-50'
+            : 'rounded-bl-md bg-violet-100 text-violet-950 dark:bg-violet-950/50 dark:text-violet-50',
       )}
     >
       {message.author_name ? (
-        <p className="mb-1 text-xs font-semibold opacity-80">{message.author_name}</p>
+        <p className={cn('mb-1 text-xs font-semibold', isOutbound ? 'opacity-90' : 'opacity-80')}>
+          {message.author_name}
+        </p>
       ) : null}
       {hasMedia ? <AttachmentBlock type={message.content_type} /> : null}
       {message.text && !(hasMedia && textLooksLikePlaceholder) ? (
         <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.text}</p>
       ) : null}
       <div className="mt-1 flex items-center justify-end gap-2">
-        <span className="text-[10px] tabular-nums opacity-60">{formatMessageTime(message.sent_at)}</span>
+        <span className={cn('text-[10px] tabular-nums', isOutbound ? 'opacity-80' : 'opacity-60')}>
+          {formatMessageTime(message.sent_at)}
+        </span>
       </div>
     </article>
   )
@@ -92,10 +107,10 @@ export function ChatThreadPanel({
   channelTitle,
   className,
   hideHeader = false,
+  showComposer = true,
 }: ChatThreadPanelProps) {
   const [chunks, setChunks] = useState(1)
   const bottomRef = useRef<HTMLDivElement | null>(null)
-  const scrollerRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     setChunks(1)
@@ -126,7 +141,7 @@ export function ChatThreadPanel({
       {!hideHeader ? (
         <header className="flex items-center gap-3 border-b px-4 py-3">
           <div className="min-w-0 flex-1">
-            <p className="truncate font-medium">{channelTitle?.trim() || 'Канал'}</p>
+            <p className="truncate font-medium">{channelTitle?.trim() || 'Чат'}</p>
             <p className="text-xs text-muted-foreground">{messageSourceLabel(source)}</p>
           </div>
           <Badge variant="secondary" className="font-normal">
@@ -136,8 +151,10 @@ export function ChatThreadPanel({
       ) : null}
 
       <div
-        ref={scrollerRef}
-        className="min-h-0 flex-1 overflow-y-auto bg-muted/20 px-3 py-4 sm:px-4"
+        className={cn(
+          'min-h-0 flex-1 overflow-y-auto bg-muted/20 px-3 py-4 sm:px-4',
+          !query.isLoading && !query.isError && items.length === 0 && 'flex',
+        )}
       >
         {query.isLoading && !query.data ? (
           <LoadingState label="Загрузка сообщений…" />
@@ -150,7 +167,7 @@ export function ChatThreadPanel({
         {!query.isLoading && !query.isError && items.length === 0 ? (
           <EmptyState
             title="Пока нет сообщений"
-            className="py-16"
+            className="m-auto border-0 bg-transparent py-0 shadow-none"
           />
         ) : null}
 
@@ -177,7 +194,7 @@ export function ChatThreadPanel({
                   {group.label}
                 </span>
               </div>
-              <div className="flex flex-col items-start gap-2">
+              <div className="flex flex-col gap-2">
                 {group.items.map((message) => (
                   <MessageBubble key={message.id} message={message} />
                 ))}
@@ -187,6 +204,15 @@ export function ChatThreadPanel({
         </div>
         <div ref={bottomRef} />
       </div>
+
+      {showComposer ? (
+        <ChatComposer
+          workGroupId={workGroupId}
+          platform={source}
+          chatId={externalChatId}
+          onSent={() => void query.refetch()}
+        />
+      ) : null}
     </div>
   )
 }

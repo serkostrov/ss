@@ -47,7 +47,7 @@ function assertResult<T>(result: QueryResult<T>): T {
 
 /**
  * Admin CRUD for messenger_connections (Telegram / Max chat binding).
- * Does not talk to bots — only the table used by worker later.
+ * One chat per platform within a work group.
  */
 export const messengerConnectionsService = {
   async listByWorkGroup(workGroupId: string): Promise<MessengerConnection[]> {
@@ -91,7 +91,7 @@ export const messengerConnectionsService = {
     }
 
     const existing = await this.getByPlatform(input.work_group_id, input.platform)
-    const botStatus = input.bot_status ?? existing?.bot_status ?? 'pending'
+    const botStatus = input.bot_status ?? existing?.bot_status ?? 'connected'
     const lastError =
       botStatus === 'error'
         ? (input.last_error?.trim() || existing?.last_error || null)
@@ -132,6 +132,7 @@ export const messengerConnectionsService = {
         payload: {
           work_group_id: row.work_group_id,
           platform: row.platform,
+          chat_id: row.chat_id,
           bot_status: row.bot_status,
         },
       })
@@ -202,6 +203,7 @@ export const messengerConnectionsService = {
       payload: {
         work_group_id: row.work_group_id,
         platform: row.platform,
+        chat_id: row.chat_id,
         bot_status: row.bot_status,
       },
     })

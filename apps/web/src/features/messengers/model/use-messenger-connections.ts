@@ -88,12 +88,29 @@ export function toMessengerConnectionInput(
 }
 
 export function availablePlatforms(
-  connections: MessengerConnection[],
+  connections: MessengerConnection[] = [],
   current?: MessengerPlatform,
 ): MessengerPlatform[] {
   const taken = new Set(connections.map((item) => item.platform))
   return (['telegram', 'max'] as MessengerPlatform[]).filter(
     (platform) => platform === current || !taken.has(platform),
+  )
+}
+
+/** Chat ids already bound in this work group for a platform. */
+export function boundChatIds(
+  connections: MessengerConnection[],
+  platform: MessengerPlatform,
+  exceptConnectionId?: string,
+): Set<string> {
+  return new Set(
+    connections
+      .filter(
+        (item) =>
+          item.platform === platform &&
+          (!exceptConnectionId || item.id !== exceptConnectionId),
+      )
+      .map((item) => item.chat_id),
   )
 }
 

@@ -9,6 +9,7 @@ export {
   useDeleteMessengerConnectionMutation,
   toMessengerConnectionInput,
   availablePlatforms,
+  boundChatIds,
 } from './model/use-messenger-connections'
 export type { MessengerConnection } from './model/use-messenger-connections'
 

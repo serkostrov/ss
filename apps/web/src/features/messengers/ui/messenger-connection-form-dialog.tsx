@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import type { MessengerConnection } from '@shared/api'
+import type { MessengerConnection, MessengerPlatform } from '@shared/api'
+import { env } from '@shared/config/env'
 import {
   Button,
   FormField,
@@ -22,6 +23,7 @@ import {
 } from '../model/schemas'
 import {
   availablePlatforms,
+  boundChatIds,
   toMessengerConnectionInput,
   useMessengerBotChannels,
   useMessengerConnections,
@@ -65,6 +67,44 @@ function channelLabel(channel: {
   return `${kind}: ${name}`
 }
 
+function botUrlForPlatform(platform: MessengerPlatform): string | null {
+  return platform === 'telegram' ? env.telegramBotUrl : env.maxBotUrl
+}
+
+function botLinkLabel(url: string): string {
+  try {
+    const parsed = new URL(url)
+    const path = parsed.pathname.replace(/^\/+/, '')
+    if (path) return path.startsWith('@') ? path : `@${path}`
+    return parsed.host
+  } catch {
+    return url
+  }
+}
+
+function BindDialogDescription({ platform }: { platform: MessengerPlatform }) {
+  const botUrl = botUrlForPlatform(platform)
+  const platformLabel = messengerPlatformLabel(platform)
+
+  return (
+    <span>
+      Работа с ботом в {platformLabel}: {botUrl ? (
+        <>
+          {' '}
+          <a
+            href={botUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
+            {botLinkLabel(botUrl)}
+          </a>
+        </>
+      ) : null}
+    </span>
+  )
+}
+
 export function MessengerConnectionFormDialog({
   open,
   onOpenChange,
@@ -91,8 +131,12 @@ export function MessengerConnectionFormDialog({
 
   const channelsQuery = useMessengerBotChannels(values.platform, open)
   const catalogFromApi = channelsQuery.data ?? []
+  const takenChatIds = useMemo(
+    () => boundChatIds(listQuery.data ?? [], values.platform, connection?.id),
+    [listQuery.data, values.platform, connection?.id],
+  )
   const channels = useMemo(() => {
-    const list = [...catalogFromApi]
+    const list = catalogFromApi.filter((item) => !takenChatIds.has(item.external_chat_id))
     if (
       values.chatId &&
       !list.some((item) => item.external_chat_id === values.chatId)
@@ -111,7 +155,7 @@ export function MessengerConnectionFormDialog({
       })
     }
     return list
-  }, [catalogFromApi, values.chatId, values.chatTitle, values.platform])
+  }, [catalogFromApi, takenChatIds, values.chatId, values.chatTitle, values.platform])
   const noChannelsFound = !channelsQuery.isLoading && channels.length === 0
 
   useEffect(() => {
@@ -189,7 +233,7 @@ export function MessengerConnectionFormDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={isEdit ? 'Изменить привязку' : 'Привязать чат'}
-      description="Выберите канал, группу или личный чат, где уже есть бот АПСС. Статус обновляет worker."
+      description={<BindDialogDescription platform={values.platform} />}
       footer={
         <>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -199,7 +243,6 @@ export function MessengerConnectionFormDialog({
             type="button"
             disabled={
               pending ||
-              (!isEdit && platforms.length === 0) ||
               channelsQuery.isLoading ||
               noChannelsFound ||
               !values.chatId.trim()
@@ -216,7 +259,7 @@ export function MessengerConnectionFormDialog({
         <FormField label="Платформа" required error={errors.platform}>
           <Select
             value={values.platform}
-            disabled={isEdit || platforms.length <= 1}
+            disabled={isEdit || Boolean(preferredPlatform) || platforms.length <= 1}
             onValueChange={(value) => {
               const platform = value as MessengerConnectionFormValues['platform']
               setValues((prev) => ({
