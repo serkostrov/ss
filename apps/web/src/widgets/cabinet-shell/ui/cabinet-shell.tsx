@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Building2, FileText, Home, UsersRound, Vote } from 'lucide-react'
+import { Building2, FileText, Home, MessageSquareText, UsersRound, Vote } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { useAuth } from '@app/providers'
@@ -11,6 +11,7 @@ const navItems = [
   { to: routes.cabinet.root, label: 'Главная', icon: Home, end: true },
   { to: routes.cabinet.company, label: 'Компания', icon: Building2, end: false },
   { to: routes.cabinet.directory, label: 'Участники', icon: UsersRound, end: false },
+  { to: routes.cabinet.messages, label: 'Сообщения', icon: MessageSquareText, end: false },
   { to: routes.cabinet.materials, label: 'Материалы', icon: FileText, end: false },
   { to: routes.cabinet.polls, label: 'Голосования', icon: Vote, end: false },
 ] as const

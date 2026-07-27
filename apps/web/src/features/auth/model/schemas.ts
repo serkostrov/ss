@@ -19,6 +19,22 @@ export const loginSchema = z.object({
 
 export type LoginFormValues = z.infer<typeof loginSchema>
 
+const optionalMessengerUsername = z
+  .string()
+  .trim()
+  .optional()
+  .or(z.literal(''))
+  .refine(
+    (value) => {
+      if (!value) return true
+      const normalized = value.replace(/^@+/, '')
+      return /^[A-Za-z0-9_.]{2,64}$/.test(normalized)
+    },
+    {
+      message: 'Латиница, цифры, _ и точка (от 2 символов)',
+    },
+  )
+
 export const registerSchema = z
   .object({
     email: emailSchema,
@@ -35,6 +51,8 @@ export const registerSchema = z
       .max(32, 'Телефон слишком длинный')
       .optional()
       .or(z.literal('')),
+    telegramUsername: optionalMessengerUsername,
+    maxUsername: optionalMessengerUsername,
     companyInnHint: z
       .string()
       .trim()
@@ -52,6 +70,7 @@ export const registerSchema = z
     accepted: z.boolean().refine((value) => value === true, {
       message: 'Необходимо принять условия регистрации',
     }),
+    showContactsToMembers: z.boolean(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Пароли не совпадают',

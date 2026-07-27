@@ -28,6 +28,7 @@ import {
 } from '../model/use-companies'
 import { CompanyFormDialog } from './company-form-dialog'
 import { CompanyRepresentativesPanel } from './company-representatives-panel'
+import { CompanyProductsPanel } from '@features/company-products'
 
 export function CompanyDetailsCard() {
   const { id } = useParams<{ id: string }>()
@@ -184,6 +185,12 @@ export function CompanyDetailsCard() {
       </div>
 
       <CompanyRepresentativesPanel companyId={company.id} companyName={company.name} />
+
+      <Card>
+        <CardContent className="pt-6">
+          <CompanyProductsPanel companyId={company.id} />
+        </CardContent>
+      </Card>
 
       <CompanyFormDialog open={editOpen} onOpenChange={setEditOpen} company={company} />
 

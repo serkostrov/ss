@@ -71,8 +71,15 @@ function buildCreatePayload(
     position: values.position || null,
     phone: values.phone || application.phone || null,
     email: values.email || application.email || null,
+    telegram_username:
+      values.telegramUsername?.replace(/^@+/, '') ||
+      application.telegram_username ||
+      null,
+    max_username:
+      values.maxUsername?.replace(/^@+/, '') || application.max_username || null,
     pd_consent: true,
     is_primary: values.isPrimary,
+    show_contacts_to_members: application.show_contacts_to_members,
   }
 }
 

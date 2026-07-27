@@ -48,7 +48,7 @@ export function RepresentativesPanel() {
       id: 'search',
       label: 'Поиск',
       type: 'search',
-      placeholder: 'ФИО, email, телефон…',
+      placeholder: 'ФИО, email, телефон, username…',
       value: search,
       onChange: setSearch,
     },
@@ -137,6 +137,18 @@ export function RepresentativesPanel() {
           <div className="min-w-0 text-sm text-muted-foreground">
             <p className="truncate">{row.original.email || '—'}</p>
             <p className="truncate">{row.original.phone || ''}</p>
+            {row.original.telegram_username || row.original.max_username ? (
+              <p className="truncate text-muted-foreground">
+                {[
+                  row.original.telegram_username
+                    ? `TG @${row.original.telegram_username}`
+                    : null,
+                  row.original.max_username ? `Max @${row.original.max_username}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
+            ) : null}
           </div>
         ),
       },

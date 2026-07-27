@@ -20,6 +20,7 @@ import {
   BulkMaterialAccessDialog,
   MaterialAccessBadges,
 } from '@features/material-access'
+import { useActiveMaterialCategories } from '@features/material-categories'
 
 import {
   materialStatusFilterLabel,
@@ -37,16 +38,19 @@ export function MaterialsPanel() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<MaterialStatusFilter>('all')
   const [levelId, setLevelId] = useState('')
+  const [categoryId, setCategoryId] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const navigate = useNavigate()
 
   const levels = useLevelsForMaterialAcl()
+  const categories = useActiveMaterialCategories()
   const query = useMaterialSections({
     search,
     status,
     levelId: levelId || undefined,
+    categoryId: categoryId || undefined,
   })
   const moveMutation = useMoveMaterialSectionMutation()
   const publishMutation = usePublishMaterialSectionMutation()
@@ -91,6 +95,20 @@ export function MaterialsPanel() {
         })),
       ],
     },
+    {
+      id: 'categoryId',
+      label: 'Категория',
+      type: 'select',
+      value: categoryId,
+      onChange: setCategoryId,
+      options: [
+        { value: '', label: 'Все категории' },
+        ...(categories.data ?? []).map((category) => ({
+          value: category.id,
+          label: category.name,
+        })),
+      ],
+    },
   ]
 
   const columns = useMemo<ColumnDef<MaterialSection, unknown>[]>(
@@ -129,6 +147,15 @@ export function MaterialsPanel() {
               {row.original.slug || 'без slug'}
             </p>
           </div>
+        ),
+      },
+      {
+        id: 'category',
+        header: 'Категория',
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">
+            {row.original.category?.name ?? '—'}
+          </span>
         ),
       },
       {
@@ -237,6 +264,7 @@ export function MaterialsPanel() {
           setSearch('')
           setStatus('all')
           setLevelId('')
+          setCategoryId('')
         }}
       />
 

@@ -135,6 +135,20 @@ export function RepresentativeDetailsCard() {
             <dl className="grid gap-4 sm:grid-cols-2">
               <Field label="Email" value={representative.email} />
               <Field label="Телефон" value={representative.phone} />
+              <Field
+                label="Telegram"
+                value={
+                  representative.telegram_username
+                    ? `@${representative.telegram_username}`
+                    : null
+                }
+              />
+              <Field
+                label="Max"
+                value={
+                  representative.max_username ? `@${representative.max_username}` : null
+                }
+              />
               <Field label="Должность" value={representative.position} className="sm:col-span-2" />
             </dl>
           </CardContent>

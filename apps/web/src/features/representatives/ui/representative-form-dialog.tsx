@@ -43,6 +43,8 @@ function toFormValues(
     position: representative?.position ?? '',
     phone: representative?.phone ?? '',
     email: representative?.email ?? '',
+    telegramUsername: representative?.telegram_username ?? '',
+    maxUsername: representative?.max_username ?? '',
     isPrimary: representative?.is_primary ?? false,
     isActive: representative?.is_active ?? true,
   }
@@ -166,11 +168,33 @@ export function RepresentativeFormDialog({
           />
         </FormField>
 
-        <FormField label="Email" error={errors.email} className="sm:col-span-2">
+        <FormField label="Email" error={errors.email}>
           <Input
             type="email"
             value={values.email ?? ''}
             onChange={(event) => patch('email', event.target.value)}
+          />
+        </FormField>
+
+        <FormField
+          label="Username в Telegram"
+          error={errors.telegramUsername}
+        >
+          <Input
+            value={values.telegramUsername ?? ''}
+            onChange={(event) => patch('telegramUsername', event.target.value)}
+            placeholder="telegram_user"
+          />
+        </FormField>
+
+        <FormField
+          label="Username в Max"
+          error={errors.maxUsername}
+        >
+          <Input
+            value={values.maxUsername ?? ''}
+            onChange={(event) => patch('maxUsername', event.target.value)}
+            placeholder="max_user"
           />
         </FormField>
 

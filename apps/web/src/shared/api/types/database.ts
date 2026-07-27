@@ -22,6 +22,8 @@ export type BotStatus = 'pending' | 'connected' | 'error'
 export type MessageSource = 'telegram' | 'max'
 export type DeliveryStatus = 'received' | 'stored' | 'relayed' | 'failed'
 export type RelayStatus = 'pending' | 'sent' | 'failed'
+export type MessengerChatKind = 'channel' | 'group' | 'supergroup' | 'other'
+export type MessageContentType = 'text' | 'photo' | 'video' | 'document' | 'other'
 
 /** Payload for confirm_registration → create representative (+ optional company). */
 export type CreateRepresentativePayload = {
@@ -32,8 +34,11 @@ export type CreateRepresentativePayload = {
   position?: string | null
   phone?: string | null
   email?: string | null
+  telegram_username?: string | null
+  max_username?: string | null
   pd_consent?: boolean
   is_primary?: boolean
+  show_contacts_to_members?: boolean
 }
 
 export type Database = {
@@ -54,6 +59,10 @@ export type Database = {
           is_ceo: boolean
           can_manage_work_groups: boolean
           pd_consent_at: string | null
+          show_contacts_to_members: boolean
+          messenger_username: string | null
+          telegram_username: string | null
+          max_username: string | null
           created_at: string
         }
         Insert: {
@@ -70,6 +79,10 @@ export type Database = {
           is_ceo?: boolean
           can_manage_work_groups?: boolean
           pd_consent_at?: string | null
+          show_contacts_to_members?: boolean
+          messenger_username?: string | null
+          telegram_username?: string | null
+          max_username?: string | null
           created_at?: string
         }
         Update: {
@@ -85,6 +98,10 @@ export type Database = {
           is_ceo?: boolean
           can_manage_work_groups?: boolean
           pd_consent_at?: string | null
+          show_contacts_to_members?: boolean
+          messenger_username?: string | null
+          telegram_username?: string | null
+          max_username?: string | null
         }
         Relationships: [
           {
@@ -183,10 +200,14 @@ export type Database = {
           position: string | null
           phone: string | null
           email: string | null
+          messenger_username: string | null
+          telegram_username: string | null
+          max_username: string | null
           pd_consent: boolean
           pd_consent_date: string | null
           is_primary: boolean
           is_active: boolean
+          show_contacts_to_members: boolean
           created_at: string
           updated_at: string
         }
@@ -197,10 +218,14 @@ export type Database = {
           position?: string | null
           phone?: string | null
           email?: string | null
+          messenger_username?: string | null
+          telegram_username?: string | null
+          max_username?: string | null
           pd_consent?: boolean
           pd_consent_date?: string | null
           is_primary?: boolean
           is_active?: boolean
+          show_contacts_to_members?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -210,10 +235,14 @@ export type Database = {
           position?: string | null
           phone?: string | null
           email?: string | null
+          messenger_username?: string | null
+          telegram_username?: string | null
+          max_username?: string | null
           pd_consent?: boolean
           pd_consent_date?: string | null
           is_primary?: boolean
           is_active?: boolean
+          show_contacts_to_members?: boolean
           updated_at?: string
         }
         Relationships: [
@@ -250,6 +279,45 @@ export type Database = {
           is_active?: boolean
         }
         Relationships: []
+      }
+      company_products: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          url: string | null
+          sort_order: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          url?: string | null
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          name?: string
+          url?: string | null
+          sort_order?: number
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'company_products_company_id_fkey'
+            columns: ['company_id']
+            isOneToOne: false
+            referencedRelation: 'companies'
+            referencedColumns: ['id']
+          },
+        ]
       }
       work_groups: {
         Row: {
@@ -357,6 +425,7 @@ export type Database = {
           content: string | null
           is_published: boolean
           sort_order: number
+          category_id: string | null
           created_at: string
           updated_at: string
         }
@@ -368,6 +437,7 @@ export type Database = {
           content?: string | null
           is_published?: boolean
           sort_order?: number
+          category_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -378,9 +448,17 @@ export type Database = {
           content?: string | null
           is_published?: boolean
           sort_order?: number
+          category_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: 'material_sections_category_id_fkey'
+            columns: ['category_id']
+            isOneToOne: false
+            referencedRelation: 'material_categories'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'material_section_levels_material_section_id_fkey'
             columns: ['id']
@@ -389,6 +467,31 @@ export type Database = {
             referencedColumns: ['material_section_id']
           },
         ]
+      }
+      material_categories: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          sort_order: number
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          name?: string
+          slug?: string
+          sort_order?: number
+          is_active?: boolean
+        }
+        Relationships: []
       }
       material_section_levels: {
         Row: {
@@ -586,6 +689,41 @@ export type Database = {
         }
         Relationships: []
       }
+      messenger_bot_channels: {
+        Row: {
+          id: string
+          platform: MessengerPlatform
+          external_chat_id: string
+          title: string | null
+          username: string | null
+          chat_kind: MessengerChatKind
+          is_active: boolean
+          last_seen_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          platform: MessengerPlatform
+          external_chat_id: string
+          title?: string | null
+          username?: string | null
+          chat_kind?: MessengerChatKind
+          is_active?: boolean
+          last_seen_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          title?: string | null
+          username?: string | null
+          chat_kind?: MessengerChatKind
+          is_active?: boolean
+          last_seen_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           id: string
@@ -596,6 +734,8 @@ export type Database = {
           author_name: string | null
           author_external_id: string | null
           text: string
+          content_type: MessageContentType
+          payload: Json
           sent_at: string
           delivery_status: DeliveryStatus
           created_at: string
@@ -609,6 +749,8 @@ export type Database = {
           author_name?: string | null
           author_external_id?: string | null
           text: string
+          content_type?: MessageContentType
+          payload?: Json
           sent_at: string
           delivery_status?: DeliveryStatus
           created_at?: string
@@ -616,6 +758,11 @@ export type Database = {
         Update: {
           delivery_status?: DeliveryStatus
           text?: string
+          content_type?: MessageContentType
+          payload?: Json
+          author_name?: string | null
+          author_external_id?: string | null
+          sent_at?: string
         }
         Relationships: []
       }
@@ -777,6 +924,22 @@ export type Database = {
         Args: { p_ordered_ids: string[] }
         Returns: Database['public']['Tables']['work_group_categories']['Row'][]
       }
+      get_material_category_usage: {
+        Args: { p_category_id: string }
+        Returns: Json
+      }
+      delete_material_category: {
+        Args: { p_category_id: string }
+        Returns: null
+      }
+      reorder_material_categories: {
+        Args: { p_ordered_ids: string[] }
+        Returns: Database['public']['Tables']['material_categories']['Row'][]
+      }
+      reorder_company_products: {
+        Args: { p_company_id: string; p_ordered_ids: string[] }
+        Returns: Database['public']['Tables']['company_products']['Row'][]
+      }
       set_primary_representative: {
         Args: { p_representative_id: string }
         Returns: Database['public']['Tables']['representatives']['Row']
@@ -792,6 +955,8 @@ export type Database = {
           p_pd_consent?: boolean | null
           p_is_primary?: boolean | null
           p_is_active?: boolean | null
+          p_telegram_username?: string | null
+          p_max_username?: string | null
         }
         Returns: Database['public']['Tables']['representatives']['Row']
       }
@@ -906,6 +1071,8 @@ export type Database = {
       message_source: MessageSource
       delivery_status: DeliveryStatus
       relay_status: RelayStatus
+      messenger_chat_kind: MessengerChatKind
+      message_content_type: MessageContentType
     }
     CompositeTypes: Record<string, never>
   }

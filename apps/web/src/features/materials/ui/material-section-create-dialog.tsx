@@ -9,10 +9,16 @@ import {
   FormField,
   Input,
   Modal,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Spinner,
   Textarea,
 } from '@shared/ui'
 import { MaterialLevelsPicker } from '@features/material-access'
+import { useActiveMaterialCategories } from '@features/material-categories'
 
 import {
   materialSectionFormSchema,
@@ -36,6 +42,7 @@ const emptyValues: MaterialSectionFormValues = {
   content: '',
   isPublished: false,
   levelIds: [],
+  categoryId: '',
 }
 
 export function MaterialSectionCreateDialog({
@@ -44,6 +51,7 @@ export function MaterialSectionCreateDialog({
 }: MaterialSectionCreateDialogProps) {
   const navigate = useNavigate()
   const levels = useLevelsForMaterialAcl()
+  const categories = useActiveMaterialCategories()
   const createMutation = useCreateMaterialSectionMutation()
   const [values, setValues] = useState<MaterialSectionFormValues>(emptyValues)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -135,6 +143,24 @@ export function MaterialSectionCreateDialog({
             onChange={(event) => patch('description', event.target.value)}
             rows={3}
           />
+        </FormField>
+        <FormField label="Категория" error={errors.categoryId}>
+          <Select
+            value={values.categoryId || 'none'}
+            onValueChange={(value) => patch('categoryId', value === 'none' ? '' : value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Выберите категорию" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Не указана</SelectItem>
+              {(categories.data ?? []).map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </FormField>
         <div className="space-y-2">
           <p className="text-sm font-medium">Уровни доступа</p>

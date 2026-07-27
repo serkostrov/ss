@@ -184,6 +184,16 @@ function ApplicationCard({ application }: { application: RegistrationApplication
 
       <dl className="grid gap-3">
         <Field label="Телефон" value={application.phone} />
+        <Field
+          label="Telegram"
+          value={
+            application.telegram_username ? `@${application.telegram_username}` : null
+          }
+        />
+        <Field
+          label="Max"
+          value={application.max_username ? `@${application.max_username}` : null}
+        />
         <Field label="ИНН (из заявки)" value={application.company_inn_hint} />
         <Field label="Компания (из заявки)" value={application.company_name_hint} />
         <Field label="Создана" value={formatRegistrationDate(application.created_at)} />
@@ -205,6 +215,22 @@ function ApplicationCard({ application }: { application: RegistrationApplication
             ) : null}
             <Field label="Email" value={application.representative.email} />
             <Field label="Телефон" value={application.representative.phone} />
+            <Field
+              label="Telegram"
+              value={
+                application.representative.telegram_username
+                  ? `@${application.representative.telegram_username}`
+                  : null
+              }
+            />
+            <Field
+              label="Max"
+              value={
+                application.representative.max_username
+                  ? `@${application.representative.max_username}`
+                  : null
+              }
+            />
           </div>
         </>
       ) : null}

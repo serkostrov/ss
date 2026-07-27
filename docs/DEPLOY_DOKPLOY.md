@@ -1,7 +1,7 @@
 # Деплой на Dokploy
 
 SPA (`apps/web`) раздаётся через nginx. Backend — hosted Supabase (миграции отдельно).
-Messenger worker пока scaffold — в Dokploy можно не деплоить.
+Messenger worker (`Dockerfile.messenger`) принимает webhooks Telegram/Max и пишет посты каналов в `messages`.
 
 ## Важно про `VITE_*`
 
@@ -65,9 +65,35 @@ docker run --rm -p 8080:80 \
   apss-web
 ```
 
-## 5. Messenger (позже)
+## 5. Messenger worker
 
-Когда worker будет слушать webhooks — `Dockerfile.messenger`, секреты отдельно от web.
+Отдельное приложение: `Dockerfile.messenger`, порт **8787** (или `PORT`).
+
+**Environment (runtime secrets, не в web-образе):**
+
+```env
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_WEBHOOK_SECRET=
+MAX_BOT_TOKEN=
+MAX_WEBHOOK_SECRET=
+PUBLIC_WEBHOOK_BASE_URL=https://messenger.your-domain
+PORT=8787
+LOG_LEVEL=info
+```
+
+`PUBLIC_WEBHOOK_BASE_URL` — публичный HTTPS origin worker **без** суффикса пути (worker сам добавит `/webhooks/telegram` и `/webhooks/max`). При старте регистрируются Telegram `setWebhook` и Max `POST /subscriptions`.
+
+Эндпоинты:
+
+- `GET /health`
+- `POST /webhooks/telegram`
+- `POST /webhooks/max`
+
+Домен worker должен быть доступен из интернета (HTTPS). Локально: `npm run dev -w @apss/messenger` + tunnel (ngrok/cloudflared) на `PUBLIC_WEBHOOK_BASE_URL`.
+
+Подробнее: [MESSENGER_CHAT_IDS.md](./MESSENGER_CHAT_IDS.md).
 
 ## 6. Частые проблемы
 
@@ -78,3 +104,5 @@ docker run --rm -p 8080:80 \
 | 404 на `/admin/...` | SPA `try_files` (см. `deploy/nginx.conf`) |
 | Auth redirect не туда | `VITE_APP_URL` / Site URL в Supabase |
 | Автозаполнение по ИНН недоступно | Старый образ без Node sidecar — **Redeploy** с актуальным `Dockerfile` |
+| Каналы не появляются в picker | Worker не запущен / бот не добавлен в канал / webhook не зарегистрирован |
+| Посты не в ленте | Канал не привязан к рабочей группе в «Чаты» |

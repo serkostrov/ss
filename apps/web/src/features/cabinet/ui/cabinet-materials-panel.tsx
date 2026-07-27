@@ -8,9 +8,15 @@ import {
   ErrorState,
   PageHeader,
   SearchInput,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Skeleton,
   StatusBadge,
 } from '@shared/ui'
+import { useActiveMaterialCategories } from '@features/material-categories'
 
 import {
   useCabinetMaterialsSearch,
@@ -33,12 +39,22 @@ function MaterialsListSkeleton() {
 
 export function CabinetMaterialsPanel() {
   const [search, setSearch] = useState('')
+  const [categoryId, setCategoryId] = useState('all')
   const query = useCabinetMaterialsSearch(search)
+  const categories = useActiveMaterialCategories()
   const prefetch = usePrefetchCabinetMaterial()
 
+  const items = useMemo(() => {
+    if (categoryId === 'all') return query.items
+    if (categoryId === 'none') {
+      return query.items.filter((item) => !item.category_id)
+    }
+    return query.items.filter((item) => item.category_id === categoryId)
+  }, [query.items, categoryId])
+
   const emptyAfterFilter = useMemo(
-    () => !query.isLoading && !query.isError && query.totalCount > 0 && query.items.length === 0,
-    [query.isLoading, query.isError, query.totalCount, query.items.length],
+    () => !query.isLoading && !query.isError && query.totalCount > 0 && items.length === 0,
+    [query.isLoading, query.isError, query.totalCount, items.length],
   )
 
   return (
@@ -49,18 +65,34 @@ export function CabinetMaterialsPanel() {
       />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <SearchInput
-          value={search}
-          onValueChange={setSearch}
-          placeholder="Поиск по названию или описанию…"
-          aria-label="Поиск материалов"
-          className="w-full sm:max-w-md"
-          disabled={query.isLoading && query.totalCount === 0}
-        />
+        <div className="flex w-full flex-col gap-3 sm:max-w-xl sm:flex-row">
+          <SearchInput
+            value={search}
+            onValueChange={setSearch}
+            placeholder="Поиск по названию или описанию…"
+            aria-label="Поиск материалов"
+            className="w-full"
+            disabled={query.isLoading && query.totalCount === 0}
+          />
+          <Select value={categoryId} onValueChange={setCategoryId}>
+            <SelectTrigger className="w-full sm:w-56" aria-label="Категория">
+              <SelectValue placeholder="Категория" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все категории</SelectItem>
+              <SelectItem value="none">Без категории</SelectItem>
+              {(categories.data ?? []).map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         {!query.isLoading && query.totalCount > 0 ? (
           <p className="text-sm text-muted-foreground">
-            {search.trim()
-              ? `Найдено: ${query.items.length} из ${query.totalCount}`
+            {search.trim() || categoryId !== 'all'
+              ? `Найдено: ${items.length} из ${query.totalCount}`
               : `Разделов: ${query.totalCount}`}
           </p>
         ) : null}
@@ -87,17 +119,24 @@ export function CabinetMaterialsPanel() {
         <EmptyState
           icon={SearchX}
           title="Ничего не найдено"
-          description={`По запросу «${search.trim()}» разделов нет. Измените поисковую фразу.`}
-          actionLabel="Сбросить поиск"
-          onAction={() => setSearch('')}
+          description={
+            search.trim()
+              ? `По запросу «${search.trim()}» разделов нет.`
+              : 'В выбранной категории разделов нет.'
+          }
+          actionLabel="Сбросить фильтры"
+          onAction={() => {
+            setSearch('')
+            setCategoryId('all')
+          }}
         />
       ) : null}
 
-      {query.items.length > 0 ? (
+      {items.length > 0 ? (
         <div
           className={`grid gap-3 sm:grid-cols-2 ${query.isFiltering ? 'opacity-80' : ''}`}
         >
-          {query.items.map((section) => {
+          {items.map((section) => {
             const href = routes.cabinet.material(section.slug || section.id)
             return (
               <Link
@@ -111,6 +150,9 @@ export function CabinetMaterialsPanel() {
                   <p className="min-w-0 font-medium leading-snug">{section.title}</p>
                   <StatusBadge status="active" label="Доступно" className="shrink-0" />
                 </div>
+                {section.category?.name ? (
+                  <p className="mt-1 text-xs text-muted-foreground">{section.category.name}</p>
+                ) : null}
                 {section.description ? (
                   <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
                     {section.description}

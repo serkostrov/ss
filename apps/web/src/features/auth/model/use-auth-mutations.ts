@@ -54,6 +54,9 @@ export function useRegisterMutation() {
         phone: values.phone || undefined,
         companyNameHint: values.companyNameHint || undefined,
         companyInnHint: values.companyInnHint || undefined,
+        showContactsToMembers: values.showContactsToMembers,
+        telegramUsername: values.telegramUsername || undefined,
+        maxUsername: values.maxUsername || undefined,
         accepted: true,
       })
     },

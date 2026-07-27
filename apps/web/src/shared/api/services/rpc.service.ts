@@ -50,6 +50,20 @@ const RPC_AUDIT: Partial<Record<RpcName, RpcAuditSpec>> = {
     action: 'work_group_categories.reorder',
     entity_type: 'work_group_categories',
   },
+  delete_material_category: {
+    action: 'material_categories.delete',
+    entity_type: 'material_categories',
+    entityId: (args) => String(args.p_category_id ?? ''),
+  },
+  reorder_material_categories: {
+    action: 'material_categories.reorder',
+    entity_type: 'material_categories',
+  },
+  reorder_company_products: {
+    action: 'company_products.reorder',
+    entity_type: 'company_products',
+    entityId: (args) => String(args.p_company_id ?? ''),
+  },
   set_primary_representative: {
     action: 'representatives.set_primary',
     entity_type: 'representatives',

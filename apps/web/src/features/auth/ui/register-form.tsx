@@ -37,9 +37,12 @@ export function RegisterForm() {
       confirmPassword: '',
       fullName: '',
       phone: '',
+      telegramUsername: '',
+      maxUsername: '',
       companyInnHint: '',
       companyNameHint: '',
       accepted: false,
+      showContactsToMembers: true,
     },
   })
 
@@ -144,6 +147,38 @@ export function RegisterForm() {
           )}
         />
 
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="telegramUsername"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Username в Telegram</FormLabel>
+                <FormControl>
+                  <Input placeholder="telegram_user" autoComplete="off" {...field} />
+                </FormControl>
+                <FormDescription>Необязательно</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="maxUsername"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Username в Max</FormLabel>
+                <FormControl>
+                  <Input placeholder="max_user" autoComplete="off" {...field} />
+                </FormControl>
+                <FormDescription>Необязательно</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
         <FormField
           control={form.control}
           name="companyInnHint"
@@ -162,7 +197,7 @@ export function RegisterForm() {
                 />
               </FormControl>
               <FormDescription>
-                Необязательно. По ИНН попробуем подставить название из ЕГРЮЛ — при сбое укажите вручную.
+                Необязательно.
               </FormDescription>
               {innLookupStatus === 'loading' ? (
                 <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -233,16 +268,38 @@ export function RegisterForm() {
 
         <FormField
           control={form.control}
-          name="accepted"
+          name="showContactsToMembers"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start gap-3 space-y-0 rounded-md border p-3">
+            <FormItem className="flex flex-row items-start gap-4 space-y-0 rounded-md border p-4">
               <FormControl>
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={(checked) => field.onChange(checked === true)}
                 />
               </FormControl>
-              <div className="space-y-1 leading-none">
+              <div className="space-y-1 leading-none ">
+                <FormLabel>Показывать мои контакты другим участникам</FormLabel>
+                <FormDescription>
+                  Другие участники смогут видеть ваши данные в справочнике.
+                </FormDescription>
+                <FormMessage />
+              </div>
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="accepted"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start gap-4 space-y-0 rounded-md border p-4">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={(checked) => field.onChange(checked === true)}
+                />
+              </FormControl>
+              <div className="space-y-2 leading-snug">
                 <FormLabel>Принимаю условия регистрации</FormLabel>
                 <FormDescription>
                   Без подтверждения зарегистрироваться нельзя.

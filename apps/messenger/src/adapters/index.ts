@@ -1,2 +1,2 @@
-/** Telegram / Max adapters — scaffold. */
-export {}
+export { handleTelegramUpdate, registerTelegramWebhook } from './telegram.js'
+export { handleMaxUpdate, registerMaxWebhook } from './max.js'

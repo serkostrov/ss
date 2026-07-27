@@ -91,6 +91,7 @@ export const router = createBrowserRouter([
                     children: [
                       { path: "company", element: <pages.CabinetCompanyPage /> },
                       { path: "directory", element: <pages.CabinetDirectoryPage /> },
+                      { path: "messages", element: <pages.CabinetMessagesPage /> },
                       { path: "materials", element: <pages.CabinetMaterialsPage /> },
                       { path: "materials/:slug", element: <pages.CabinetMaterialDetailsPage /> },
                       { path: "polls", element: <pages.CabinetPollsPage /> },

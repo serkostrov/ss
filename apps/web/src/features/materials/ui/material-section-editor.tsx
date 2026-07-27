@@ -4,6 +4,9 @@ import { ChevronLeft, Eye, FilePen, Save, Send, Trash2 } from 'lucide-react'
 
 import { slugifyTitle } from '@shared/api'
 import { routes } from '@shared/config'
+import { MaterialDocumentsPanel } from '@features/documents'
+import { MaterialLevelsPicker } from '@features/material-access'
+import { useActiveMaterialCategories } from '@features/material-categories'
 import {
   Button,
   Card,
@@ -20,13 +23,15 @@ import {
   LoadingState,
   MarkdownEditor,
   PageHeader,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Spinner,
   StatusBadge,
   Textarea,
 } from '@shared/ui'
-
-import { MaterialDocumentsPanel } from '@features/documents'
-import { MaterialLevelsPicker } from '@features/material-access'
 
 import {
   formatMaterialDate,
@@ -47,6 +52,7 @@ export function MaterialSectionEditor() {
   const navigate = useNavigate()
   const query = useMaterialSection(id)
   const levels = useLevelsForMaterialAcl()
+  const categories = useActiveMaterialCategories()
   const updateMutation = useUpdateMaterialSectionMutation()
   const publishMutation = usePublishMaterialSectionMutation()
   const deleteMutation = useDeleteMaterialSectionMutation()
@@ -66,6 +72,7 @@ export function MaterialSectionEditor() {
       content: query.data.content ?? '',
       isPublished: query.data.is_published,
       levelIds: query.data.level_ids,
+      categoryId: query.data.category_id ?? '',
     })
     setSlugTouched(true)
     setErrors({})
@@ -254,6 +261,24 @@ export function MaterialSectionEditor() {
                   patch('slug', event.target.value.toLowerCase())
                 }}
               />
+            </FormField>
+            <FormField label="Категория" error={errors.categoryId}>
+              <Select
+                value={values.categoryId || 'none'}
+                onValueChange={(value) => patch('categoryId', value === 'none' ? '' : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите категорию" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Не указана</SelectItem>
+                  {(categories.data ?? []).map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </FormField>
             <FormField label="Краткое описание" error={errors.description}>
               <Textarea

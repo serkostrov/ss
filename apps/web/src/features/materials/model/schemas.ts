@@ -21,6 +21,7 @@ export const materialSectionFormSchema = z
     content: z.string().max(100_000).optional().or(z.literal('')),
     isPublished: z.boolean(),
     levelIds: z.array(z.string().uuid()),
+    categoryId: z.string().uuid().optional().or(z.literal('')),
   })
   .superRefine((values, ctx) => {
     if (values.isPublished && values.levelIds.length === 0) {

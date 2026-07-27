@@ -146,11 +146,15 @@ export function toRepresentativeInput(
     position?: string
     phone?: string
     email?: string
+    telegramUsername?: string
+    maxUsername?: string
     isPrimary: boolean
     isActive: boolean
   },
   id?: string,
 ): RepresentativeInput {
+  const telegram = (values.telegramUsername ?? '').trim().replace(/^@+/, '')
+  const max = (values.maxUsername ?? '').trim().replace(/^@+/, '')
   return {
     id,
     company_id: values.companyId,
@@ -158,6 +162,8 @@ export function toRepresentativeInput(
     position: values.position || null,
     phone: values.phone || null,
     email: values.email || null,
+    telegram_username: telegram || null,
+    max_username: max || null,
     pd_consent: true,
     is_primary: values.isPrimary,
     is_active: values.isActive,

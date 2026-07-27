@@ -61,7 +61,11 @@ export function useAssociationDirectory(search = '') {
       company.inn,
       company.description,
       company.address,
-      ...company.representatives.map((rep) => `${rep.full_name} ${rep.position ?? ''}`),
+      ...company.representatives.map(
+        (rep) =>
+          `${rep.full_name} ${rep.position ?? ''} ${rep.telegram_username ?? ''} ${rep.max_username ?? ''}`,
+      ),
+      ...company.products.map((product) => product.name),
     ]
       .filter(Boolean)
       .join(' ')

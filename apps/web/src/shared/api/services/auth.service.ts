@@ -25,6 +25,12 @@ export type SignUpInput = {
   phone?: string
   companyNameHint?: string
   companyInnHint?: string
+  /** Whether other members may see phone/email in the association directory. */
+  showContactsToMembers?: boolean
+  /** Telegram username without @. */
+  telegramUsername?: string
+  /** Max username without @. */
+  maxUsername?: string
   /** Required gate — registration is rejected without acceptance. */
   accepted: true
 }
@@ -266,6 +272,9 @@ export const authService = {
           phone: input.phone ?? null,
           company_name_hint: input.companyNameHint ?? null,
           company_inn_hint: input.companyInnHint ?? null,
+          show_contacts_to_members: input.showContactsToMembers === true,
+          telegram_username: input.telegramUsername?.trim().replace(/^@+/, '') || null,
+          max_username: input.maxUsername?.trim().replace(/^@+/, '') || null,
           pd_consent: true,
           pd_consent_at: new Date().toISOString(),
         },

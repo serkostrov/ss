@@ -6,6 +6,7 @@ export { directoryService, cabinetPollsMetaService } from './directory.service'
 export type {
   DirectoryCompany,
   DirectoryRepresentative,
+  DirectoryProduct,
   CabinetPollAccessHint,
 } from './directory.service'
 export { staffService } from './staff.service'
@@ -54,9 +55,23 @@ export type {
   MaterialSection,
   MaterialSectionInput,
   MaterialLevelRef,
+  MaterialCategoryRef,
   MaterialsListFilters,
   CabinetMaterial,
 } from './materials.service'
+export { materialCategoriesService } from './material-categories.service'
+export type {
+  MaterialCategory,
+  MaterialCategoryInput,
+  MaterialCategoryUsage,
+  MaterialCategoriesListFilters,
+} from './material-categories.service'
+export { companyProductsService } from './company-products.service'
+export type {
+  CompanyProduct,
+  CompanyProductInput,
+  CompanyProductUpdateInput,
+} from './company-products.service'
 export { materialAccessService } from './material-access.service'
 export type { MaterialAccessMode, BulkMaterialAccessInput } from './material-access.service'
 export { documentsService } from './documents.service'
@@ -98,6 +113,8 @@ export type {
   MessengerConnection,
   MessengerConnectionInput,
 } from './messenger-connections.service'
+export { messengerBotChannelsService } from './messenger-bot-channels.service'
+export type { MessengerBotChannel } from './messenger-bot-channels.service'
 export { messagesService } from './messages.service'
 export type {
   Message,

@@ -10,9 +10,15 @@ export type MaterialLevelRef = Pick<
   'id' | 'name' | 'is_active' | 'sort_order'
 >
 
+export type MaterialCategoryRef = Pick<
+  TableRow<'material_categories'>,
+  'id' | 'name' | 'slug' | 'sort_order' | 'is_active'
+>
+
 export type MaterialSection = TableRow<'material_sections'> & {
   levels: MaterialLevelRef[]
   level_ids: string[]
+  category: MaterialCategoryRef | null
 }
 
 export type MaterialSectionInput = {
@@ -23,6 +29,7 @@ export type MaterialSectionInput = {
   is_published?: boolean
   sort_order?: number
   level_ids?: string[]
+  category_id?: string | null
 }
 
 export type MaterialsListFilters = {
@@ -30,6 +37,7 @@ export type MaterialsListFilters = {
   status?: 'all' | 'draft' | 'published'
   /** Filter sections that include this participation level. */
   levelId?: string
+  categoryId?: string
 }
 
 /** List/card payload — without heavy Markdown `content`. */
@@ -40,8 +48,16 @@ const LIST_SELECT = `
   description,
   is_published,
   sort_order,
+  category_id,
   created_at,
   updated_at,
+  category:material_categories (
+    id,
+    name,
+    slug,
+    sort_order,
+    is_active
+  ),
   material_section_levels (
     participation_level_id,
     participation_levels (
@@ -62,8 +78,16 @@ const DETAIL_SELECT = `
   content,
   is_published,
   sort_order,
+  category_id,
   created_at,
   updated_at,
+  category:material_categories (
+    id,
+    name,
+    slug,
+    sort_order,
+    is_active
+  ),
   material_section_levels (
     participation_level_id,
     participation_levels (
@@ -86,8 +110,16 @@ const MEMBER_LIST_SELECT = `
   description,
   is_published,
   sort_order,
+  category_id,
   created_at,
-  updated_at
+  updated_at,
+  category:material_categories (
+    id,
+    name,
+    slug,
+    sort_order,
+    is_active
+  )
 `
 
 const MEMBER_DETAIL_SELECT = `
@@ -98,8 +130,16 @@ const MEMBER_DETAIL_SELECT = `
   content,
   is_published,
   sort_order,
+  category_id,
   created_at,
-  updated_at
+  updated_at,
+  category:material_categories (
+    id,
+    name,
+    slug,
+    sort_order,
+    is_active
+  )
 `
 
 export type CabinetMaterial = {
@@ -109,6 +149,8 @@ export type CabinetMaterial = {
   description: string | null
   content: string | null
   sort_order: number
+  category_id: string | null
+  category: MaterialCategoryRef | null
   created_at: string
   updated_at: string
 }
@@ -120,6 +162,7 @@ type QueryResult<T> = {
 
 type RawSection = Omit<TableRow<'material_sections'>, 'content'> & {
   content?: string | null
+  category: MaterialCategoryRef | MaterialCategoryRef[] | null
   material_section_levels:
     | Array<{
         participation_level_id: string
@@ -201,6 +244,8 @@ function normalize(row: RawSection): MaterialSection {
   }
   levels.sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name, 'ru'))
 
+  const category = Array.isArray(row.category) ? row.category[0] : row.category
+
   return {
     id: row.id,
     title: row.title,
@@ -209,8 +254,10 @@ function normalize(row: RawSection): MaterialSection {
     content: row.content ?? null,
     is_published: row.is_published,
     sort_order: row.sort_order,
+    category_id: row.category_id,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    category: category ?? null,
     levels,
     level_ids: levels.map((item) => item.id),
   }
@@ -219,11 +266,23 @@ function normalize(row: RawSection): MaterialSection {
 function toCabinetMaterial(
   row: Pick<
     TableRow<'material_sections'>,
-    'id' | 'title' | 'slug' | 'description' | 'is_published' | 'sort_order' | 'created_at' | 'updated_at'
-  > & { content?: string | null },
+    | 'id'
+    | 'title'
+    | 'slug'
+    | 'description'
+    | 'is_published'
+    | 'sort_order'
+    | 'category_id'
+    | 'created_at'
+    | 'updated_at'
+  > & {
+    content?: string | null
+    category?: MaterialCategoryRef | MaterialCategoryRef[] | null
+  },
 ): CabinetMaterial | null {
   // Defense in depth: never surface unpublished rows to members.
   if (!row.is_published) return null
+  const category = Array.isArray(row.category) ? row.category[0] : row.category
   return {
     id: row.id,
     title: row.title,
@@ -231,6 +290,8 @@ function toCabinetMaterial(
     description: row.description,
     content: row.content ?? null,
     sort_order: row.sort_order,
+    category_id: row.category_id,
+    category: category ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   }
@@ -281,6 +342,11 @@ export const materialsService = {
       query = query.eq('is_published', false)
     } else if (filters.status === 'published') {
       query = query.eq('is_published', true)
+    }
+
+    const categoryId = filters.categoryId?.trim()
+    if (categoryId) {
+      query = query.eq('category_id', categoryId)
     }
 
     const search = filters.search?.trim()
@@ -343,9 +409,10 @@ export const materialsService = {
           | 'description'
           | 'is_published'
           | 'sort_order'
+          | 'category_id'
           | 'created_at'
           | 'updated_at'
-        >
+        > & { category: MaterialCategoryRef | MaterialCategoryRef[] | null }
       >
     >
 
@@ -377,9 +444,13 @@ export const materialsService = {
           | 'description'
           | 'is_published'
           | 'sort_order'
+          | 'category_id'
           | 'created_at'
           | 'updated_at'
-        > & { content: string | null })
+        > & {
+          content: string | null
+          category: MaterialCategoryRef | MaterialCategoryRef[] | null
+        })
       | null
     >
 
@@ -397,6 +468,7 @@ export const materialsService = {
       content: input.content ?? null,
       is_published: input.is_published ?? false,
       sort_order: nextOrder,
+      category_id: input.category_id?.trim() || null,
     }
 
     const created = await dataService.insert('material_sections', payload)
@@ -421,6 +493,7 @@ export const materialsService = {
       content: input.content ?? null,
       is_published: input.is_published,
       sort_order: input.sort_order,
+      category_id: input.category_id === undefined ? undefined : input.category_id?.trim() || null,
       updated_at: new Date().toISOString(),
     }
 

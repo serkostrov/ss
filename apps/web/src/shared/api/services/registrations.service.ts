@@ -5,7 +5,16 @@ import type { TableRow, UserStatus } from '../types/database'
 
 export type RegistrationRepresentative = Pick<
   TableRow<'representatives'>,
-  'id' | 'full_name' | 'email' | 'phone' | 'position' | 'company_id' | 'is_primary' | 'is_active'
+  | 'id'
+  | 'full_name'
+  | 'email'
+  | 'phone'
+  | 'telegram_username'
+  | 'max_username'
+  | 'position'
+  | 'company_id'
+  | 'is_primary'
+  | 'is_active'
 > & {
   company: Pick<TableRow<'companies'>, 'id' | 'name' | 'access_status'> | null
 }
@@ -22,6 +31,9 @@ export type RegistrationApplication = Pick<
   | 'company_name_hint'
   | 'company_inn_hint'
   | 'pd_consent_at'
+  | 'show_contacts_to_members'
+  | 'telegram_username'
+  | 'max_username'
   | 'created_at'
 > & {
   representative: RegistrationRepresentative | null
@@ -74,12 +86,17 @@ const APPLICATION_SELECT = `
   company_name_hint,
   company_inn_hint,
   pd_consent_at,
+  show_contacts_to_members,
+  telegram_username,
+  max_username,
   created_at,
   representative:representatives (
     id,
     full_name,
     email,
     phone,
+    telegram_username,
+    max_username,
     position,
     company_id,
     is_primary,

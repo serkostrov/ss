@@ -24,7 +24,12 @@ export function filterCabinetMaterials(
   const q = normalizeSearch(search)
   if (!q) return items
   return items.filter((item) => {
-    const haystack = [item.title, item.description ?? '', item.slug ?? '']
+    const haystack = [
+      item.title,
+      item.description ?? '',
+      item.slug ?? '',
+      item.category?.name ?? '',
+    ]
       .join(' ')
       .toLowerCase()
     return haystack.includes(q)

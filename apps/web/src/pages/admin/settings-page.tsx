@@ -9,6 +9,10 @@ import {
 } from '@features/directions'
 import { LevelsPanel, type LevelsPanelHandle } from '@features/levels'
 import {
+  MaterialCategoriesPanel,
+  type MaterialCategoriesPanelHandle,
+} from '@features/material-categories'
+import {
   ErrorState,
   PageHeader,
   PageHeaderAction,
@@ -18,15 +22,20 @@ import {
   TabsTrigger,
 } from '@shared/ui'
 
-type SettingsTab = 'levels' | 'directions'
+type SettingsTab = 'levels' | 'directions' | 'materialCategories'
 
 export function AdminSettingsPage() {
   const [tab, setTab] = useState<SettingsTab>('levels')
   const levelsRef = useRef<LevelsPanelHandle>(null)
   const directionsRef = useRef<DirectionsPanelHandle>(null)
+  const materialCategoriesRef = useRef<MaterialCategoriesPanelHandle>(null)
 
   const addPermission =
-    tab === 'levels' ? permissions['admin.levels'] : permissions['admin.workGroups']
+    tab === 'levels'
+      ? permissions['admin.levels']
+      : tab === 'directions'
+        ? permissions['admin.workGroups']
+        : permissions['admin.materials']
 
   return (
     <CanAccess
@@ -49,13 +58,15 @@ export function AdminSettingsPage() {
             <TabsList className="w-auto">
               <TabsTrigger value="levels">Уровни</TabsTrigger>
               <TabsTrigger value="directions">Направления</TabsTrigger>
+              <TabsTrigger value="materialCategories">Категории материалов</TabsTrigger>
             </TabsList>
             <CanAccess permission={addPermission}>
               <PageHeaderAction
                 type="button"
                 onClick={() => {
                   if (tab === 'levels') levelsRef.current?.openCreate()
-                  else directionsRef.current?.openCreate()
+                  else if (tab === 'directions') directionsRef.current?.openCreate()
+                  else materialCategoriesRef.current?.openCreate()
                 }}
               >
                 <Plus className="size-4" />
@@ -89,6 +100,20 @@ export function AdminSettingsPage() {
               }
             >
               <DirectionsPanel ref={directionsRef} embedded />
+            </CanAccess>
+          </TabsContent>
+
+          <TabsContent value="materialCategories">
+            <CanAccess
+              permission={permissions['admin.materials']}
+              fallback={
+                <ErrorState
+                  title="Нет доступа"
+                  description="Недостаточно прав для управления категориями материалов."
+                />
+              }
+            >
+              <MaterialCategoriesPanel ref={materialCategoriesRef} embedded />
             </CanAccess>
           </TabsContent>
         </Tabs>

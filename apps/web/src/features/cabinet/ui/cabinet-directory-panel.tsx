@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Building2, SearchX, Users } from 'lucide-react'
+import { Building2, ExternalLink, Package, SearchX, Users } from 'lucide-react'
 
 import {
   Badge,
@@ -34,13 +34,13 @@ export function CabinetDirectoryPanel() {
     <div className="space-y-6">
       <PageHeader
         title="Участники ассоциации"
-        description="Активные компании, их описание и представители."
+        description="Активные компании, продукция и представители."
       />
 
       <SearchInput
         value={search}
         onValueChange={setSearch}
-        placeholder="Поиск по компании, ИНН или представителю…"
+        placeholder="Поиск по компании, продукции или представителю…"
         aria-label="Поиск по справочнику"
         className="w-full sm:max-w-md"
       />
@@ -122,6 +122,38 @@ export function CabinetDirectoryPanel() {
 
               <div className="mt-4 border-t pt-3">
                 <p className="mb-2 flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                  <Package className="size-3.5" />
+                  Продукция
+                </p>
+                {company.products.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Не указана</p>
+                ) : (
+                  <ul className="flex flex-wrap gap-2">
+                    {company.products.map((product) => (
+                      <li key={product.id}>
+                        {product.url ? (
+                          <a
+                            href={product.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-sm hover:border-primary/40 hover:bg-accent/30"
+                          >
+                            {product.name}
+                            <ExternalLink className="size-3" />
+                          </a>
+                        ) : (
+                          <span className="inline-flex rounded-md border px-2 py-1 text-sm">
+                            {product.name}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="mt-4 border-t pt-3">
+                <p className="mb-2 flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
                   <Users className="size-3.5" />
                   Представители
                 </p>
@@ -140,9 +172,19 @@ export function CabinetDirectoryPanel() {
                         {rep.position ? (
                           <span className="text-muted-foreground"> · {rep.position}</span>
                         ) : null}
-                        {(rep.phone || rep.email) && (
+                        {(rep.phone ||
+                          rep.email ||
+                          rep.telegram_username ||
+                          rep.max_username) && (
                           <p className="text-xs text-muted-foreground">
-                            {[rep.phone, rep.email].filter(Boolean).join(' · ')}
+                            {[
+                              rep.phone,
+                              rep.email,
+                              rep.telegram_username ? `TG @${rep.telegram_username}` : null,
+                              rep.max_username ? `Max @${rep.max_username}` : null,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
                           </p>
                         )}
                       </li>

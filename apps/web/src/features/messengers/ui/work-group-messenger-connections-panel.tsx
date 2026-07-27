@@ -10,6 +10,10 @@ import {
   ErrorState,
   LoadingState,
   StatusBadge,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 } from '@shared/ui'
 
 import {
@@ -19,7 +23,6 @@ import {
   messengerPlatformLabel,
 } from '../model/schemas'
 import {
-  availablePlatforms,
   useDeleteMessengerConnectionMutation,
   useMessengerConnections,
 } from '../model/use-messenger-connections'
@@ -27,38 +30,141 @@ import { MessengerConnectionFormDialog } from './messenger-connection-form-dialo
 
 type WorkGroupMessengerConnectionsPanelProps = {
   workGroupId: string
-  /** When set, shows only this platform and creates for it. */
+  /** When set, locks to one platform (no inner tabs). */
   platform?: MessengerPlatform
+}
+
+const PLATFORMS: Array<{ id: MessengerPlatform; label: string }> = [
+  { id: 'telegram', label: 'Telegram' },
+  { id: 'max', label: 'Max' },
+]
+
+function ConnectionsList({
+  platform,
+  connections,
+  canAdd,
+  onCreate,
+  onEdit,
+  onDelete,
+}: {
+  platform: MessengerPlatform
+  connections: MessengerConnection[]
+  canAdd: boolean
+  onCreate: () => void
+  onEdit: (connection: MessengerConnection) => void
+  onDelete: (connection: MessengerConnection) => void
+}) {
+  if (connections.length === 0) {
+    return (
+      <EmptyState
+        title={`${messengerPlatformLabel(platform)} не привязан`}
+        description={`Выберите канал ${messengerPlatformLabel(platform)}, в котором уже есть бот АПСС.`}
+        className="py-10"
+        actionLabel={canAdd ? 'Привязать канал' : undefined}
+        onAction={canAdd ? onCreate : undefined}
+      />
+    )
+  }
+
+  return (
+    <ul className="space-y-3">
+      {connections.map((connection) => (
+        <li key={connection.id} className="rounded-lg border px-4 py-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusBadge
+                  status={connection.bot_status}
+                  label={botStatusLabel(connection.bot_status)}
+                />
+                {connection.last_error ? (
+                  <Badge variant="destructive" className="font-normal">
+                    <AlertTriangle className="mr-1 size-3" />
+                    Есть ошибка
+                  </Badge>
+                ) : null}
+              </div>
+
+              <div className="space-y-1 text-sm">
+                <p>
+                  <span className="text-muted-foreground">Канал: </span>
+                  <span className="font-medium">
+                    {connection.chat_title?.trim() || 'Без названия'}
+                  </span>
+                </p>
+                <p className="truncate font-mono text-xs text-muted-foreground">
+                  ID: {connection.chat_id}
+                </p>
+              </div>
+
+              {connection.last_error ? (
+                <p className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                  {connection.last_error}
+                </p>
+              ) : null}
+
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                <span>Создано: {formatMessengerDate(connection.created_at)}</span>
+                <span>Подключено: {formatMessengerDate(connection.connected_at)}</span>
+                <span>Обновление: {formatMessengerDate(connectionLastUpdate(connection))}</span>
+              </div>
+            </div>
+
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => onEdit(connection)}>
+                <Pencil className="size-4" />
+                Изменить
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-destructive"
+                onClick={() => onDelete(connection)}
+              >
+                <Trash2 className="size-4" />
+                Удалить
+              </Button>
+            </div>
+          </div>
+        </li>
+      ))}
+    </ul>
+  )
 }
 
 export function WorkGroupMessengerConnectionsPanel({
   workGroupId,
-  platform,
+  platform: lockedPlatform,
 }: WorkGroupMessengerConnectionsPanelProps) {
   const query = useMessengerConnections(workGroupId)
   const deleteMutation = useDeleteMessengerConnectionMutation(workGroupId)
 
+  const [activePlatform, setActivePlatform] = useState<MessengerPlatform>(
+    lockedPlatform ?? 'telegram',
+  )
   const [formOpen, setFormOpen] = useState(false)
   const [editItem, setEditItem] = useState<MessengerConnection | null>(null)
   const [deleteItem, setDeleteItem] = useState<MessengerConnection | null>(null)
 
+  const platform = lockedPlatform ?? activePlatform
   const connections = query.data ?? []
-  const filtered = useMemo(() => {
-    const list = platform ? connections.filter((item) => item.platform === platform) : connections
-    return [...list].sort((a, b) => a.platform.localeCompare(b.platform, 'en'))
-  }, [connections, platform])
 
-  const canAdd = platform
-    ? !connections.some((item) => item.platform === platform)
-    : availablePlatforms(connections).length > 0
+  const byPlatform = useMemo(() => {
+    const map: Record<MessengerPlatform, MessengerConnection[]> = {
+      telegram: [],
+      max: [],
+    }
+    for (const item of connections) {
+      map[item.platform].push(item)
+    }
+    return map
+  }, [connections])
+
+  const canAdd = !connections.some((item) => item.platform === platform)
 
   const openCreate = () => {
     setEditItem(null)
-    setFormOpen(true)
-  }
-
-  const openEdit = (connection: MessengerConnection) => {
-    setEditItem(connection)
     setFormOpen(true)
   }
 
@@ -76,107 +182,55 @@ export function WorkGroupMessengerConnectionsPanel({
     )
   }
 
-  const emptyTitle = platform
-    ? `${messengerPlatformLabel(platform)} не привязан`
-    : 'Чаты не привязаны'
-  const emptyDescription = platform
-    ? `Добавьте чат ${messengerPlatformLabel(platform)} — укажите ID и статус подключения.`
-    : 'Добавьте Telegram или Max — укажите ID чата и статус подключения.'
+  const bindButton = (
+    <Button type="button" size="sm" className="shrink-0" disabled={!canAdd} onClick={openCreate}>
+      <Plus className="size-4" />
+      Привязать канал
+    </Button>
+  )
+
+  const listFor = (target: MessengerPlatform) => (
+    <ConnectionsList
+      platform={target}
+      connections={byPlatform[target]}
+      canAdd={!connections.some((item) => item.platform === target)}
+      onCreate={openCreate}
+      onEdit={(connection) => {
+        setEditItem(connection)
+        setFormOpen(true)
+      }}
+      onDelete={setDeleteItem}
+    />
+  )
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted-foreground">
-          Привязка чата к рабочей группе. На платформу — не больше одного канала.
-        </p>
-        <Button type="button" size="sm" disabled={!canAdd} onClick={openCreate}>
-          <Plus className="size-4" />
-          Привязать чат
-        </Button>
-      </div>
-
-      {filtered.length === 0 ? (
-        <EmptyState
-          title={emptyTitle}
-          description={emptyDescription}
-          className="py-10"
-          actionLabel={canAdd ? 'Привязать чат' : undefined}
-          onAction={canAdd ? openCreate : undefined}
-        />
+      {lockedPlatform ? (
+        <>
+          <div className="flex justify-end">{bindButton}</div>
+          {listFor(lockedPlatform)}
+        </>
       ) : (
-        <ul className="space-y-3">
-          {filtered.map((connection) => (
-            <li key={connection.id} className="rounded-lg border px-4 py-3">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0 space-y-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {!platform ? (
-                      <p className="font-medium">{messengerPlatformLabel(connection.platform)}</p>
-                    ) : null}
-                    <StatusBadge
-                      status={connection.bot_status}
-                      label={botStatusLabel(connection.bot_status)}
-                    />
-                    {connection.last_error ? (
-                      <Badge variant="destructive" className="font-normal">
-                        <AlertTriangle className="mr-1 size-3" />
-                        Есть ошибка
-                      </Badge>
-                    ) : null}
-                  </div>
-
-                  <div className="space-y-1 text-sm">
-                    <p>
-                      <span className="text-muted-foreground">Чат: </span>
-                      <span className="font-medium">
-                        {connection.chat_title?.trim() || 'Без названия'}
-                      </span>
-                    </p>
-                    <p className="truncate font-mono text-xs text-muted-foreground">
-                      ID: {connection.chat_id}
-                    </p>
-                  </div>
-
-                  {connection.last_error ? (
-                    <p className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-                      {connection.last_error}
-                    </p>
-                  ) : null}
-
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    <span>Создано: {formatMessengerDate(connection.created_at)}</span>
-                    <span>Подключено: {formatMessengerDate(connection.connected_at)}</span>
-                    <span>
-                      Обновление: {formatMessengerDate(connectionLastUpdate(connection))}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex shrink-0 flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openEdit(connection)}
-                  >
-                    <Pencil className="size-4" />
-                    Изменить
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive"
-                    onClick={() => setDeleteItem(connection)}
-                  >
-                    <Trash2 className="size-4" />
-                    Удалить
-                  </Button>
-                </div>
-              </div>
-            </li>
+        <Tabs
+          value={activePlatform}
+          onValueChange={(value) => setActivePlatform(value as MessengerPlatform)}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <TabsList className="w-auto">
+              {PLATFORMS.map((item) => (
+                <TabsTrigger key={item.id} value={item.id}>
+                  {item.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {bindButton}
+          </div>
+          {PLATFORMS.map((item) => (
+            <TabsContent key={item.id} value={item.id} className="mt-4">
+              {listFor(item.id)}
+            </TabsContent>
           ))}
-        </ul>
+        </Tabs>
       )}
 
       <MessengerConnectionFormDialog
@@ -204,8 +258,8 @@ export function WorkGroupMessengerConnectionsPanel({
             ? `${messengerPlatformLabel(deleteItem.platform)} · ${deleteItem.chat_title || deleteItem.chat_id}`
             : undefined
         }
-        title="Отвязать чат?"
-        description="Запись будет удалена из messenger_connections. Worker перестанет использовать этот канал."
+        title="Отвязать канал?"
+        description="Запись будет удалена. Worker перестанет использовать этот канал."
         loading={deleteMutation.isPending}
         onConfirm={async () => {
           if (!deleteItem) return

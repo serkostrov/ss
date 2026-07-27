@@ -9,7 +9,16 @@ export type DirectoryRepresentative = {
   position: string | null
   phone: string | null
   email: string | null
+  telegram_username: string | null
+  max_username: string | null
   is_primary: boolean
+}
+
+export type DirectoryProduct = {
+  id: string
+  name: string
+  url: string | null
+  sort_order: number
 }
 
 export type DirectoryCompany = {
@@ -23,6 +32,7 @@ export type DirectoryCompany = {
   address: string | null
   participation_level_name: string | null
   representatives: DirectoryRepresentative[]
+  products: DirectoryProduct[]
 }
 
 export type CabinetPollAccessHint = {
@@ -65,7 +75,20 @@ function mapRepresentative(raw: unknown): DirectoryRepresentative | null {
     position: asString(row.position),
     phone: asString(row.phone),
     email: asString(row.email),
+    telegram_username: asString(row.telegram_username),
+    max_username: asString(row.max_username),
     is_primary: asBool(row.is_primary),
+  }
+}
+
+function mapProduct(raw: unknown): DirectoryProduct | null {
+  const row = asObject(raw as Json)
+  if (!row || typeof row.id !== 'string' || typeof row.name !== 'string') return null
+  return {
+    id: row.id,
+    name: row.name,
+    url: asString(row.url),
+    sort_order: typeof row.sort_order === 'number' ? row.sort_order : 0,
   }
 }
 
@@ -73,6 +96,7 @@ function mapCompany(raw: unknown): DirectoryCompany | null {
   const row = asObject(raw as Json)
   if (!row || typeof row.id !== 'string' || typeof row.name !== 'string') return null
   const repsRaw = Array.isArray(row.representatives) ? row.representatives : []
+  const productsRaw = Array.isArray(row.products) ? row.products : []
   return {
     id: row.id,
     name: row.name,
@@ -86,6 +110,9 @@ function mapCompany(raw: unknown): DirectoryCompany | null {
     representatives: repsRaw
       .map(mapRepresentative)
       .filter((item): item is DirectoryRepresentative => Boolean(item)),
+    products: productsRaw
+      .map(mapProduct)
+      .filter((item): item is DirectoryProduct => Boolean(item)),
   }
 }
 

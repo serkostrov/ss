@@ -21,6 +21,8 @@ export type RepresentativeInput = {
   position?: string | null
   phone?: string | null
   email?: string | null
+  telegram_username?: string | null
+  max_username?: string | null
   /** Kept for DB RPC compatibility; always true from app forms. */
   pd_consent?: boolean
   is_primary?: boolean
@@ -59,10 +61,13 @@ const REPRESENTATIVE_SELECT = `
   position,
   phone,
   email,
+  telegram_username,
+  max_username,
   pd_consent,
   pd_consent_date,
   is_primary,
   is_active,
+  show_contacts_to_members,
   created_at,
   updated_at,
   company:companies (
@@ -80,7 +85,7 @@ type QueryResult<T> = {
   error: { message: string; code?: string; details?: string; hint?: string } | null
 }
 
-type RawRepresentativeRow = TableRow<'representatives'> & {
+type RawRepresentativeRow = Omit<TableRow<'representatives'>, 'messenger_username'> & {
   company: RepresentativeCompanyRef | RepresentativeCompanyRef[] | null
   user: { id: string } | { id: string }[] | null
 }
@@ -106,10 +111,14 @@ function normalize(row: RawRepresentativeRow): Representative {
     position: row.position,
     phone: row.phone,
     email: row.email,
+    messenger_username: null,
+    telegram_username: row.telegram_username,
+    max_username: row.max_username,
     pd_consent: row.pd_consent,
     pd_consent_date: row.pd_consent_date,
     is_primary: row.is_primary,
     is_active: row.is_active,
+    show_contacts_to_members: row.show_contacts_to_members,
     created_at: row.created_at,
     updated_at: row.updated_at,
     company: company ?? null,
@@ -188,9 +197,13 @@ export const representativesService = {
       if (safe) {
         const pattern = `%${safe}%`
         query = query.or(
-          [`full_name.ilike."${pattern}"`, `email.ilike."${pattern}"`, `phone.ilike."${pattern}"`].join(
-            ',',
-          ),
+          [
+            `full_name.ilike."${pattern}"`,
+            `email.ilike."${pattern}"`,
+            `phone.ilike."${pattern}"`,
+            `telegram_username.ilike."${pattern}"`,
+            `max_username.ilike."${pattern}"`,
+          ].join(','),
         )
       }
     }
@@ -255,6 +268,8 @@ export const representativesService = {
       p_position: input.position ?? null,
       p_phone: input.phone ?? null,
       p_email: input.email ?? null,
+      p_telegram_username: input.telegram_username ?? null,
+      p_max_username: input.max_username ?? null,
       p_pd_consent: input.pd_consent ?? true,
       p_is_primary: input.is_primary ?? false,
       p_is_active: input.is_active ?? true,
@@ -291,6 +306,8 @@ export const representativesService = {
       position: current.position,
       phone: current.phone,
       email: current.email,
+      telegram_username: current.telegram_username,
+      max_username: current.max_username,
       pd_consent: current.pd_consent,
       is_primary: isActive ? current.is_primary : false,
       is_active: isActive,

@@ -32,6 +32,36 @@ export const confirmRegistrationSchema = z
     position: z.string().trim().max(120).optional(),
     phone: z.string().trim().max(32).optional(),
     email: z.string().trim().optional(),
+    telegramUsername: z
+      .string()
+      .trim()
+      .optional()
+      .or(z.literal(''))
+      .refine(
+        (value) => {
+          if (!value) return true
+          const normalized = value.replace(/^@+/, '')
+          return /^[A-Za-z0-9_.]{2,64}$/.test(normalized)
+        },
+        {
+          message: 'Латиница, цифры, _ и точка; можно с @ или без (от 2 символов)',
+        },
+      ),
+    maxUsername: z
+      .string()
+      .trim()
+      .optional()
+      .or(z.literal(''))
+      .refine(
+        (value) => {
+          if (!value) return true
+          const normalized = value.replace(/^@+/, '')
+          return /^[A-Za-z0-9_.]{2,64}$/.test(normalized)
+        },
+        {
+          message: 'Латиница, цифры, _ и точка; можно с @ или без (от 2 символов)',
+        },
+      ),
     isPrimary: z.boolean(),
   })
   .superRefine((values, ctx) => {

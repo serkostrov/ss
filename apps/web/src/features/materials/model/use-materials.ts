@@ -19,6 +19,7 @@ function listKey(filters: MaterialsListFilters) {
     search: filters.search?.trim() || '',
     status: filters.status ?? 'all',
     levelId: filters.levelId?.trim() || '',
+    categoryId: filters.categoryId?.trim() || '',
   })
 }
 
@@ -175,6 +176,7 @@ export function toMaterialSectionInput(values: {
   content?: string
   isPublished: boolean
   levelIds: string[]
+  categoryId?: string
 }): MaterialSectionInput {
   return {
     title: values.title,
@@ -183,6 +185,7 @@ export function toMaterialSectionInput(values: {
     content: values.content || null,
     is_published: values.isPublished,
     level_ids: values.levelIds,
+    category_id: values.categoryId || null,
   }
 }
 

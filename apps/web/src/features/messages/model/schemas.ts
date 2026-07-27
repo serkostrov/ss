@@ -1,4 +1,4 @@
-import type { DeliveryStatus, MessageSource } from '@shared/api'
+import type { DeliveryStatus, MessageContentType, MessageSource } from '@shared/api'
 
 export function messageSourceLabel(source: MessageSource | 'all'): string {
   switch (source) {
@@ -37,6 +37,21 @@ export function relayStatusLabel(status: 'pending' | 'sent' | 'failed'): string 
   }
 }
 
+export function messageContentTypeLabel(type: MessageContentType): string {
+  switch (type) {
+    case 'photo':
+      return 'Фото'
+    case 'video':
+      return 'Видео'
+    case 'document':
+      return 'Документ'
+    case 'other':
+      return 'Вложение'
+    default:
+      return 'Текст'
+  }
+}
+
 export function formatMessageDate(value: string | null | undefined): string {
   if (!value) return '—'
   try {
@@ -47,6 +62,38 @@ export function formatMessageDate(value: string | null | undefined): string {
   } catch {
     return value
   }
+}
+
+export function formatMessageTime(value: string | null | undefined): string {
+  if (!value) return ''
+  try {
+    return new Intl.DateTimeFormat('ru-RU', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(value))
+  } catch {
+    return ''
+  }
+}
+
+export function formatMessageDay(value: string | null | undefined): string {
+  if (!value) return ''
+  try {
+    return new Intl.DateTimeFormat('ru-RU', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(new Date(value))
+  } catch {
+    return value
+  }
+}
+
+export function dayKey(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toISOString().slice(0, 10)
 }
 
 export function truncateMessageText(text: string, max = 120): string {

@@ -12,4 +12,7 @@ export {
   formatAuditDate,
   auditActorLabel,
   formatAuditPayload,
+  actionLabel,
+  entityTypeLabel,
+  entityDisplay,
 } from './model/schemas'

@@ -38,6 +38,7 @@ export const routes = {
     blocked: '/cabinet/blocked',
     company: '/cabinet/company',
     directory: '/cabinet/directory',
+    messages: '/cabinet/messages',
     materials: '/cabinet/materials',
     material: (slug: string) => `/cabinet/materials/${slug}`,
     polls: '/cabinet/polls',

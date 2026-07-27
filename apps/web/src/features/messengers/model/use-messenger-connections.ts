@@ -1,4 +1,5 @@
 import {
+  messengerBotChannelsService,
   messengerConnectionsService,
   queryKeys,
   useSupabaseMutation,
@@ -24,6 +25,14 @@ export function useMessengerConnections(workGroupId: string) {
     queryKeys.workGroups.messengers(workGroupId),
     () => messengerConnectionsService.listByWorkGroup(workGroupId),
     { ensureFreshSession: true },
+  )
+}
+
+export function useMessengerBotChannels(platform: MessengerPlatform, enabled = true) {
+  return useSupabaseQuery(
+    queryKeys.workGroups.botChannels(platform),
+    () => messengerBotChannelsService.listActiveChannels(platform),
+    { ensureFreshSession: true, enabled },
   )
 }
 

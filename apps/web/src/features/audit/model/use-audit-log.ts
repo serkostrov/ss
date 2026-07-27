@@ -9,7 +9,7 @@ import {
 import { downloadCsv, slugifyFilename } from '@shared/lib/csv'
 import { notify } from '@shared/lib/notify'
 
-import { auditActorLabel, formatAuditDate, formatAuditPayload } from './schemas'
+import { auditActorLabel, actionLabel, entityTypeLabel, formatAuditDate, formatAuditPayload } from './schemas'
 
 function listKey(filters: AuditLogListFilters) {
   return queryKeys.audit.list({
@@ -60,8 +60,8 @@ export function buildAuditCsvRows(entries: AuditLogEntry[]): Array<Array<string 
     ['Когда', 'Действие', 'Сущность', 'ID сущности', 'Актор', 'Email', 'Payload'],
     ...entries.map((entry) => [
       formatAuditDate(entry.created_at),
-      entry.action,
-      entry.entity_type,
+      actionLabel(entry.action),
+      entityTypeLabel(entry.entity_type),
       entry.entity_id ?? '',
       auditActorLabel(entry),
       entry.actor?.email ?? '',

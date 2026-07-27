@@ -9,6 +9,22 @@ export type RepresentativePrimaryFilter = z.infer<typeof representativePrimaryFi
 const optionalText = (max: number) =>
   z.string().trim().max(max, `Не более ${max} символов`).optional().or(z.literal(''))
 
+const optionalMessengerUsername = z
+  .string()
+  .trim()
+  .optional()
+  .or(z.literal(''))
+  .refine(
+    (value) => {
+      if (!value) return true
+      const normalized = value.replace(/^@+/, '')
+      return /^[A-Za-z0-9_.]{2,64}$/.test(normalized)
+    },
+    {
+      message: 'Латиница, цифры, _ и точка; можно с @ или без (от 2 символов)',
+    },
+  )
+
 export const representativeFormSchema = z
   .object({
     companyId: z.string().uuid('Выберите компанию'),
@@ -27,6 +43,8 @@ export const representativeFormSchema = z
       .refine((value) => !value || z.string().email().safeParse(value).success, {
         message: 'Некорректный email',
       }),
+    telegramUsername: optionalMessengerUsername,
+    maxUsername: optionalMessengerUsername,
     isPrimary: z.boolean(),
     isActive: z.boolean(),
   })

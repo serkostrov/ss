@@ -105,7 +105,14 @@ export function CompanyRepresentativesPanel({
                         {rep.position || 'Должность не указана'}
                       </p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {[rep.email, rep.phone].filter(Boolean).join(' · ') || 'Контакты не указаны'}
+                        {[
+                          rep.email,
+                          rep.phone,
+                          rep.telegram_username ? `TG @${rep.telegram_username}` : null,
+                          rep.max_username ? `Max @${rep.max_username}` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ') || 'Контакты не указаны'}
                       </p>
                       <StatusBadge
                         status={rep.is_active ? 'active' : 'archived'}

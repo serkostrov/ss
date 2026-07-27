@@ -31,13 +31,25 @@ export const queryKeys = {
   },
   materials: {
     all: ['apss', 'materials'] as const,
-    list: (filters: { search?: string; status?: string; levelId?: string }) =>
-      ['apss', 'materials', 'list', filters] as const,
+    list: (filters: {
+      search?: string
+      status?: string
+      levelId?: string
+      categoryId?: string
+    }) => ['apss', 'materials', 'list', filters] as const,
     detail: (id: string) => ['apss', 'materials', id] as const,
     bySlug: (slug: string) => ['apss', 'materials', 'slug', slug] as const,
     documents: (sectionId: string) => ['apss', 'materials', 'documents', sectionId] as const,
     cabinetList: ['apss', 'materials', 'cabinet', 'list'] as const,
     cabinetBySlug: (slug: string) => ['apss', 'materials', 'cabinet', 'slug', slug] as const,
+    categories: ['apss', 'materials', 'categories'] as const,
+    categoriesList: (filters: { search?: string; active?: string }) =>
+      ['apss', 'materials', 'categories', 'list', filters] as const,
+    categoryUsage: (id: string) => ['apss', 'materials', 'categories', 'usage', id] as const,
+  },
+  companyProducts: {
+    all: ['apss', 'company-products'] as const,
+    byCompany: (companyId: string) => ['apss', 'company-products', 'company', companyId] as const,
   },
   workGroups: {
     all: ['apss', 'work-groups'] as const,
@@ -47,6 +59,7 @@ export const queryKeys = {
     members: (id: string) => ['apss', 'work-groups', id, 'members'] as const,
     messengers: (id: string) => ['apss', 'work-groups', id, 'messengers'] as const,
     messages: (id: string) => ['apss', 'work-groups', id, 'messages'] as const,
+    botChannels: (platform: string) => ['apss', 'messenger-bot-channels', platform] as const,
     links: (id: string) => ['apss', 'work-groups', id, 'links'] as const,
     categories: ['apss', 'work-groups', 'categories'] as const,
     categoriesList: (filters: { search?: string; active?: string }) =>

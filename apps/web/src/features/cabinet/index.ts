@@ -6,6 +6,7 @@ export { CabinetMaterialDetailsPanel } from './ui/cabinet-material-details-panel
 export { CabinetDocumentsPanel } from './ui/cabinet-documents-panel'
 export { CabinetPollsPanel } from './ui/cabinet-polls-panel'
 export { CabinetPollBallotPanel } from './ui/cabinet-poll-ballot-panel'
+export { CabinetMessagesPanel } from './ui/cabinet-messages-panel'
 
 export {
   useCabinetMaterials,

@@ -1,0 +1,247 @@
+import type { DbClient } from '../db.js'
+import { markBotChannelInactive, upsertBotChannel } from '../pipeline/channels.js'
+import { ingestChannelMessage } from '../pipeline/ingest.js'
+import {
+  contentPlaceholder,
+  log,
+  type ChatKind,
+  type MessageContentType,
+} from '../types.js'
+
+type MaxUser = {
+  user_id?: number
+  name?: string
+  username?: string
+  first_name?: string
+  last_name?: string
+}
+
+type MaxChat = {
+  chat_id?: number
+  type?: string
+  title?: string
+  link?: string
+}
+
+type MaxAttachment = {
+  type?: string
+}
+
+type MaxMessageBody = {
+  mid?: string
+  text?: string
+  attachments?: MaxAttachment[]
+}
+
+type MaxMessage = {
+  sender?: MaxUser
+  recipient?: {
+    chat_id?: number
+    chat_type?: string
+  }
+  timestamp?: number
+  body?: MaxMessageBody
+  link?: unknown
+}
+
+export type MaxUpdate = {
+  update_type?: string
+  timestamp?: number
+  chat_id?: number
+  user?: MaxUser
+  message?: MaxMessage
+  chat?: MaxChat
+}
+
+function mapChatKind(type: string | undefined): ChatKind {
+  const normalized = (type ?? '').toLowerCase()
+  if (normalized === 'channel') return 'channel'
+  if (normalized === 'chat' || normalized === 'group') return 'group'
+  if (normalized === 'supergroup') return 'supergroup'
+  return 'other'
+}
+
+function detectContentType(message: MaxMessage): MessageContentType {
+  const attachments = message.body?.attachments ?? []
+  const types = attachments.map((item) => (item.type ?? '').toLowerCase())
+  if (types.some((t) => t.includes('image') || t === 'photo')) return 'photo'
+  if (types.some((t) => t.includes('video'))) return 'video'
+  if (types.some((t) => t.includes('file') || t === 'document')) return 'document'
+  if ((message.body?.text ?? '').trim()) return 'text'
+  if (attachments.length) return 'other'
+  return 'text'
+}
+
+function resolveText(message: MaxMessage, contentType: MessageContentType): string {
+  const body = (message.body?.text ?? '').trim()
+  if (body) return body
+  return contentPlaceholder(contentType) || '[Сообщение]'
+}
+
+function resolveAuthor(message: MaxMessage): { name: string | null; externalId: string | null } {
+  const sender = message.sender
+  if (!sender) return { name: null, externalId: null }
+  const name =
+    sender.name ||
+    [sender.first_name, sender.last_name].filter(Boolean).join(' ') ||
+    sender.username ||
+    null
+  return {
+    name,
+    externalId: sender.user_id != null ? String(sender.user_id) : null,
+  }
+}
+
+function chatIdFromUpdate(update: MaxUpdate): string | null {
+  const fromMessage = update.message?.recipient?.chat_id
+  if (fromMessage != null) return String(fromMessage)
+  if (update.chat_id != null) return String(update.chat_id)
+  if (update.chat?.chat_id != null) return String(update.chat.chat_id)
+  return null
+}
+
+function chatTypeFromUpdate(update: MaxUpdate): string | undefined {
+  return update.message?.recipient?.chat_type ?? update.chat?.type
+}
+
+async function handleBotMembership(
+  db: DbClient,
+  update: MaxUpdate,
+  isActive: boolean,
+): Promise<void> {
+  const chatId = chatIdFromUpdate(update)
+  if (!chatId) return
+
+  const kind = mapChatKind(chatTypeFromUpdate(update))
+  if (kind !== 'channel' && !isActive) {
+    await markBotChannelInactive(db, 'max', chatId)
+    return
+  }
+
+  await upsertBotChannel(db, {
+    platform: 'max',
+    externalChatId: chatId,
+    title: update.chat?.title ?? null,
+    username: null,
+    chatKind: kind === 'other' && isActive ? 'channel' : kind,
+    isActive,
+  })
+
+  log('info', 'Max bot membership', { chatId, kind, isActive })
+}
+
+async function handleMessageCreated(db: DbClient, update: MaxUpdate, isEdit: boolean): Promise<void> {
+  const message = update.message
+  if (!message) return
+
+  const chatId = chatIdFromUpdate(update)
+  if (!chatId) return
+
+  const kind = mapChatKind(chatTypeFromUpdate(update))
+  // Only ingest channel posts; still refresh catalog when we see a channel.
+  if (kind !== 'channel') {
+    if (kind === 'group' || kind === 'supergroup') {
+      await upsertBotChannel(db, {
+        platform: 'max',
+        externalChatId: chatId,
+        title: update.chat?.title ?? null,
+        chatKind: kind,
+        isActive: true,
+      })
+    }
+    return
+  }
+
+  await upsertBotChannel(db, {
+    platform: 'max',
+    externalChatId: chatId,
+    title: update.chat?.title ?? null,
+    chatKind: 'channel',
+    isActive: true,
+  })
+
+  const mid = message.body?.mid
+  if (!mid) {
+    log('warn', 'Max message without mid', { chatId })
+    return
+  }
+
+  const contentType = detectContentType(message)
+  const author = resolveAuthor(message)
+  const sentAtMs = message.timestamp ?? update.timestamp ?? Date.now()
+
+  const result = await ingestChannelMessage(db, {
+    platform: 'max',
+    externalChatId: chatId,
+    externalMessageId: mid,
+    authorName: author.name,
+    authorExternalId: author.externalId,
+    text: resolveText(message, contentType),
+    contentType,
+    payload: {
+      max: {
+        attachment_types: (message.body?.attachments ?? []).map((item) => item.type ?? null),
+      },
+    },
+    sentAt: new Date(sentAtMs).toISOString(),
+    isEdit,
+  })
+
+  log('info', 'Max channel message processed', { chatId, mid, result, isEdit })
+}
+
+export async function handleMaxUpdate(db: DbClient, update: MaxUpdate): Promise<void> {
+  const type = (update.update_type ?? '').toLowerCase()
+
+  if (type === 'bot_added') {
+    await handleBotMembership(db, update, true)
+    return
+  }
+  if (type === 'bot_removed' || type === 'bot_stopped') {
+    await handleBotMembership(db, update, false)
+    return
+  }
+  if (type === 'message_created') {
+    await handleMessageCreated(db, update, false)
+    return
+  }
+  if (type === 'message_edited') {
+    await handleMessageCreated(db, update, true)
+  }
+}
+
+export async function registerMaxWebhook(
+  token: string,
+  baseUrl: string,
+  secret: string | null,
+): Promise<void> {
+  const url = `${baseUrl}/webhooks/max`
+  const body: Record<string, unknown> = {
+    url,
+    update_types: [
+      'message_created',
+      'message_edited',
+      'bot_added',
+      'bot_removed',
+      'bot_started',
+      'bot_stopped',
+    ],
+  }
+  if (secret) body.secret = secret
+
+  const response = await fetch('https://platform-api.max.ru/subscriptions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(`Max subscriptions failed: ${response.status} ${text}`)
+  }
+
+  log('info', 'Max webhook registered', { url })
+}

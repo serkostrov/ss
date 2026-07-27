@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 
+import { CompanyProductsPanel } from '@features/company-products'
 import { useAuth } from '@app/providers'
 import { normalizeInnDigits } from '@shared/api'
 import {
@@ -145,6 +146,12 @@ export function CabinetCompanyPanel() {
           </Button>
         </div>
       </div>
+
+      {companyId ? (
+        <div className="max-w-2xl border-t pt-6">
+          <CompanyProductsPanel companyId={companyId} />
+        </div>
+      ) : null}
     </div>
   )
 }

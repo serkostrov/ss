@@ -14,7 +14,14 @@ import {
   type FilterFieldConfig,
 } from '@shared/ui'
 
-import { auditActorLabel, formatAuditDate, formatAuditPayload } from '../model/schemas'
+import {
+  actionLabel,
+  auditActorLabel,
+  entityDisplay,
+  entityTypeLabel,
+  formatAuditDate,
+  formatAuditPayload,
+} from '../model/schemas'
 import {
   exportAuditLogCsv,
   useAuditActionOptions,
@@ -60,7 +67,7 @@ export function AuditLogPanel() {
       id: 'search',
       label: 'Поиск',
       type: 'search',
-      placeholder: 'Действие, тип, ID…',
+      placeholder: 'Действие, сущность…',
       value: search,
       onChange: setSearch,
     },
@@ -72,7 +79,10 @@ export function AuditLogPanel() {
       onChange: setAction,
       options: [
         { value: 'all', label: 'Все действия' },
-        ...(actionsQuery.data ?? []).map((value) => ({ value, label: value })),
+        ...(actionsQuery.data ?? []).map((value) => ({
+          value,
+          label: actionLabel(value),
+        })),
       ],
     },
     {
@@ -83,7 +93,10 @@ export function AuditLogPanel() {
       onChange: setEntityType,
       options: [
         { value: 'all', label: 'Все сущности' },
-        ...(entityTypesQuery.data ?? []).map((value) => ({ value, label: value })),
+        ...(entityTypesQuery.data ?? []).map((value) => ({
+          value,
+          label: entityTypeLabel(value),
+        })),
       ],
     },
   ]
@@ -103,22 +116,25 @@ export function AuditLogPanel() {
         accessorKey: 'action',
         header: 'Действие',
         cell: ({ row }) => (
-          <Badge variant="outline" className="font-mono font-normal">
-            {row.original.action}
+          <Badge variant="outline" className="font-normal">
+            {actionLabel(row.original.action)}
           </Badge>
         ),
       },
       {
         accessorKey: 'entity_type',
         header: 'Сущность',
-        cell: ({ row }) => (
-          <div className="min-w-0">
-            <p className="font-medium">{row.original.entity_type}</p>
-            <p className="truncate font-mono text-xs text-muted-foreground">
-              {row.original.entity_id ?? '—'}
-            </p>
-          </div>
-        ),
+        cell: ({ row }) => {
+          const display = entityDisplay(row.original)
+          return (
+            <div className="min-w-0">
+              <p className="font-medium">{display.title}</p>
+              {display.subtitle ? (
+                <p className="truncate text-xs text-muted-foreground">{display.subtitle}</p>
+              ) : null}
+            </div>
+          )
+        },
       },
       {
         id: 'actor',
@@ -136,7 +152,10 @@ export function AuditLogPanel() {
         id: 'payload',
         header: 'Детали',
         cell: ({ row }) => (
-          <p className="max-w-[20rem] truncate font-mono text-xs text-muted-foreground">
+          <p
+            className="max-w-[22rem] truncate text-sm text-muted-foreground"
+            title={formatAuditPayload(row.original.payload)}
+          >
             {formatAuditPayload(row.original.payload)}
           </p>
         ),

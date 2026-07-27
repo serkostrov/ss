@@ -1,4 +1,4 @@
-import { MessagesHistoryPanel } from './messages-history-panel'
+import { MessagesFeedPanel } from './messages-feed-panel'
 
 import type { MessageSource } from '@shared/api'
 
@@ -12,10 +12,11 @@ export function WorkGroupMessagesPanel({
   lockedSource,
 }: WorkGroupMessagesPanelProps) {
   return (
-    <MessagesHistoryPanel
+    <MessagesFeedPanel
       workGroupId={workGroupId}
       lockedSource={lockedSource}
       showPageHeader={false}
+      hideGroupFilter
     />
   )
 }

@@ -51,11 +51,7 @@ export function WorkGroupSectionTabs({ workGroupId }: WorkGroupSectionTabsProps)
       </TabsList>
 
       <TabsContent value="chats">
-        <PlatformTabs>
-          {(platform) => (
-            <WorkGroupMessengerConnectionsPanel workGroupId={workGroupId} platform={platform} />
-          )}
-        </PlatformTabs>
+        <WorkGroupMessengerConnectionsPanel workGroupId={workGroupId} />
       </TabsContent>
 
       <TabsContent value="messages">
