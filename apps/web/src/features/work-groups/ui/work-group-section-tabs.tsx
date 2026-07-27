@@ -11,13 +11,19 @@ type WorkGroupSectionTabsProps = {
 export function WorkGroupSectionTabs({ workGroupId }: WorkGroupSectionTabsProps) {
   return (
     <Tabs defaultValue="chats">
-      <TabsList>
-        <TabsTrigger value="chats">Чаты</TabsTrigger>
-        <TabsTrigger value="members">Участники</TabsTrigger>
-        <TabsTrigger value="links">Ссылки</TabsTrigger>
+      <TabsList className="h-9 w-auto gap-0.5 rounded-lg p-0.5">
+        <TabsTrigger value="chats" className="h-8 rounded-md px-2.5 text-sm">
+          Чаты
+        </TabsTrigger>
+        <TabsTrigger value="members" className="h-8 rounded-md px-2.5 text-sm">
+          Участники
+        </TabsTrigger>
+        <TabsTrigger value="links" className="h-8 rounded-md px-2.5 text-sm">
+          Ссылки
+        </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="chats" className="mt-4 data-[state=inactive]:hidden">
+      <TabsContent value="chats" className="mt-3 data-[state=inactive]:hidden">
         <WorkGroupMessengerWorkspace workGroupId={workGroupId} />
       </TabsContent>
 

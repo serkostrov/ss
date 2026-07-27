@@ -44,6 +44,7 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 VITE_APP_URL=https://app.example.com
 VITE_TELEGRAM_BOT_URL=https://t.me/YourBot
 VITE_MAX_BOT_URL=https://max.ru/YourBot
+VITE_MESSENGER_API_URL=https://messenger.example.com
 ```
 
 6. **Не добавляйте** `MESSENGER_UPSTREAM`.
@@ -52,6 +53,7 @@ VITE_MAX_BOT_URL=https://max.ru/YourBot
 Проверка:
 
 - `https://app.example.com/env.js` — реальные URL, не `${VITE_...}`
+- отправка сообщения из админки идёт на `VITE_MESSENGER_API_URL/v1/outbound`
 - В логах старта: `MESSENGER_UPSTREAM empty — /webhooks/ proxy disabled`
 - Открываются `/admin`, `/cabinet`
 
@@ -133,14 +135,15 @@ MESSENGER_UPSTREAM=http://messenger:8787
 VITE_APP_URL=https://app.example.com
 VITE_TELEGRAM_BOT_URL=https://t.me/YourBot
 VITE_MAX_BOT_URL=https://max.ru/YourBot
+VITE_MESSENGER_API_URL=https://messenger.example.com
 
 # messenger
-PUBLIC_WEBHOOK_BASE_URL=https://app.example.com
+PUBLIC_WEBHOOK_BASE_URL=https://messenger.example.com
 ```
 
 Web nginx проксирует `/webhooks/` → messenger. Домен у web один; у messenger отдельный публичный домен не обязателен.
 
-Для Dokploy проще и надёжнее **два отдельных Application** (разделы 1–2).
+Для Dokploy проще и надёжнее **два отдельных Application** (разделы 1–2). Для отправки сообщений из админки задайте **`VITE_MESSENGER_API_URL`** на HTTPS-домен messenger.
 
 ---
 

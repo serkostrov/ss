@@ -11,6 +11,7 @@ NGINX_CONF="/etc/nginx/conf.d/default.conf"
 : "${VITE_APP_URL:=}"
 : "${VITE_TELEGRAM_BOT_URL:=}"
 : "${VITE_MAX_BOT_URL:=}"
+: "${VITE_MESSENGER_API_URL:=}"
 : "${MESSENGER_UPSTREAM:=}"
 
 if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
@@ -24,15 +25,15 @@ if [ -z "$VITE_APP_URL" ]; then
   VITE_APP_URL=""
 fi
 
-export VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY VITE_APP_URL VITE_TELEGRAM_BOT_URL VITE_MAX_BOT_URL
+export VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY VITE_APP_URL VITE_TELEGRAM_BOT_URL VITE_MAX_BOT_URL VITE_MESSENGER_API_URL
 
 # Only substitute our vars so `$` elsewhere is untouched
-envsubst '${VITE_SUPABASE_URL} ${VITE_SUPABASE_ANON_KEY} ${VITE_APP_URL} ${VITE_TELEGRAM_BOT_URL} ${VITE_MAX_BOT_URL}' \
+envsubst '${VITE_SUPABASE_URL} ${VITE_SUPABASE_ANON_KEY} ${VITE_APP_URL} ${VITE_TELEGRAM_BOT_URL} ${VITE_MAX_BOT_URL} ${VITE_MESSENGER_API_URL}' \
   < "$TEMPLATE" > "$TARGET"
 
 echo "Wrote runtime env to $TARGET"
 
-# Optional: proxy /webhooks/* and /api/messenger/* to messenger worker (only when upstream is configured).
+# Optional: proxy /webhooks/* and override /api/messenger/* to messenger worker.
 # Uses a variable + Docker DNS resolver so nginx can start even if messenger is not up yet.
 if [ -n "$MESSENGER_UPSTREAM" ]; then
   webhook_block=$(cat <<EOF
@@ -49,7 +50,7 @@ if [ -n "$MESSENGER_UPSTREAM" ]; then
     proxy_read_timeout 30s;
   }
 
-  # Messenger outbound API (admin send from SPA)
+  # Messenger outbound API (admin send from SPA) — overrides stub in nginx.conf
   location /api/messenger/ {
     resolver 127.0.0.11 valid=10s ipv6=off;
     set \$messenger_upstream "${MESSENGER_UPSTREAM}";
@@ -68,6 +69,17 @@ if [ -n "$MESSENGER_UPSTREAM" ]; then
 EOF
 )
   tmp=$(mktemp)
+  # Remove the stub /api/messenger/ block, then inject proxy locations before SPA.
+  awk '
+    BEGIN { skip=0 }
+    /# Messenger outbound stub/ { skip=1; next }
+    skip && /^  # Optional messenger webhook/ { skip=0 }
+    skip { next }
+    { print }
+  ' "$NGINX_CONF" > "$tmp"
+  mv "$tmp" "$NGINX_CONF"
+
+  tmp=$(mktemp)
   awk -v block="$webhook_block" '
     /# SPA: React Router/ && !done {
       printf "%s", block
@@ -76,9 +88,9 @@ EOF
     { print }
   ' "$NGINX_CONF" > "$tmp"
   mv "$tmp" "$NGINX_CONF"
-  echo "Enabled /webhooks/ proxy → $MESSENGER_UPSTREAM"
+  echo "Enabled /webhooks/ and /api/messenger/ proxy → $MESSENGER_UPSTREAM"
 else
-  echo "MESSENGER_UPSTREAM empty — /webhooks/ proxy disabled (set it only when messenger is on the same Docker network)."
+  echo "MESSENGER_UPSTREAM empty — use VITE_MESSENGER_API_URL for outbound (separate messenger domain)."
 fi
 
 # FNS INN lookup (same-origin /api/company-by-inn via nginx)

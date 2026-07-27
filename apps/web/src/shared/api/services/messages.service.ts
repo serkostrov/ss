@@ -188,6 +188,50 @@ export const messagesService = {
     const row = assertResult(result)
     return row ? normalize(row) : null
   },
+
+  /**
+   * Live updates for a bound chat thread (INSERT/UPDATE/DELETE).
+   * Requires `messages` in `supabase_realtime` publication.
+   */
+  subscribeChat(
+    input: {
+      workGroupId: string
+      source: MessageSource
+      externalChatId: string
+    },
+    onChange: () => void,
+  ): () => void {
+    const channelName = `messages:${input.workGroupId}:${input.source}:${input.externalChatId}`
+    const channel = supabaseClient
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages',
+          filter: `work_group_id=eq.${input.workGroupId}`,
+        },
+        (payload) => {
+          const row = (payload.new ?? payload.old) as {
+            source?: string
+            external_chat_id?: string
+          } | null
+          if (!row) {
+            onChange()
+            return
+          }
+          if (row.source && row.source !== input.source) return
+          if (row.external_chat_id && row.external_chat_id !== input.externalChatId) return
+          onChange()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      void supabaseClient.removeChannel(channel)
+    }
+  },
 }
 
 export type { DeliveryStatus, MessageSource, RelayStatus }

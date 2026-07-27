@@ -13,6 +13,7 @@ import {
   messageSourceLabel,
 } from '../model/schemas'
 import { useMessages } from '../model/use-messages'
+import { useChatMessagesRealtime } from '../model/use-messages-realtime'
 import { ChatComposer } from './chat-composer'
 
 type ChatThreadPanelProps = {
@@ -49,54 +50,125 @@ function groupByDay(items: Message[]): DayGroup[] {
   return [...map.values()]
 }
 
-function AttachmentBlock({ type }: { type: MessageContentType }) {
+function AttachmentBlock({
+  type,
+  outbound,
+}: {
+  type: MessageContentType
+  outbound?: boolean
+}) {
   if (type === 'text') return null
   const Icon = type === 'photo' ? ImageIcon : type === 'video' ? Video : FileText
   return (
-    <div className="mb-2 flex items-center gap-2 rounded-xl border border-dashed bg-background/60 px-3 py-2 text-sm text-muted-foreground">
-      <Icon className="size-4 shrink-0" />
+    <div
+      className={cn(
+        'mb-1.5 flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium',
+        outbound
+          ? 'bg-primary-foreground/15 text-primary-foreground/90'
+          : 'bg-muted/80 text-muted-foreground',
+      )}
+    >
+      <Icon className="size-3.5 shrink-0" />
       <span>{messageContentTypeLabel(type)}</span>
     </div>
   )
 }
 
-function MessageBubble({ message }: { message: Message }) {
-  const isOutbound = Boolean(
+function authorInitial(name: string | null | undefined): string {
+  const trimmed = name?.trim()
+  if (!trimmed) return '?'
+  return trimmed.charAt(0).toUpperCase()
+}
+
+function isOutboundMessage(message: Message): boolean {
+  return Boolean(
     message.payload &&
       typeof message.payload === 'object' &&
       !Array.isArray(message.payload) &&
       (message.payload as { outbound?: boolean }).outbound,
   )
-  const isTelegram = message.source === 'telegram'
+}
+
+function MessageBubble({
+  message,
+  compactTop,
+}: {
+  message: Message
+  compactTop?: boolean
+}) {
+  const isOutbound = isOutboundMessage(message)
   const hasMedia = message.content_type !== 'text'
   const textLooksLikePlaceholder = /^\[.+\]$/.test(message.text.trim())
+  const showText = Boolean(message.text && !(hasMedia && textLooksLikePlaceholder))
+  const showAuthor = Boolean(message.author_name && !isOutbound && !compactTop)
 
   return (
-    <article
+    <div
       className={cn(
-        'max-w-[min(100%,28rem)] rounded-2xl px-3.5 py-2.5 shadow-sm',
-        isOutbound
-          ? 'ml-auto rounded-br-md bg-primary text-primary-foreground'
-          : isTelegram
-            ? 'rounded-bl-md bg-sky-100 text-sky-950 dark:bg-sky-950/50 dark:text-sky-50'
-            : 'rounded-bl-md bg-violet-100 text-violet-950 dark:bg-violet-950/50 dark:text-violet-50',
+        'flex max-w-[min(92%,22rem)] gap-2 sm:max-w-[min(85%,26rem)]',
+        isOutbound ? 'ml-auto flex-row-reverse' : 'mr-auto',
       )}
     >
-      {message.author_name ? (
-        <p className={cn('mb-1 text-xs font-semibold', isOutbound ? 'opacity-90' : 'opacity-80')}>
-          {message.author_name}
-        </p>
+      {!isOutbound ? (
+        <div
+          className={cn(
+            'mt-auto flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold',
+            compactTop
+              ? 'invisible'
+              : 'bg-muted text-muted-foreground ring-1 ring-border/60',
+          )}
+          aria-hidden={compactTop}
+        >
+          {authorInitial(message.author_name)}
+        </div>
       ) : null}
-      {hasMedia ? <AttachmentBlock type={message.content_type} /> : null}
-      {message.text && !(hasMedia && textLooksLikePlaceholder) ? (
-        <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.text}</p>
-      ) : null}
-      <div className="mt-1 flex items-center justify-end gap-2">
-        <span className={cn('text-[10px] tabular-nums', isOutbound ? 'opacity-80' : 'opacity-60')}>
-          {formatMessageTime(message.sent_at)}
-        </span>
-      </div>
-    </article>
+
+      <article
+        className={cn(
+          'min-w-0 w-fit rounded-2xl px-3 py-2 text-sm shadow-xs',
+          isOutbound
+            ? 'rounded-br-md bg-primary text-primary-foreground'
+            : 'rounded-bl-md bg-card text-card-foreground ring-1 ring-border/70',
+        )}
+      >
+        {showAuthor ? (
+          <p className="mb-0.5 truncate text-[11px] font-semibold tracking-wide text-primary">
+            {message.author_name}
+          </p>
+        ) : null}
+
+        {hasMedia ? <AttachmentBlock type={message.content_type} outbound={isOutbound} /> : null}
+
+        {showText ? (
+          <div className="flex flex-wrap items-end gap-x-2 gap-y-0.5">
+            <p className="min-w-0 flex-1 whitespace-pre-wrap break-words leading-relaxed">
+              {message.text}
+            </p>
+            <time
+              dateTime={message.sent_at}
+              className={cn(
+                'ml-auto shrink-0 self-end pb-px text-[10px] leading-none tabular-nums',
+                isOutbound ? 'text-primary-foreground/70' : 'text-muted-foreground',
+              )}
+            >
+              {formatMessageTime(message.sent_at)}
+            </time>
+          </div>
+        ) : (
+          <div className="flex justify-end">
+            <time
+              dateTime={message.sent_at}
+              className={cn(
+                'text-[10px] leading-none tabular-nums',
+                isOutbound ? 'text-primary-foreground/70' : 'text-muted-foreground',
+              )}
+            >
+              {formatMessageTime(message.sent_at)}
+            </time>
+          </div>
+        )}
+      </article>
+    </div>
   )
 }
 
@@ -112,9 +184,11 @@ export function ChatThreadPanel({
   const [chunks, setChunks] = useState(1)
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const scrollerRef = useRef<HTMLDivElement | null>(null)
+  const stickToBottomRef = useRef(true)
 
   useEffect(() => {
     setChunks(1)
+    stickToBottomRef.current = true
   }, [workGroupId, source, externalChatId])
 
   const pageSize = Math.min(100, chunks * PAGE_CHUNK)
@@ -126,6 +200,13 @@ export function ChatThreadPanel({
     pageSize,
   })
 
+  useChatMessagesRealtime({
+    workGroupId,
+    source,
+    externalChatId,
+    enabled: Boolean(workGroupId && externalChatId),
+  })
+
   const items = query.data?.items ?? []
   const total = query.data?.total ?? 0
   const dayGroups = useMemo(() => groupByDay(items), [items])
@@ -134,9 +215,9 @@ export function ChatThreadPanel({
   useEffect(() => {
     const scroller = scrollerRef.current
     if (!scroller || query.isFetching) return
-    // Scroll only the thread pane — never the page (scrollIntoView was jumping up).
+    if (!stickToBottomRef.current) return
     scroller.scrollTop = scroller.scrollHeight
-  }, [items.length, query.isFetching, externalChatId])
+  }, [items.length, query.isFetching, externalChatId, query.dataUpdatedAt])
 
   return (
     <div className={cn('flex h-full min-h-0 flex-col', className)}>
@@ -154,6 +235,13 @@ export function ChatThreadPanel({
 
       <div
         ref={scrollerRef}
+        onScroll={() => {
+          const scroller = scrollerRef.current
+          if (!scroller) return
+          const distance =
+            scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight
+          stickToBottomRef.current = distance < 96
+        }}
         className={cn(
           'min-h-0 flex-1 overflow-y-auto bg-muted/20 px-3 py-4 sm:px-4',
           !query.isLoading && !query.isError && items.length === 0 && 'flex',
@@ -189,18 +277,33 @@ export function ChatThreadPanel({
           </div>
         ) : null}
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           {dayGroups.map((group) => (
-            <section key={group.key} className="space-y-3">
-              <div className="flex justify-center">
-                <span className="rounded-full bg-background/90 px-3 py-1 text-[11px] font-medium text-muted-foreground shadow-sm">
+            <section key={group.key} className="space-y-1">
+              <div className="sticky top-0 z-10 flex justify-center py-2">
+                <span className="rounded-full bg-background/95 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border/50 backdrop-blur">
                   {group.label}
                 </span>
               </div>
               <div className="flex flex-col gap-2">
-                {group.items.map((message) => (
-                  <MessageBubble key={message.id} message={message} />
-                ))}
+                {group.items.map((message, index) => {
+                  const prev = group.items[index - 1]
+                  const compactTop = Boolean(
+                    prev &&
+                      !isOutboundMessage(message) &&
+                      !isOutboundMessage(prev) &&
+                      (prev.author_external_id || prev.author_name) &&
+                      (prev.author_external_id ?? prev.author_name) ===
+                        (message.author_external_id ?? message.author_name),
+                  )
+                  return (
+                    <MessageBubble
+                      key={message.id}
+                      message={message}
+                      compactTop={compactTop}
+                    />
+                  )
+                })}
               </div>
             </section>
           ))}
@@ -213,7 +316,10 @@ export function ChatThreadPanel({
           workGroupId={workGroupId}
           platform={source}
           chatId={externalChatId}
-          onSent={() => void query.refetch()}
+          onSent={() => {
+            stickToBottomRef.current = true
+            void query.refetch()
+          }}
         />
       ) : null}
     </div>

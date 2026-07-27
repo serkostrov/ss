@@ -8,6 +8,7 @@ declare global {
       VITE_APP_URL?: string
       VITE_TELEGRAM_BOT_URL?: string
       VITE_MAX_BOT_URL?: string
+      VITE_MESSENGER_API_URL?: string
     }
   }
 }
@@ -30,6 +31,7 @@ const clientEnvSchema = z.object({
   VITE_APP_URL: optionalUrl,
   VITE_TELEGRAM_BOT_URL: optionalUrl,
   VITE_MAX_BOT_URL: optionalUrl,
+  VITE_MESSENGER_API_URL: optionalUrl,
   MODE: z.enum(['development', 'production', 'test']),
   DEV: z.boolean(),
   PROD: z.boolean(),
@@ -41,6 +43,8 @@ export type ClientEnv = {
   appUrl: string
   telegramBotUrl: string | null
   maxBotUrl: string | null
+  /** Public messenger worker origin (e.g. https://messenger.example.com). Empty → same-origin /api/messenger. */
+  messengerApiUrl: string | null
   mode: 'development' | 'production' | 'test'
   isDev: boolean
   isProd: boolean
@@ -87,6 +91,10 @@ export function getClientEnv(): ClientEnv {
       import.meta.env.VITE_TELEGRAM_BOT_URL,
     ),
     VITE_MAX_BOT_URL: pick(runtime.VITE_MAX_BOT_URL, import.meta.env.VITE_MAX_BOT_URL),
+    VITE_MESSENGER_API_URL: pick(
+      runtime.VITE_MESSENGER_API_URL,
+      import.meta.env.VITE_MESSENGER_API_URL,
+    ),
     MODE: import.meta.env.MODE,
     DEV: import.meta.env.DEV,
     PROD: import.meta.env.PROD,
@@ -104,6 +112,7 @@ export function getClientEnv(): ClientEnv {
     appUrl: data.VITE_APP_URL ?? (typeof window !== 'undefined' ? window.location.origin : ''),
     telegramBotUrl: data.VITE_TELEGRAM_BOT_URL ?? null,
     maxBotUrl: data.VITE_MAX_BOT_URL ?? null,
+    messengerApiUrl: data.VITE_MESSENGER_API_URL?.replace(/\/+$/, '') ?? null,
     mode: data.MODE,
     isDev: data.DEV,
     isProd: data.PROD,

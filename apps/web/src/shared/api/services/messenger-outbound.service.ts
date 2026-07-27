@@ -1,4 +1,5 @@
 import { ApiError } from '@shared/lib/errors'
+import { env } from '@shared/config'
 import { supabaseClient } from '../lib/client'
 import type { MessengerPlatform } from '../types/database'
 
@@ -33,9 +34,16 @@ function fileToBase64(file: File): Promise<string> {
   })
 }
 
+function outboundUrl(): string {
+  // Production (separate messenger domain): VITE_MESSENGER_API_URL=https://messenger.example.com
+  // Local / same-origin proxy: /api/messenger → worker :8787
+  const base = env.messengerApiUrl
+  if (base) return `${base}/v1/outbound`
+  return '/api/messenger/v1/outbound'
+}
+
 /**
  * Sends a message via messenger worker (`POST /v1/outbound`).
- * In local/dev use Vite proxy `/api/messenger` → :8787.
  */
 export const messengerOutboundService = {
   async send(input: MessengerOutboundInput): Promise<MessengerOutboundResult> {
@@ -56,21 +64,29 @@ export const messengerOutboundService = {
       })),
     )
 
-    const response = await fetch('/api/messenger/v1/outbound', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        platform: input.platform,
-        chatId: input.chatId,
-        workGroupId: input.workGroupId,
-        text: input.text,
-        authorName: input.authorName ?? 'АПСС',
-        files,
-      }),
-    })
+    let response: Response
+    try {
+      response = await fetch(outboundUrl(), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          platform: input.platform,
+          chatId: input.chatId,
+          workGroupId: input.workGroupId,
+          text: input.text,
+          authorName: input.authorName ?? 'АПСС',
+          files,
+        }),
+      })
+    } catch {
+      throw new ApiError(
+        'Messenger недоступен. Запустите worker или задайте VITE_MESSENGER_API_URL.',
+        { code: 'unknown' },
+      )
+    }
 
     const json = (await response.json().catch(() => null)) as {
       ok?: boolean
@@ -90,7 +106,11 @@ export const messengerOutboundService = {
                 ? 'Чат не привязан к группе'
                 : json?.error === 'file_too_large'
                   ? 'Файл слишком большой (макс. 8 МБ)'
-                  : json?.error ?? `Не удалось отправить (${response.status})`
+                  : json?.error === 'messenger_api_unavailable'
+                    ? 'Messenger API не проксируется. Задайте VITE_MESSENGER_API_URL на домен worker.'
+                    : response.status === 405
+                      ? 'Messenger API не настроен (405). Задайте VITE_MESSENGER_API_URL на HTTPS-домен messenger.'
+                      : json?.error ?? `Не удалось отправить (${response.status})`
       throw new ApiError(message, {
         code: response.status === 401 || response.status === 403 ? 'unauthorized' : 'unknown',
       })

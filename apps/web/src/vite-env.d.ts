@@ -6,6 +6,7 @@ interface ImportMetaEnv {
   readonly VITE_APP_URL?: string
   readonly VITE_TELEGRAM_BOT_URL?: string
   readonly VITE_MAX_BOT_URL?: string
+  readonly VITE_MESSENGER_API_URL?: string
   readonly MODE: 'development' | 'production' | 'test'
   readonly DEV: boolean
   readonly PROD: boolean
