@@ -17,15 +17,15 @@ export function WorkGroupSectionTabs({ workGroupId }: WorkGroupSectionTabsProps)
         <TabsTrigger value="links">Ссылки</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="chats" className="mt-4">
+      <TabsContent value="chats" className="mt-4 data-[state=inactive]:hidden">
         <WorkGroupMessengerWorkspace workGroupId={workGroupId} />
       </TabsContent>
 
-      <TabsContent value="members">
+      <TabsContent value="members" className="data-[state=inactive]:hidden">
         <WorkGroupMembersPanel workGroupId={workGroupId} />
       </TabsContent>
 
-      <TabsContent value="links">
+      <TabsContent value="links" className="data-[state=inactive]:hidden">
         <WorkGroupLinksPanel workGroupId={workGroupId} />
       </TabsContent>
     </Tabs>

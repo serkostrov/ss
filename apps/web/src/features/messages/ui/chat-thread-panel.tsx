@@ -111,6 +111,7 @@ export function ChatThreadPanel({
 }: ChatThreadPanelProps) {
   const [chunks, setChunks] = useState(1)
   const bottomRef = useRef<HTMLDivElement | null>(null)
+  const scrollerRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     setChunks(1)
@@ -131,9 +132,10 @@ export function ChatThreadPanel({
   const hasMore = items.length < total && pageSize < 100
 
   useEffect(() => {
-    if (!query.isFetching) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-    }
+    const scroller = scrollerRef.current
+    if (!scroller || query.isFetching) return
+    // Scroll only the thread pane — never the page (scrollIntoView was jumping up).
+    scroller.scrollTop = scroller.scrollHeight
   }, [items.length, query.isFetching, externalChatId])
 
   return (
@@ -151,6 +153,7 @@ export function ChatThreadPanel({
       ) : null}
 
       <div
+        ref={scrollerRef}
         className={cn(
           'min-h-0 flex-1 overflow-y-auto bg-muted/20 px-3 py-4 sm:px-4',
           !query.isLoading && !query.isError && items.length === 0 && 'flex',

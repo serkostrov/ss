@@ -75,15 +75,25 @@ export function WorkGroupMessengerWorkspace({ workGroupId }: WorkGroupMessengerW
   }
 
   return (
-    <div className="flex min-h-[32rem] flex-col overflow-hidden rounded-xl border bg-card lg:min-h-[36rem]">
-      <div className="flex flex-wrap items-center gap-3 border-b px-3 py-2.5">
+    <div className="flex h-[calc(100svh-7rem)] min-h-[32rem] flex-col overflow-hidden rounded-xl border bg-card">
+      <div className="flex flex-wrap items-center gap-3 border-b px-3 py-2">
         <Tabs
           value={platform}
-          onValueChange={(value) => setPlatform(value as MessengerPlatform)}
+          onValueChange={(value) => {
+            const x = window.scrollX
+            const y = window.scrollY
+            setPlatform(value as MessengerPlatform)
+            // Radix tab focus can scroll the page — restore position.
+            requestAnimationFrame(() => window.scrollTo(x, y))
+          }}
         >
-          <TabsList>
+          <TabsList className="h-8 w-auto gap-0.5 rounded-full border-0 bg-muted/70 p-0.5">
             {PLATFORMS.map((item) => (
-              <TabsTrigger key={item} value={item}>
+              <TabsTrigger
+                key={item}
+                value={item}
+                className="h-7 rounded-full px-3 text-xs font-medium shadow-none data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
                 {messengerPlatformLabel(item)}
               </TabsTrigger>
             ))}
@@ -91,20 +101,15 @@ export function WorkGroupMessengerWorkspace({ workGroupId }: WorkGroupMessengerW
         </Tabs>
 
         {selected ? (
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="truncate text-sm font-medium">{connectionTitle(selected)}</p>
-                <StatusBadge
-                  status={selected.bot_status}
-                  label={botStatusLabel(selected.bot_status)}
-                />
-              </div>
-              <p className="truncate font-mono text-[11px] text-muted-foreground">
-                {selected.chat_id}
-              </p>
-            </div>
-            <div className="flex shrink-0 gap-1">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <p className="min-w-0 flex-1 truncate text-lg font-semibold tracking-tight sm:text-xl">
+              {connectionTitle(selected)}
+            </p>
+            <div className="flex shrink-0 items-center gap-2">
+              <StatusBadge
+                status={selected.bot_status}
+                label={botStatusLabel(selected.bot_status)}
+              />
               <Button
                 type="button"
                 size="sm"
@@ -149,8 +154,8 @@ export function WorkGroupMessengerWorkspace({ workGroupId }: WorkGroupMessengerW
       ) : (
         <EmptyState
           title={`${messengerPlatformLabel(platform)} не привязан`}
-          description="Привяжите канал, группу или личный чат — сообщения и композер появятся здесь."
-          className="my-auto py-16"
+          description="Привяжите канал, группу или личный чат — сообщения появятся здесь."
+          className="m-auto border-0 bg-transparent py-0 shadow-none"
           actionLabel={canBind ? 'Привязать чат' : undefined}
           onAction={canBind ? openCreate : undefined}
         />
