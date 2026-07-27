@@ -68,10 +68,10 @@ export function CabinetPollsPanel() {
   const membership = profile?.membership
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Голосования"
-        description="Активные опросы, доступные уровню участия вашей компании. Голос учитывается один раз."
+        description="Опросы вашего уровня участия. Голос учитывается один раз."
       />
 
       {membership && !membership.participationLevelId ? (
@@ -83,7 +83,7 @@ export function CabinetPollsPanel() {
         </Alert>
       ) : null}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <SearchInput
           value={search}
           onValueChange={setSearch}

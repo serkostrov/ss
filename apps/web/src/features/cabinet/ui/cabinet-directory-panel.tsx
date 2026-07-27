@@ -31,7 +31,7 @@ export function CabinetDirectoryPanel() {
   const query = useAssociationDirectory(search)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Участники ассоциации"
         description="Активные компании, продукция и представители."

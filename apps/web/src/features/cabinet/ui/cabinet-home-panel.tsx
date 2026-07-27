@@ -29,7 +29,7 @@ export function CabinetHomePanel() {
   const hasLevel = Boolean(membership?.participationLevelId)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title={profile?.fullName ? `Здравствуйте, ${profile.fullName}` : 'Личный кабинет'}
         description="Материалы и голосования Ассоциации, доступные вашей компании."

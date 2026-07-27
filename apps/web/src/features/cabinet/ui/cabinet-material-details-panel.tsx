@@ -15,7 +15,7 @@ import { CabinetDocumentsPanel } from './cabinet-documents-panel'
 
 function DetailSkeleton() {
   return (
-    <div className="space-y-6" aria-busy="true" aria-label="Загрузка материала">
+    <div className="space-y-4" aria-busy="true" aria-label="Загрузка материала">
       <Skeleton className="h-8 w-40" />
       <div className="space-y-3">
         <Skeleton className="h-8 w-3/4" />
@@ -73,7 +73,7 @@ export function CabinetMaterialDetailsPanel() {
   const contentPending = query.isFetching && !contentReady
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="space-y-4">
         <Button asChild variant="ghost" size="sm" className="-ms-2 w-fit gap-1">
           <Link to={routes.cabinet.materials}>

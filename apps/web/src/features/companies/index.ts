@@ -28,6 +28,7 @@ export {
   sortByLabel,
   formatCompanyDate,
   formatCompanyBalance,
+  formatCompanyAutoId,
   parseCompanyBalance,
 } from './model/schemas'
 export type {

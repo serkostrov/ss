@@ -58,7 +58,7 @@ export function CabinetMaterialsPanel() {
   )
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Материалы"
         description="Разделы, разрешённые уровню участия вашей компании."

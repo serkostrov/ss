@@ -24,44 +24,50 @@ export function CabinetShell({ children }: CabinetShellProps) {
   const { profile } = useAuth()
   const showNav = profile?.status === 'confirmed'
   const levelLabel = profile?.membership?.participationLevelName
+  const userLabel = profile?.fullName?.trim() || 'Личный кабинет'
 
   return (
     <div className="flex min-h-svh flex-col bg-background">
-      <header className="border-b">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div>
-            <p className="text-sm font-semibold">{APP_NAME}</p>
-            <p className="text-xs text-muted-foreground">
-              {profile?.fullName ? profile.fullName : 'Личный кабинет'}
+      <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="mx-auto flex max-w-5xl items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4">
+          <div className="min-w-0 shrink">
+            <p className="truncate text-sm font-semibold leading-tight">{APP_NAME}</p>
+            <p className="truncate text-xs leading-tight text-muted-foreground">
+              {userLabel}
               {levelLabel ? ` · ${levelLabel}` : ''}
             </p>
           </div>
-          <div className="flex items-center gap-1">
+
+          <div className="ml-auto flex min-w-0 items-center gap-0.5 overflow-x-auto">
             {showNav
               ? navItems.map(({ to, label, icon: Icon, end }) => (
                   <NavLink
                     key={to}
                     to={to}
                     end={end}
+                    title={label}
                     className={({ isActive }) =>
                       cn(
-                        'inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
+                        'inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-colors',
                         isActive
                           ? 'bg-accent font-medium text-accent-foreground'
                           : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
                       )
                     }
                   >
-                    <Icon className="size-4" />
-                    <span className="hidden sm:inline">{label}</span>
+                    <Icon className="size-4 shrink-0" />
+                    <span className="hidden lg:inline">{label}</span>
                   </NavLink>
                 ))
               : null}
-            <LogoutButton />
+            <LogoutButton
+              className="h-8 shrink-0 gap-1.5 px-2 text-sm"
+              label="Выйти"
+            />
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">{children}</main>
+      <main className="mx-auto w-full max-w-5xl px-3 py-4 sm:px-4 sm:py-5">{children}</main>
     </div>
   )
 }

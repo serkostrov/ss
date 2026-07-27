@@ -18,6 +18,7 @@ import {
 import {
   accessStatusLabel,
   balanceFilterLabel,
+  formatCompanyAutoId,
   formatCompanyBalance,
   sortByLabel,
   type CompanyAccessFilter,
@@ -116,17 +117,21 @@ export function CompaniesPanel() {
       {
         accessorKey: 'auto_id',
         header: 'ID',
+        meta: { className: 'w-[4.75rem] max-w-[4.75rem] pr-3' },
         cell: ({ row }) => (
-          <span className="font-mono text-sm text-muted-foreground">{row.original.auto_id}</span>
+          <span className="font-mono text-sm tabular-nums text-muted-foreground">
+            {formatCompanyAutoId(row.original.auto_id)}
+          </span>
         ),
       },
       {
         accessorKey: 'name',
         header: 'Компания',
+        meta: { className: 'pl-2' },
         cell: ({ row }) => (
-          <div className="min-w-0">
-            <p className="truncate font-medium">{row.original.name}</p>
-            <p className="truncate text-xs text-muted-foreground">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <p className="truncate font-medium leading-tight">{row.original.name}</p>
+            <p className="truncate text-xs leading-tight text-muted-foreground">
               {row.original.inn ? `ИНН ${row.original.inn}` : 'ИНН не указан'}
             </p>
           </div>
@@ -173,9 +178,11 @@ export function CompaniesPanel() {
         accessorKey: 'email',
         header: 'Контакты',
         cell: ({ row }) => (
-          <div className="min-w-0 text-sm text-muted-foreground">
-            <p className="truncate">{row.original.email || '—'}</p>
-            <p className="truncate">{row.original.phone || ''}</p>
+          <div className="flex min-w-0 flex-col gap-0.5 text-sm text-muted-foreground">
+            <p className="truncate leading-tight">{row.original.email || '—'}</p>
+            {row.original.phone ? (
+              <p className="truncate leading-tight">{row.original.phone}</p>
+            ) : null}
           </div>
         ),
       },
@@ -184,7 +191,7 @@ export function CompaniesPanel() {
   )
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-2">
       <PageHeader
         title="Компании"
         description="Организации ассоциации: активные, приостановленные и вышедшие. Можно импортировать из Excel бухгалтерии."
@@ -203,6 +210,7 @@ export function CompaniesPanel() {
       />
 
       <Filters
+        className="gap-2"
         fields={filterFields}
         onReset={() => {
           setSearch('')
@@ -217,6 +225,7 @@ export function CompaniesPanel() {
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       ) : (
         <DataTable
+          compact
           columns={columns}
           data={query.data ?? []}
           loading={query.isLoading}

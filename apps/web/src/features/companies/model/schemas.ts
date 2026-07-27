@@ -108,6 +108,10 @@ export function formatCompanyDate(value: string): string {
   }
 }
 
+export function formatCompanyAutoId(value: number): string {
+  return String(value).padStart(6, '0')
+}
+
 export function formatCompanyBalance(value: number): string {
   try {
     return new Intl.NumberFormat('ru-RU', {

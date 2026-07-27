@@ -15,7 +15,7 @@ import {
   Textarea,
 } from '@shared/ui'
 
-import { companyFormSchema, type CompanyFormValues } from '../model/schemas'
+import { companyFormSchema, formatCompanyAutoId, type CompanyFormValues } from '../model/schemas'
 import {
   toCompanyInput,
   useActiveLevelsForSelect,
@@ -147,7 +147,7 @@ export function CompanyFormDialog({
             description="Назначается автоматически"
             className="sm:col-span-2"
           >
-            <Input value={String(company.auto_id)} readOnly disabled />
+            <Input value={formatCompanyAutoId(company.auto_id)} readOnly disabled />
           </FormField>
         ) : null}
 
@@ -196,11 +196,7 @@ export function CompanyFormDialog({
           </Select>
         </FormField>
 
-        <FormField
-          label="Уровень участия"
-          error={errors.participationLevelId}
-          className="sm:col-span-2"
-        >
+        <FormField label="Уровень участия" error={errors.participationLevelId}>
           <Select
             value={values.participationLevelId || '__none__'}
             onValueChange={(value) =>

@@ -41,7 +41,7 @@ export function CabinetCompanyPanel() {
 
   if (!companyId) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <PageHeader title="Моя компания" description="Карточка организации в ассоциации." />
         <Alert>
           <AlertTitle>Компания не привязана</AlertTitle>
@@ -81,13 +81,13 @@ export function CabinetCompanyPanel() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Моя компания"
         description="Редактируйте публичные сведения об организации. Уровень участия и статус доступа меняет только администратор АПСС."
       />
 
-      <div className="grid max-w-2xl gap-4">
+      <div className="grid w-full gap-4">
         <FormField label="Название" required error={errors.name}>
           <Input value={values.name} onChange={(event) => patch('name', event.target.value)} />
         </FormField>
@@ -107,33 +107,35 @@ export function CabinetCompanyPanel() {
             placeholder="Кратко о компании"
           />
         </FormField>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label="Телефон" error={errors.phone}>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <FormField label="Телефон" error={errors.phone} className="min-w-0">
             <Input
               value={values.phone ?? ''}
               onChange={(event) => patch('phone', event.target.value)}
             />
           </FormField>
-          <FormField label="Email" error={errors.email}>
+          <FormField label="Email" error={errors.email} className="min-w-0">
             <Input
               value={values.email ?? ''}
               onChange={(event) => patch('email', event.target.value)}
             />
           </FormField>
         </div>
-        <FormField label="Сайт" error={errors.website}>
-          <Input
-            value={values.website ?? ''}
-            onChange={(event) => patch('website', event.target.value)}
-            placeholder="example.ru"
-          />
-        </FormField>
-        <FormField label="Адрес" error={errors.address}>
-          <Input
-            value={values.address ?? ''}
-            onChange={(event) => patch('address', event.target.value)}
-          />
-        </FormField>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <FormField label="Сайт" error={errors.website} className="min-w-0">
+            <Input
+              value={values.website ?? ''}
+              onChange={(event) => patch('website', event.target.value)}
+              placeholder="example.ru"
+            />
+          </FormField>
+          <FormField label="Адрес" error={errors.address} className="min-w-0">
+            <Input
+              value={values.address ?? ''}
+              onChange={(event) => patch('address', event.target.value)}
+            />
+          </FormField>
+        </div>
 
         <div className="flex justify-end">
           <Button
@@ -148,7 +150,7 @@ export function CabinetCompanyPanel() {
       </div>
 
       {companyId ? (
-        <div className="max-w-2xl border-t pt-6">
+        <div className="w-full border-t pt-6">
           <CompanyProductsPanel companyId={companyId} />
         </div>
       ) : null}

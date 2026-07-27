@@ -20,7 +20,7 @@ import {
   StatusBadge,
 } from '@shared/ui'
 
-import { formatCompanyBalance, formatCompanyDate } from '../model/schemas'
+import { formatCompanyAutoId, formatCompanyBalance, formatCompanyDate } from '../model/schemas'
 import {
   useCompany,
   useDeleteCompanyMutation,
@@ -79,7 +79,7 @@ export function CompanyDetailsCard() {
         backTo={routes.admin.companies}
         title={company.name}
         description={
-          `ID ${company.auto_id}` +
+          `ID ${formatCompanyAutoId(company.auto_id)}` +
           (company.description ? ` · ${company.description}` : ' · Карточка компании — участника ассоциации.')
         }
         status={<StatusBadge status={company.access_status} />}
@@ -131,7 +131,7 @@ export function CompanyDetailsCard() {
           </CardHeader>
           <CardContent>
             <dl className="grid gap-4 sm:grid-cols-2">
-              <Field label="ID" value={String(company.auto_id)} />
+              <Field label="ID" value={formatCompanyAutoId(company.auto_id)} />
               <Field label="ИНН" value={company.inn} />
               <Field
                 label="Баланс"

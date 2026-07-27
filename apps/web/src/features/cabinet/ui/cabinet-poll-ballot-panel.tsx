@@ -92,7 +92,7 @@ export function CabinetPollBallotPanel() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="space-y-3">
         <Button asChild variant="ghost" size="sm" className="-ms-2 w-fit gap-1">
           <Link to={routes.cabinet.polls}>

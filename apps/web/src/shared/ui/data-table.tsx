@@ -35,6 +35,8 @@ type DataTableProps<TData> = {
   onPageSizeChange?: (pageSize: number) => void
   className?: string
   getRowId?: (row: TData) => string
+  /** Tighter row padding for dense admin lists. */
+  compact?: boolean
 }
 
 function DataTable<TData>({
@@ -55,7 +57,10 @@ function DataTable<TData>({
   onPageSizeChange,
   className,
   getRowId,
+  compact = false,
 }: DataTableProps<TData>) {
+  const headPad = compact ? 'h-auto p-2' : undefined
+  const cellPad = compact ? 'p-2' : undefined
   const [internalSorting, setInternalSorting] = React.useState<SortingState>([])
 
   const table = useReactTable({
@@ -83,7 +88,7 @@ function DataTable<TData>({
   }
 
   return (
-    <div className={cn('space-y-4', className)}>
+    <div className={cn(compact ? 'flex flex-col gap-2' : 'space-y-4', className)}>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -97,7 +102,7 @@ function DataTable<TData>({
                   return (
                   <TableHead
                     key={header.id}
-                    className={cn(isSelect && 'w-10 max-w-10', metaClassName)}
+                    className={cn(headPad, isSelect && 'w-10 max-w-10', metaClassName)}
                     style={isSelect ? { width: '2.5rem' } : undefined}
                   >
                     <div className={cn('min-w-0', !isSelect && 'truncate')}>
@@ -158,7 +163,7 @@ function DataTable<TData>({
                   return (
                   <TableCell
                     key={cell.id}
-                    className={cn(isSelect && 'w-10 max-w-10', metaClassName)}
+                    className={cn(cellPad, isSelect && 'w-10 max-w-10', metaClassName)}
                     style={isSelect ? { width: '2.5rem' } : undefined}
                   >
                     <div className={cn('min-w-0', !isSelect && 'overflow-hidden')}>
