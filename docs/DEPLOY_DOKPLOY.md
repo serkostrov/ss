@@ -1,114 +1,152 @@
 # Деплой на Dokploy
 
-SPA (`apps/web`) раздаётся через nginx. Backend — hosted Supabase (миграции отдельно).
-Messenger worker (`Dockerfile.messenger`) принимает webhooks Telegram/Max и пишет посты каналов в `messages`.
+Рекомендуемая схема: **два отдельных Application** в Dokploy.
 
-## Важно про `VITE_*`
+| Приложение | Dockerfile | Порт | Домен (пример) |
+|------------|------------|------|----------------|
+| Web (SPA) | `Dockerfile` | `80` | `https://app.example.com` |
+| Messenger (webhooks) | `Dockerfile.messenger` | `8787` | `https://hooks.example.com` |
 
-Значения читаются **в runtime** из `/env.js` (генерируется при старте контейнера).
+Не связывайте web с hostname `messenger` через nginx, если messenger — отдельное приложение. У web **не задавайте** `MESSENGER_UPSTREAM`.
 
-В Dokploy задавайте их в **Environment** (переменные окружения контейнера), не только Build Arguments:
-
-| Name | Example |
-|------|---------|
-| `VITE_SUPABASE_URL` | `https://xxx.supabase.co` |
-| `VITE_SUPABASE_ANON_KEY` | anon key |
-| `VITE_APP_URL` | `https://your-domain` (можно оставить пустым → берётся origin) |
-
-После смены env достаточно **Redeploy / Restart** (пересборка не обязательна).
-
-## 1. Перед деплоем
-
-1. Примените миграции из `supabase/migrations/` к проекту Supabase.
-2. Автозаполнение по ИНН в production идёт через **same-origin** `/api/company-by-inn` внутри Docker-образа (Node sidecar + nginx). Edge Function **не обязательна**. Опционально:
-
-```bash
-supabase functions deploy lookup-company-by-inn --no-verify-jwt
+```mermaid
+flowchart LR
+  User[Browser] --> Web[Web :80]
+  TG[Telegram] --> Hooks[Messenger :8787]
+  Max[Max] --> Hooks
+  Hooks --> SB[(Supabase)]
+  Web --> SB
 ```
 
-3. В Supabase → Authentication → URL Configuration:
-   - **Site URL** = `https://your-domain`
-   - **Redirect URLs** = `https://your-domain/**`
+---
 
-## 2. Dokploy: Application (Dockerfile)
+## 0. Перед деплоем
 
-1. **New Application** → Git.
-2. Build type: **Dockerfile**, path `Dockerfile`.
+1. Примените все миграции из `supabase/migrations/` к Supabase.
+2. В Supabase → Authentication → URL Configuration:
+   - **Site URL** = `https://app.example.com`
+   - **Redirect URLs** = `https://app.example.com/**`
+3. Закоммитьте и запушьте актуальный код (иначе Dokploy соберёт старый образ).
+
+---
+
+## 1. Application: Web
+
+1. **New Application** → Git-репозиторий.
+2. Build type: **Dockerfile**, path: `Dockerfile`.
 3. Port: **80**.
-4. **Environment** (runtime):
+4. Domain: `app.example.com` → HTTPS (Let's Encrypt / Traefik).
+5. **Environment** (runtime, не Build Args):
 
 ```env
 VITE_SUPABASE_URL=https://xxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
-VITE_APP_URL=https://your-domain
+VITE_APP_URL=https://app.example.com
 ```
 
-5. Domain → HTTPS.
-6. Deploy.
+6. **Не добавляйте** `MESSENGER_UPSTREAM`.
+7. Deploy → дождитесь **Rebuild**, не только Restart.
 
-Проверка: `/env.js` на домене должен содержать ваши URL (не `${VITE_...}`).
-Маршруты `/admin/...`, `/cabinet/...` — без 404.
+Проверка:
 
-## 3. Compose
+- `https://app.example.com/env.js` — реальные URL, не `${VITE_...}`
+- В логах старта: `MESSENGER_UPSTREAM empty — /webhooks/ proxy disabled`
+- Открываются `/admin`, `/cabinet`
 
-`docker-compose.yml` пробрасывает те же `environment` в сервис `web`.
+---
 
-## 4. Локальная проверка образа
+## 2. Application: Messenger
 
-```bash
-docker build -t apss-web .
-
-docker run --rm -p 8080:80 \
-  -e VITE_SUPABASE_URL=https://xxx.supabase.co \
-  -e VITE_SUPABASE_ANON_KEY=your-anon-key \
-  -e VITE_APP_URL=http://localhost:8080 \
-  apss-web
-```
-
-## 5. Messenger worker
-
-Отдельное приложение: `Dockerfile.messenger`, порт **8787** (или `PORT`).
-
-**Environment (runtime secrets, не в web-образе):**
+1. **New Application** → тот же Git-репозиторий.
+2. Build type: **Dockerfile**, path: `Dockerfile.messenger`.
+3. Port: **8787**.
+4. Domain: `hooks.example.com` → HTTPS (обязательно публичный HTTPS).
+5. **Environment**:
 
 ```env
 SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
-TELEGRAM_BOT_TOKEN=
-TELEGRAM_WEBHOOK_SECRET=
-MAX_BOT_TOKEN=
-MAX_WEBHOOK_SECRET=
-PUBLIC_WEBHOOK_BASE_URL=https://messenger.your-domain
+SUPABASE_SERVICE_ROLE_KEY=eyJ...service_role...
+TELEGRAM_BOT_TOKEN=123456:ABC...
+TELEGRAM_WEBHOOK_SECRET=случайная_строка_AZaz09_
+MAX_BOT_TOKEN=токен_без_Bearer
+MAX_WEBHOOK_SECRET=случайная_строка_AZaz09_
+PUBLIC_WEBHOOK_BASE_URL=https://hooks.example.com
 PORT=8787
 LOG_LEVEL=info
 ```
 
-`PUBLIC_WEBHOOK_BASE_URL` — публичный **HTTPS** origin, доступный из интернета (без `/webhooks/...`). Worker сам добавит пути. При старте регистрируются Telegram `setWebhook` и Max `POST /subscriptions`.
+Важно:
 
-Если web и messenger в одном compose: задайте у web `MESSENGER_UPSTREAM=http://messenger:8787` (уже в `docker-compose.yml`) и укажите домен **web** в `PUBLIC_WEBHOOK_BASE_URL`.
+- `PUBLIC_WEBHOOK_BASE_URL` — только origin (`https://hooks.example.com`), **без** `/webhooks/telegram`.
+- Max: токен **без** префикса `Bearer`.
+- Секреты webhook: только `A-Z a-z 0-9 _ -` (5–256 символов).
+- `SUPABASE_SERVICE_ROLE_KEY` — только в messenger, не в web.
 
-В Dokploy для **отдельного** web-приложения **не задавайте** `MESSENGER_UPSTREAM` — иначе nginx упадёт, если сервиса messenger нет в сети. Messenger деплойте отдельно со своим HTTPS-доменом и этим доменом в `PUBLIC_WEBHOOK_BASE_URL`.
+6. Deploy.
 
-Локально без публичного HTTPS: `cloudflared tunnel --url http://localhost:8787` и подставьте выданный `https://….trycloudflare.com` в `PUBLIC_WEBHOOK_BASE_URL`.
+Проверка логов messenger:
 
-Эндпоинты:
+```text
+[messenger] HTTP listening on :8787
+[messenger] Webhook base URL {"url":"https://hooks.example.com"}
+[messenger] Telegram webhook registered {"url":"https://hooks.example.com/webhooks/telegram"}
+[messenger] Max webhook registered {"url":"https://hooks.example.com/webhooks/max"}
+[messenger] Messenger worker ready
+```
 
-- `GET /health`
-- `POST /webhooks/telegram`
-- `POST /webhooks/max`
+Проверка снаружи:
 
-Для Max API на Windows/Alpine может понадобиться корневой сертификат Минцифры (`NODE_EXTRA_CA_CERTS`), иначе будет `fetch failed`.
+```bash
+curl -sS https://hooks.example.com/health
+# {"ok":true}
+```
+
+Если Max пишет `fetch failed` (TLS / сертификат Минцифры), временно:
+
+```env
+MAX_TLS_INSECURE=1
+```
+
+---
+
+## 3. После старта ботов
+
+1. Добавьте бота АПСС **администратором** в канал Telegram / Max.
+2. В админке: **Группы → [группа] → Чаты** — выберите канал из списка.
+3. Напишите пост в канал → он появится в **История** / кабинет **Сообщения**.
 
 Подробнее: [MESSENGER_CHAT_IDS.md](./MESSENGER_CHAT_IDS.md).
 
-## 6. Частые проблемы
+---
 
-| Симптом | Причина |
-|---------|---------|
-| Invalid environment configuration | Нет **runtime** `VITE_*` в Environment Dokploy |
-| `/env.js` с `${VITE_...}` | Entrypoint не отработал / env пустые при старте |
-| 404 на `/admin/...` | SPA `try_files` (см. `deploy/nginx.conf`) |
-| Auth redirect не туда | `VITE_APP_URL` / Site URL в Supabase |
-| Автозаполнение по ИНН недоступно | Старый образ без Node sidecar — **Redeploy** с актуальным `Dockerfile` |
-| Каналы не появляются в picker | Worker не запущен / бот не добавлен в канал / webhook не зарегистрирован |
-| Посты не в ленте | Канал не привязан к рабочей группе в «Чаты» |
+## 4. Альтернатива: один Compose-стек
+
+Можно задеплоить `docker-compose.yml` как Compose-приложение (web + messenger в одной сети).
+
+Тогда:
+
+```env
+# web
+MESSENGER_UPSTREAM=http://messenger:8787
+VITE_APP_URL=https://app.example.com
+
+# messenger
+PUBLIC_WEBHOOK_BASE_URL=https://app.example.com
+```
+
+Web nginx проксирует `/webhooks/` → messenger. Домен у web один; у messenger отдельный публичный домен не обязателен.
+
+Для Dokploy проще и надёжнее **два отдельных Application** (разделы 1–2).
+
+---
+
+## 5. Частые проблемы
+
+| Симптом | Что делать |
+|---------|------------|
+| `host not found in upstream "messenger"` | Старый образ web **или** задан `MESSENGER_UPSTREAM` без сервиса messenger. Уберите env, сделайте **Rebuild** |
+| Telegram: `HTTPS URL must be provided` | `PUBLIC_WEBHOOK_BASE_URL` должен быть `https://...`, не `http://` и не localhost |
+| Max: `Malformed access token` | Токен без `Bearer `, актуальный из кабинета Max |
+| Max: `fetch failed` | TLS; `MAX_TLS_INSECURE=1` или корневой CA Минцифры |
+| Каналы не в picker | Messenger не запущен / бот не в канале / webhook не зарегистрирован |
+| `/env.js` с `${VITE_...}` | Нет runtime `VITE_*` в Environment Dokploy |

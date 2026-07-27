@@ -10,12 +10,10 @@ services:
       VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
       VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
       VITE_APP_URL: ${VITE_APP_URL:-}
-      # Enable only when messenger service is on the same network
-      MESSENGER_UPSTREAM: ${MESSENGER_UPSTREAM:-http://messenger:8787}
-    depends_on:
-      - messenger
+      # Set only when messenger is reachable on this Docker network, e.g. http://messenger:8787
+      MESSENGER_UPSTREAM: ${MESSENGER_UPSTREAM:-}
     # Dokploy Traefik: map domain to this service on port 80
-    # Dokploy web-only: leave MESSENGER_UPSTREAM unset/empty so nginx starts without messenger.
+    # To proxy webhooks via web: start messenger service and set MESSENGER_UPSTREAM=http://messenger:8787
 
   messenger:
     build:

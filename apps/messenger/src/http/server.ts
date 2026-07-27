@@ -48,12 +48,22 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
           const header = req.headers['x-telegram-bot-api-secret-token']
           const provided = Array.isArray(header) ? header[0] : header
           if (!provided || !timingSafeEqual(provided, config.telegramWebhookSecret)) {
+            log('warn', 'Telegram webhook unauthorized (secret mismatch)')
             send(res, 401, { ok: false, error: 'unauthorized' })
             return
           }
         }
 
         const body = (await readJson(req)) as TelegramUpdate
+        const kinds = [
+          body.channel_post ? 'channel_post' : null,
+          body.edited_channel_post ? 'edited_channel_post' : null,
+          body.my_chat_member ? 'my_chat_member' : null,
+        ].filter(Boolean)
+        log('info', 'Telegram webhook received', {
+          updateId: body.update_id,
+          kinds: kinds.length ? kinds : ['other'],
+        })
         await handleTelegramUpdate(db, body)
         send(res, 200, { ok: true })
         return
@@ -64,12 +74,21 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
           const header = req.headers['x-max-bot-api-secret']
           const provided = Array.isArray(header) ? header[0] : header
           if (!provided || !timingSafeEqual(provided, config.maxWebhookSecret)) {
+            log('warn', 'Max webhook unauthorized (secret mismatch)')
             send(res, 401, { ok: false, error: 'unauthorized' })
             return
           }
         }
 
         const body = await readJson(req)
+        const updateType =
+          body && typeof body === 'object' && 'update_type' in body
+            ? String((body as { update_type?: string }).update_type ?? 'unknown')
+            : Array.isArray(body)
+              ? `batch:${body.length}`
+              : 'unknown'
+        log('info', 'Max webhook received', { updateType })
+
         // Max may send a single update or wrap it.
         if (Array.isArray(body)) {
           for (const item of body) {

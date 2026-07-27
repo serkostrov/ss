@@ -12,11 +12,9 @@ import {
   SelectTrigger,
   SelectValue,
   Spinner,
-  Textarea,
 } from '@shared/ui'
 
 import {
-  botStatusLabel,
   messengerConnectionFormSchema,
   messengerPlatformLabel,
   type MessengerConnectionFormValues,
@@ -47,8 +45,6 @@ function toFormValues(
     platform: connection?.platform ?? defaultPlatform,
     chatId: connection?.chat_id ?? '',
     chatTitle: connection?.chat_title ?? '',
-    botStatus: connection?.bot_status ?? 'pending',
-    lastError: connection?.last_error ?? '',
   }
 }
 
@@ -90,8 +86,10 @@ export function MessengerConnectionFormDialog({
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const channelsQuery = useMessengerBotChannels(values.platform, open)
+  const catalogFromApi = channelsQuery.data ?? []
+  const catalogEmpty = !channelsQuery.isLoading && catalogFromApi.length === 0
   const channels = useMemo(() => {
-    const list = [...(channelsQuery.data ?? [])]
+    const list = [...catalogFromApi]
     if (
       values.chatId &&
       !list.some((item) => item.external_chat_id === values.chatId)
@@ -110,7 +108,7 @@ export function MessengerConnectionFormDialog({
       })
     }
     return list
-  }, [channelsQuery.data, values.chatId, values.chatTitle, values.platform])
+  }, [catalogFromApi, values.chatId, values.chatTitle, values.platform])
 
   useEffect(() => {
     if (!open) return
@@ -143,14 +141,10 @@ export function MessengerConnectionFormDialog({
       ...prev,
       chatId: externalChatId,
       chatTitle: channel?.title ?? channel?.username ?? prev.chatTitle,
-      botStatus: 'connected',
-      lastError: '',
     }))
     setErrors((prev) => {
       const next = { ...prev }
       delete next.chatId
-      delete next.botStatus
-      delete next.lastError
       return next
     })
   }
@@ -191,7 +185,7 @@ export function MessengerConnectionFormDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={isEdit ? 'Изменить привязку' : 'Привязать канал'}
-      description="Выберите канал, в котором уже есть бот АПСС. Worker забирает посты только из каналов."
+      description="Выберите канал, в котором уже есть бот АПСС. Статус подключения обновляет worker."
       footer={
         <>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -220,7 +214,6 @@ export function MessengerConnectionFormDialog({
                 platform,
                 chatId: '',
                 chatTitle: '',
-                botStatus: 'pending',
               }))
               setErrors({})
             }}
@@ -245,73 +238,45 @@ export function MessengerConnectionFormDialog({
           description={
             channelsQuery.isLoading
               ? 'Загрузка каналов…'
-              : channels.length === 0
-                ? 'Добавьте бота в канал администратором — канал появится здесь после события membership.'
+              : catalogEmpty
+                ? 'Список пуст. Нужен канал (не группа): добавьте бота админом после запуска worker или введите chat_id.'
                 : selectedChannel
                   ? `ID: ${selectedChannel.external_chat_id}`
-                  : 'Список активных каналов, где присутствует бот.'
+                  : 'Каналы, где присутствует бот.'
           }
         >
-          <Select
-            value={values.chatId || undefined}
-            onValueChange={selectChannel}
-            disabled={channelsQuery.isLoading || channels.length === 0}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Выберите канал" />
-            </SelectTrigger>
-            <SelectContent>
-              {channels.map((channel) => (
-                <SelectItem key={channel.id} value={channel.external_chat_id}>
-                  {channelLabel(channel)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {catalogEmpty ? (
+            <Input
+              value={values.chatId}
+              onChange={(event) => patch('chatId', event.target.value.trim())}
+              placeholder={values.platform === 'telegram' ? '-100…' : 'chat_id'}
+              autoFocus
+            />
+          ) : (
+            <Select
+              value={values.chatId || undefined}
+              onValueChange={selectChannel}
+              disabled={channelsQuery.isLoading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите канал" />
+              </SelectTrigger>
+              <SelectContent>
+                {channels.map((channel) => (
+                  <SelectItem key={channel.id} value={channel.external_chat_id}>
+                    {channelLabel(channel)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </FormField>
 
-        <FormField label="Название в системе" error={errors.chatTitle}>
+        <FormField label="Название" error={errors.chatTitle}>
           <Input
             value={values.chatTitle ?? ''}
             onChange={(event) => patch('chatTitle', event.target.value)}
             placeholder="Подставится из канала"
-          />
-        </FormField>
-
-        <FormField label="Статус подключения" error={errors.botStatus}>
-          <Select
-            value={values.botStatus}
-            onValueChange={(value) =>
-              patch('botStatus', value as MessengerConnectionFormValues['botStatus'])
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(['pending', 'connected', 'error'] as const).map((status) => (
-                <SelectItem key={status} value={status}>
-                  {botStatusLabel(status)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FormField>
-
-        <FormField
-          label="Последняя ошибка"
-          error={errors.lastError}
-          description={
-            values.botStatus === 'error'
-              ? 'Обязательно при статусе «Ошибка»'
-              : 'Очищается при статусе «Подключено»'
-          }
-        >
-          <Textarea
-            value={values.lastError ?? ''}
-            onChange={(event) => patch('lastError', event.target.value)}
-            rows={3}
-            placeholder="Текст ошибки от бота или привязки…"
           />
         </FormField>
       </div>

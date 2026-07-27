@@ -220,4 +220,28 @@ export async function registerTelegramWebhook(
     throw new Error(`Telegram setWebhook failed: ${json.description ?? response.statusText}`)
   }
   log('info', 'Telegram webhook registered', { url })
+
+  try {
+    const infoRes = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`)
+    const infoJson = (await infoRes.json()) as {
+      ok?: boolean
+      result?: {
+        url?: string
+        pending_update_count?: number
+        last_error_message?: string
+        last_error_date?: number
+      }
+    }
+    if (infoJson.ok && infoJson.result) {
+      log('info', 'Telegram webhook info', {
+        url: infoJson.result.url,
+        pending: infoJson.result.pending_update_count ?? 0,
+        lastError: infoJson.result.last_error_message ?? null,
+      })
+    }
+  } catch (error) {
+    log('warn', 'Telegram getWebhookInfo failed', {
+      message: error instanceof Error ? error.message : String(error),
+    })
+  }
 }

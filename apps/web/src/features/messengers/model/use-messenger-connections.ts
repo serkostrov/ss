@@ -81,8 +81,9 @@ export function toMessengerConnectionInput(
     platform: values.platform,
     chat_id: values.chatId,
     chat_title: values.chatTitle || null,
-    bot_status: values.botStatus,
-    last_error: values.lastError || null,
+    // Status is managed by worker / binding flow — never set manually in UI.
+    bot_status: 'connected',
+    last_error: null,
   }
 }
 
