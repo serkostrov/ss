@@ -155,5 +155,7 @@ export function normalizeExternalUrl(raw: string): string {
 
 export function isPreviewableMime(mimeType: string | null | undefined): boolean {
   if (!mimeType) return false
-  return mimeType.startsWith('image/') || mimeType === 'application/pdf' || mimeType === 'text/plain'
+  return (
+    mimeType.startsWith('image/') || mimeType === 'application/pdf' || mimeType === 'text/plain'
+  )
 }

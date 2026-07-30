@@ -8,7 +8,10 @@ export function AdminCompaniesPage() {
     <CanAccess
       permission={permissions['admin.companies']}
       fallback={
-        <ErrorState title="Нет доступа" description="Недостаточно прав для управления компаниями." />
+        <ErrorState
+          title="Нет доступа"
+          description="Недостаточно прав для управления компаниями."
+        />
       }
     >
       <CompaniesPanel />

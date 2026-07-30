@@ -138,16 +138,12 @@ export function RepresentativeDetailsCard() {
               <Field
                 label="Telegram"
                 value={
-                  representative.telegram_username
-                    ? `@${representative.telegram_username}`
-                    : null
+                  representative.telegram_username ? `@${representative.telegram_username}` : null
                 }
               />
               <Field
                 label="Max"
-                value={
-                  representative.max_username ? `@${representative.max_username}` : null
-                }
+                value={representative.max_username ? `@${representative.max_username}` : null}
               />
               <Field label="Должность" value={representative.position} className="sm:col-span-2" />
             </dl>
@@ -161,7 +157,7 @@ export function RepresentativeDetailsCard() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <p className="text-xs text-muted-foreground">Компания</p>
+              <p className="text-muted-foreground text-xs">Компания</p>
               <p className="mt-0.5 font-medium">
                 {representative.company ? (
                   <Link
@@ -184,7 +180,7 @@ export function RepresentativeDetailsCard() {
               }
             />
             {representative.linked_user_id ? (
-              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
                 <Link2 className="size-3.5 shrink-0" />
                 Удаление недоступно, пока есть связь с пользователем
               </p>
@@ -252,7 +248,7 @@ function Field({
 }) {
   return (
     <div className={className}>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dt className="text-muted-foreground text-xs">{label}</dt>
       <dd className="mt-0.5 font-medium break-words">{value?.trim() || '—'}</dd>
     </div>
   )

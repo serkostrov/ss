@@ -8,10 +8,7 @@ export function AdminRegistrationsPage() {
     <CanAccess
       permission={permissions['admin.registrations']}
       fallback={
-        <ErrorState
-          title="Нет доступа"
-          description="Недостаточно прав для управления заявками."
-        />
+        <ErrorState title="Нет доступа" description="Недостаточно прав для управления заявками." />
       }
     >
       <RegistrationsPanel />

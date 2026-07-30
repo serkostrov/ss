@@ -124,16 +124,9 @@ export function WorkGroupDetailsCard() {
           <CardContent>
             {group.responsible ? (
               <dl className="grid gap-4 sm:grid-cols-2">
-                <Field
-                  label="ФИО"
-                  value={group.responsible.full_name}
-                  className="sm:col-span-2"
-                />
+                <Field label="ФИО" value={group.responsible.full_name} className="sm:col-span-2" />
                 <Field label="Должность" value={group.responsible.position} />
-                <Field
-                  label="Компания"
-                  value={group.responsible.company?.name ?? 'Не указана'}
-                />
+                <Field label="Компания" value={group.responsible.company?.name ?? 'Не указана'} />
                 {!group.responsible.is_active ? (
                   <div className="sm:col-span-2">
                     <Badge variant="outline">Представитель неактивен</Badge>
@@ -141,7 +134,7 @@ export function WorkGroupDetailsCard() {
                 ) : null}
               </dl>
             ) : (
-              <p className="text-sm text-muted-foreground">Ответственный не назначен.</p>
+              <p className="text-muted-foreground text-sm">Ответственный не назначен.</p>
             )}
           </CardContent>
         </Card>
@@ -213,7 +206,7 @@ function Field({
 }) {
   return (
     <div className={className}>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dt className="text-muted-foreground text-xs">{label}</dt>
       <dd className="mt-0.5 font-medium break-words">{value?.trim() || '—'}</dd>
     </div>
   )

@@ -1,11 +1,7 @@
 import { ApiError } from '@shared/lib/errors'
 
 import { rpcService } from './rpc.service'
-import {
-  materialsService,
-  type MaterialLevelRef,
-  type MaterialSection,
-} from './materials.service'
+import { materialsService, type MaterialLevelRef, type MaterialSection } from './materials.service'
 
 export type MaterialAccessMode = 'replace' | 'add' | 'remove'
 

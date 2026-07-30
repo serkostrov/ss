@@ -24,10 +24,7 @@ import {
   StatusBadge,
 } from '@shared/ui'
 
-import {
-  useCabinetPoll,
-  useCastCabinetVoteMutation,
-} from '../model/use-cabinet-polls'
+import { useCabinetPoll, useCastCabinetVoteMutation } from '../model/use-cabinet-polls'
 
 export function CabinetPollBallotPanel() {
   const { id } = useParams<{ id: string }>()
@@ -117,9 +114,7 @@ export function CabinetPollBallotPanel() {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">
-              {locked ? 'Ваш выбор' : 'Выберите вариант'}
-            </CardTitle>
+            <CardTitle className="text-base">{locked ? 'Ваш выбор' : 'Выберите вариант'}</CardTitle>
             <CardDescription>
               {locked
                 ? poll.myVote?.isOwnVote
@@ -152,12 +147,12 @@ export function CabinetPollBallotPanel() {
                       checked={isSelected}
                       disabled={locked || voteMutation.isPending}
                       onChange={() => setSelectedOptionId(option.id)}
-                      className="mt-1 size-4 accent-primary"
+                      className="accent-primary mt-1 size-4"
                     />
                     <span className="min-w-0 flex-1">
                       <span className="font-medium">{option.text}</span>
                       {isRecorded ? (
-                        <span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                        <span className="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
                           <CheckCircle2 className="size-3.5 text-emerald-600" />
                           Зафиксированный выбор
                         </span>
@@ -197,10 +192,10 @@ export function CabinetPollBallotPanel() {
               </p>
             </div>
             {poll.myVote ? (
-              <div className="rounded-md border bg-muted/40 px-3 py-2">
+              <div className="bg-muted/40 rounded-md border px-3 py-2">
                 <p className="text-muted-foreground">Зафиксировано</p>
                 <p className="font-medium">{poll.myVote.optionText}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="text-muted-foreground mt-1 text-xs">
                   {formatPollDate(poll.myVote.votedAt)}
                   {!poll.myVote.isOwnVote ? ' · голос компании' : ''}
                 </p>

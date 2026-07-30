@@ -75,7 +75,7 @@ export function WorkGroupMessengerWorkspace({ workGroupId }: WorkGroupMessengerW
   }
 
   return (
-    <div className="flex h-[calc(100svh-7rem)] min-h-[32rem] flex-col overflow-hidden rounded-xl border bg-card">
+    <div className="bg-card flex h-[calc(100svh-7rem)] min-h-[32rem] flex-col overflow-hidden rounded-xl border">
       <div className="flex flex-wrap items-center gap-2.5 border-b px-3 py-1.5 sm:gap-3">
         <Tabs
           value={platform}
@@ -87,12 +87,12 @@ export function WorkGroupMessengerWorkspace({ workGroupId }: WorkGroupMessengerW
             requestAnimationFrame(() => window.scrollTo(x, y))
           }}
         >
-          <TabsList className="h-8 w-auto min-w-0 gap-0.5 rounded-lg border bg-muted/40 p-0.5">
+          <TabsList className="bg-muted/40 h-8 w-auto min-w-0 gap-0.5 rounded-lg border p-0.5">
             {PLATFORMS.map((item) => (
               <TabsTrigger
                 key={item}
                 value={item}
-                className="h-7 rounded-md px-2.5 text-xs font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                className="data-[state=active]:bg-background data-[state=active]:text-foreground h-7 rounded-md px-2.5 text-xs font-medium data-[state=active]:shadow-sm"
               >
                 {messengerPlatformLabel(item)}
               </TabsTrigger>

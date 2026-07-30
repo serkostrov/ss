@@ -1,17 +1,7 @@
 import { useEffect, useState } from 'react'
 
-import {
-  levelsService,
-  queryKeys,
-  useSupabaseQuery,
-  type MaterialAccessMode,
-} from '@shared/api'
-import {
-  Button,
-  FormField,
-  Modal,
-  Spinner,
-} from '@shared/ui'
+import { levelsService, queryKeys, useSupabaseQuery, type MaterialAccessMode } from '@shared/api'
+import { Button, FormField, Modal, Spinner } from '@shared/ui'
 
 import { useBulkMaterialAccessMutation } from '../model/use-material-access'
 import { MaterialLevelsPicker } from './material-levels-picker'
@@ -115,7 +105,7 @@ export function BulkMaterialAccessDialog({
                 onClick={() => setMode(option.value)}
                 className={
                   mode === option.value
-                    ? 'rounded-md border border-primary bg-accent/40 px-3 py-2 text-sm font-medium'
+                    ? 'border-primary bg-accent/40 rounded-md border px-3 py-2 text-sm font-medium'
                     : 'rounded-md border px-3 py-2 text-sm'
                 }
               >
@@ -123,17 +113,13 @@ export function BulkMaterialAccessDialog({
               </button>
             ))}
           </div>
-          {modeMeta ? (
-            <p className="mt-2 text-xs text-muted-foreground">{modeMeta.hint}</p>
-          ) : null}
+          {modeMeta ? <p className="text-muted-foreground mt-2 text-xs">{modeMeta.hint}</p> : null}
         </FormField>
 
         <FormField
           label="Уровни участия"
           description={
-            mode === 'replace'
-              ? 'Можно оставить пустым, чтобы снять весь доступ.'
-              : undefined
+            mode === 'replace' ? 'Можно оставить пустым, чтобы снять весь доступ.' : undefined
           }
         >
           <MaterialLevelsPicker

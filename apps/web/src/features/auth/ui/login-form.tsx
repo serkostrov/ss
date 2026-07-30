@@ -44,7 +44,12 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input type="email" autoComplete="email" placeholder="name@example.com" {...field} />
+                <Input
+                  type="email"
+                  autoComplete="email"
+                  placeholder="name@example.com"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -60,7 +65,7 @@ export function LoginForm() {
                 <FormLabel>Пароль</FormLabel>
                 <Link
                   to={routes.resetPassword}
-                  className="text-xs text-muted-foreground underline-offset-4 hover:underline"
+                  className="text-muted-foreground text-xs underline-offset-4 hover:underline"
                 >
                   Забыли пароль?
                 </Link>

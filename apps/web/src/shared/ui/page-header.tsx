@@ -24,11 +24,9 @@ function PageHeader({ title, description, actions, status, className }: PageHead
       <div className="min-w-0">
         <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
         {description ? (
-          <p className="mt-0.5 text-sm leading-snug text-muted-foreground">{description}</p>
+          <p className="text-muted-foreground mt-0.5 text-sm leading-snug">{description}</p>
         ) : null}
-        {status ? (
-          <div className="mt-1.5 flex flex-wrap items-center gap-2">{status}</div>
-        ) : null}
+        {status ? <div className="mt-1.5 flex flex-wrap items-center gap-2">{status}</div> : null}
       </div>
       {actions ? (
         <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end [&>*]:w-full sm:[&>*]:w-auto">

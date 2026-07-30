@@ -8,7 +8,10 @@ export function AdminMaterialsPage() {
     <CanAccess
       permission={permissions['admin.materials']}
       fallback={
-        <ErrorState title="Нет доступа" description="Недостаточно прав для управления материалами." />
+        <ErrorState
+          title="Нет доступа"
+          description="Недостаточно прав для управления материалами."
+        />
       }
     >
       <MaterialsPanel />

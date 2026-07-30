@@ -108,7 +108,8 @@ export function toApiError(error: unknown): ApiError {
 
   if (isAuthLikeError(error)) {
     return new ApiError(messageFromAuthLike(error), {
-      code: codeFromStatus(error.status) === 'unknown' ? 'unauthorized' : codeFromStatus(error.status),
+      code:
+        codeFromStatus(error.status) === 'unknown' ? 'unauthorized' : codeFromStatus(error.status),
       status: error.status,
       cause: error,
       details: { code: error.code, name: error.name },

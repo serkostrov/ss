@@ -1,5 +1,11 @@
 export { authService } from './auth.service'
-export type { AuthProfile, MemberMembership, SignInInput, SignUpInput } from './auth.service'
+export type {
+  AuthProfile,
+  MemberMembership,
+  SignInInput,
+  SignUpInput,
+  UpdateOwnMemberProfileInput,
+} from './auth.service'
 export { companyLookupService, normalizeInnDigits } from './company-lookup.service'
 export type { CompanyByInn } from './company-lookup.service'
 export { directoryService, cabinetPollsMetaService } from './directory.service'
@@ -10,11 +16,7 @@ export type {
   CabinetPollAccessHint,
 } from './directory.service'
 export { staffService } from './staff.service'
-export type {
-  StaffUser,
-  PromoteStaffInput,
-  UpdateStaffInput,
-} from './staff.service'
+export type { StaffUser, PromoteStaffInput, UpdateStaffInput } from './staff.service'
 export { storageService, STORAGE_BUCKETS } from './storage.service'
 export type { StorageBucket, UploadFileInput, UploadFileResult } from './storage.service'
 export { rpcService } from './rpc.service'
@@ -113,17 +115,11 @@ export type {
   WorkGroupLinkUpdateInput,
 } from './work-group-links.service'
 export { messengerConnectionsService } from './messenger-connections.service'
-export type {
-  MessengerConnection,
-  MessengerConnectionInput,
-} from './messenger-connections.service'
+export type { MessengerConnection, MessengerConnectionInput } from './messenger-connections.service'
 export { messengerBotChannelsService } from './messenger-bot-channels.service'
 export type { MessengerBotChannel } from './messenger-bot-channels.service'
 export { messengerOutboundService } from './messenger-outbound.service'
-export type {
-  MessengerOutboundInput,
-  MessengerOutboundResult,
-} from './messenger-outbound.service'
+export type { MessengerOutboundInput, MessengerOutboundResult } from './messenger-outbound.service'
 export { messagesService } from './messages.service'
 export type {
   Message,

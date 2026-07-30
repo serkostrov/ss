@@ -110,9 +110,7 @@ function mapCompany(raw: unknown): DirectoryCompany | null {
     representatives: repsRaw
       .map(mapRepresentative)
       .filter((item): item is DirectoryRepresentative => Boolean(item)),
-    products: productsRaw
-      .map(mapProduct)
-      .filter((item): item is DirectoryProduct => Boolean(item)),
+    products: productsRaw.map(mapProduct).filter((item): item is DirectoryProduct => Boolean(item)),
   }
 }
 

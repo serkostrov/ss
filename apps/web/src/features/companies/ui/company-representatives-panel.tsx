@@ -89,9 +89,9 @@ export function CompanyRepresentativesPanel({
                 <li key={rep.id}>
                   <Link
                     to={routes.admin.representative(rep.id)}
-                    className="flex items-center justify-between gap-3 px-3 py-3 transition-colors hover:bg-muted/50"
+                    className="hover:bg-muted/50 flex items-center justify-between gap-3 px-3 py-3 transition-colors"
                   >
-                    <div className="min-w-0 flex items-center justify-between gap-3 w-full">
+                    <div className="flex w-full min-w-0 items-center justify-between gap-3">
                       <p className="flex items-center gap-1.5 truncate font-medium">
                         {rep.is_primary ? (
                           <Star
@@ -101,10 +101,10 @@ export function CompanyRepresentativesPanel({
                         ) : null}
                         {rep.full_name}
                       </p>
-                      <p className="truncate text-sm text-muted-foreground">
+                      <p className="text-muted-foreground truncate text-sm">
                         {rep.position || 'Должность не указана'}
                       </p>
-                      <p className="truncate text-xs text-muted-foreground">
+                      <p className="text-muted-foreground truncate text-xs">
                         {[
                           rep.email,
                           rep.phone,

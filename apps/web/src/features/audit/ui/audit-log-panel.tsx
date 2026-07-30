@@ -107,7 +107,7 @@ export function AuditLogPanel() {
         accessorKey: 'created_at',
         header: 'Когда',
         cell: ({ row }) => (
-          <span className="whitespace-nowrap text-sm text-muted-foreground">
+          <span className="text-muted-foreground text-sm whitespace-nowrap">
             {formatAuditDate(row.original.created_at)}
           </span>
         ),
@@ -130,7 +130,7 @@ export function AuditLogPanel() {
             <div className="min-w-0">
               <p className="font-medium">{display.title}</p>
               {display.subtitle ? (
-                <p className="truncate text-xs text-muted-foreground">{display.subtitle}</p>
+                <p className="text-muted-foreground truncate text-xs">{display.subtitle}</p>
               ) : null}
             </div>
           )
@@ -142,7 +142,7 @@ export function AuditLogPanel() {
         cell: ({ row }) => (
           <div className="min-w-0">
             <p className="truncate font-medium">{auditActorLabel(row.original)}</p>
-            <p className="truncate text-xs text-muted-foreground">
+            <p className="text-muted-foreground truncate text-xs">
               {row.original.actor?.email ?? '—'}
             </p>
           </div>
@@ -153,7 +153,7 @@ export function AuditLogPanel() {
         header: 'Детали',
         cell: ({ row }) => (
           <p
-            className="max-w-[22rem] truncate text-sm text-muted-foreground"
+            className="text-muted-foreground max-w-[22rem] truncate text-sm"
             title={formatAuditPayload(row.original.payload)}
           >
             {formatAuditPayload(row.original.payload)}

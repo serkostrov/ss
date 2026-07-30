@@ -4,11 +4,7 @@ import { FileSpreadsheet, Upload } from 'lucide-react'
 import { companiesService, queryKeys, useSupabaseMutation } from '@shared/api'
 import { downloadCompaniesImportTemplate, parseSpreadsheetFile } from '@shared/lib/xlsx'
 import { notify } from '@shared/lib/notify'
-import {
-  Button,
-  Modal,
-  Spinner,
-} from '@shared/ui'
+import { Button, Modal, Spinner } from '@shared/ui'
 
 import {
   mapSpreadsheetRowsToCompanyImport,
@@ -108,7 +104,12 @@ export function CompanyImportDialog({ open, onOpenChange }: CompanyImportDialogP
             <FileSpreadsheet className="size-4" />
             Скачать шаблон
           </Button>
-          <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => inputRef.current?.click()}
+          >
             <Upload className="size-4" />
             Выбрать файл
           </Button>
@@ -122,25 +123,25 @@ export function CompanyImportDialog({ open, onOpenChange }: CompanyImportDialogP
         </div>
 
         {fileName ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Файл: <span className="text-foreground">{fileName}</span> · строк к импорту:{' '}
             <span className="text-foreground">{previewCount}</span>
           </p>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Колонки: название, ИНН, статус, уровень участия, телефон, email, сайт, адрес, описание,
             заметки. Заголовки могут быть на русском.
           </p>
         )}
 
         {lastResult ? (
-          <div className="rounded-md border bg-muted/30 p-3 text-sm">
+          <div className="bg-muted/30 rounded-md border p-3 text-sm">
             <p>
               Создано: {lastResult.created}, обновлено: {lastResult.updated}, пропущено:{' '}
               {lastResult.skipped}
             </p>
             {lastResult.errors.length > 0 ? (
-              <ul className="mt-2 max-h-40 list-disc space-y-1 overflow-auto pl-5 text-muted-foreground">
+              <ul className="text-muted-foreground mt-2 max-h-40 list-disc space-y-1 overflow-auto pl-5">
                 {lastResult.errors.slice(0, 20).map((item, index) => (
                   <li key={`${item.row ?? index}-${item.error ?? 'err'}`}>
                     Строка {item.row ?? '?'}: {item.message || item.error || 'ошибка'}

@@ -36,6 +36,7 @@ export const routes = {
     root: '/cabinet',
     pending: '/cabinet/pending',
     blocked: '/cabinet/blocked',
+    account: '/cabinet/account',
     company: '/cabinet/company',
     directory: '/cabinet/directory',
     messages: '/cabinet/messages',

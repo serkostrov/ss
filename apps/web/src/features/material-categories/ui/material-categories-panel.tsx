@@ -115,9 +115,7 @@ export const MaterialCategoriesPanel = forwardRef<
                 className="size-7"
                 disabled={isFirst || moveMutation.isPending}
                 aria-label="Выше"
-                onClick={() =>
-                  moveMutation.mutate({ id: row.original.id, direction: 'up' })
-                }
+                onClick={() => moveMutation.mutate({ id: row.original.id, direction: 'up' })}
               >
                 <ArrowUp className="size-3.5" />
               </Button>
@@ -128,9 +126,7 @@ export const MaterialCategoriesPanel = forwardRef<
                 className="size-7"
                 disabled={isLast || moveMutation.isPending}
                 aria-label="Ниже"
-                onClick={() =>
-                  moveMutation.mutate({ id: row.original.id, direction: 'down' })
-                }
+                onClick={() => moveMutation.mutate({ id: row.original.id, direction: 'down' })}
               >
                 <ArrowDown className="size-3.5" />
               </Button>
@@ -183,7 +179,7 @@ export const MaterialCategoriesPanel = forwardRef<
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="size-7 text-destructive"
+                className="text-destructive size-7"
                 onClick={() => setDeleting(category)}
                 aria-label="Удалить"
               >

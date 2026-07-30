@@ -50,13 +50,7 @@ function groupByDay(items: Message[]): DayGroup[] {
   return [...map.values()]
 }
 
-function AttachmentBlock({
-  type,
-  outbound,
-}: {
-  type: MessageContentType
-  outbound?: boolean
-}) {
+function AttachmentBlock({ type, outbound }: { type: MessageContentType; outbound?: boolean }) {
   if (type === 'text') return null
   const Icon = type === 'photo' ? ImageIcon : type === 'video' ? Video : FileText
   return (
@@ -83,19 +77,13 @@ function authorInitial(name: string | null | undefined): string {
 function isOutboundMessage(message: Message): boolean {
   return Boolean(
     message.payload &&
-      typeof message.payload === 'object' &&
-      !Array.isArray(message.payload) &&
-      (message.payload as { outbound?: boolean }).outbound,
+    typeof message.payload === 'object' &&
+    !Array.isArray(message.payload) &&
+    (message.payload as { outbound?: boolean }).outbound,
   )
 }
 
-function MessageBubble({
-  message,
-  compactTop,
-}: {
-  message: Message
-  compactTop?: boolean
-}) {
+function MessageBubble({ message, compactTop }: { message: Message; compactTop?: boolean }) {
   const isOutbound = isOutboundMessage(message)
   const hasMedia = message.content_type !== 'text'
   const textLooksLikePlaceholder = /^\[.+\]$/.test(message.text.trim())
@@ -113,9 +101,7 @@ function MessageBubble({
         <div
           className={cn(
             'mt-auto flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold',
-            compactTop
-              ? 'invisible'
-              : 'bg-muted text-muted-foreground ring-1 ring-border/60',
+            compactTop ? 'invisible' : 'bg-muted text-muted-foreground ring-border/60 ring-1',
           )}
           aria-hidden={compactTop}
         >
@@ -125,14 +111,14 @@ function MessageBubble({
 
       <article
         className={cn(
-          'min-w-0 w-fit rounded-2xl px-3 py-2 text-sm shadow-xs',
+          'w-fit min-w-0 rounded-2xl px-3 py-2 text-sm shadow-xs',
           isOutbound
-            ? 'rounded-br-md bg-primary text-primary-foreground'
-            : 'rounded-bl-md bg-card text-card-foreground ring-1 ring-border/70',
+            ? 'bg-primary text-primary-foreground rounded-br-md'
+            : 'bg-card text-card-foreground ring-border/70 rounded-bl-md ring-1',
         )}
       >
         {showAuthor ? (
-          <p className="mb-0.5 truncate text-[11px] font-semibold tracking-wide text-primary">
+          <p className="text-primary mb-0.5 truncate text-[11px] font-semibold tracking-wide">
             {message.author_name}
           </p>
         ) : null}
@@ -141,7 +127,7 @@ function MessageBubble({
 
         {showText ? (
           <div className="flex flex-wrap items-end gap-x-2 gap-y-0.5">
-            <p className="min-w-0 flex-1 whitespace-pre-wrap break-words leading-relaxed">
+            <p className="min-w-0 flex-1 leading-relaxed break-words whitespace-pre-wrap">
               {message.text}
             </p>
             <time
@@ -225,7 +211,7 @@ export function ChatThreadPanel({
         <header className="flex items-center gap-3 border-b px-4 py-3">
           <div className="min-w-0 flex-1">
             <p className="truncate font-medium">{channelTitle?.trim() || 'Чат'}</p>
-            <p className="text-xs text-muted-foreground">{messageSourceLabel(source)}</p>
+            <p className="text-muted-foreground text-xs">{messageSourceLabel(source)}</p>
           </div>
           <Badge variant="secondary" className="font-normal">
             {total} сообщ.
@@ -238,18 +224,15 @@ export function ChatThreadPanel({
         onScroll={() => {
           const scroller = scrollerRef.current
           if (!scroller) return
-          const distance =
-            scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight
+          const distance = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight
           stickToBottomRef.current = distance < 96
         }}
         className={cn(
-          'min-h-0 flex-1 overflow-y-auto bg-muted/20 px-3 py-4 sm:px-4',
+          'bg-muted/20 min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-4',
           !query.isLoading && !query.isError && items.length === 0 && 'flex',
         )}
       >
-        {query.isLoading && !query.data ? (
-          <LoadingState label="Загрузка сообщений…" />
-        ) : null}
+        {query.isLoading && !query.data ? <LoadingState label="Загрузка сообщений…" /> : null}
 
         {query.isError ? (
           <ErrorState error={query.error} onRetry={() => void query.refetch()} />
@@ -281,7 +264,7 @@ export function ChatThreadPanel({
           {dayGroups.map((group) => (
             <section key={group.key} className="space-y-1">
               <div className="sticky top-0 z-10 flex justify-center py-2">
-                <span className="rounded-full bg-background/95 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border/50 backdrop-blur">
+                <span className="bg-background/95 text-muted-foreground ring-border/50 rounded-full px-2.5 py-0.5 text-[11px] font-medium ring-1 backdrop-blur">
                   {group.label}
                 </span>
               </div>
@@ -290,18 +273,14 @@ export function ChatThreadPanel({
                   const prev = group.items[index - 1]
                   const compactTop = Boolean(
                     prev &&
-                      !isOutboundMessage(message) &&
-                      !isOutboundMessage(prev) &&
-                      (prev.author_external_id || prev.author_name) &&
-                      (prev.author_external_id ?? prev.author_name) ===
-                        (message.author_external_id ?? message.author_name),
+                    !isOutboundMessage(message) &&
+                    !isOutboundMessage(prev) &&
+                    (prev.author_external_id || prev.author_name) &&
+                    (prev.author_external_id ?? prev.author_name) ===
+                      (message.author_external_id ?? message.author_name),
                   )
                   return (
-                    <MessageBubble
-                      key={message.id}
-                      message={message}
-                      compactTop={compactTop}
-                    />
+                    <MessageBubble key={message.id} message={message} compactTop={compactTop} />
                   )
                 })}
               </div>

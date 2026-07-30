@@ -203,7 +203,7 @@ function PromoteStaffDialog({
             Генеральный директор
           </label>
         ) : null}
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-xs">
           Если учётки ещё нет — сначала зарегистрируйте человека как участника, затем назначьте
           сотрудником здесь.
         </p>
@@ -255,7 +255,7 @@ export function StaffPanel() {
       {sorted.length > 0 ? (
         <div className="overflow-x-auto rounded-lg border">
           <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="border-b bg-muted/40 text-xs text-muted-foreground">
+            <thead className="bg-muted/40 text-muted-foreground border-b text-xs">
               <tr>
                 <th className="px-3 py-2 font-medium">Сотрудник</th>
                 <th className="px-3 py-2 font-medium">Должность</th>
@@ -269,11 +269,9 @@ export function StaffPanel() {
                 <tr key={staff.id} className="border-b last:border-0">
                   <td className="px-3 py-3">
                     <p className="font-medium">{staff.full_name || 'Без имени'}</p>
-                    <p className="text-xs text-muted-foreground">{staff.email}</p>
+                    <p className="text-muted-foreground text-xs">{staff.email}</p>
                   </td>
-                  <td className="px-3 py-3 text-muted-foreground">
-                    {staff.staff_position || '—'}
-                  </td>
+                  <td className="text-muted-foreground px-3 py-3">{staff.staff_position || '—'}</td>
                   <td className="px-3 py-3">
                     <div className="flex flex-wrap gap-1">
                       {staff.is_ceo ? (
@@ -331,7 +329,7 @@ export function StaffPanel() {
       ) : null}
 
       {!actorIsCeo ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Блокировать сотрудников может только генеральный директор.
         </p>
       ) : null}

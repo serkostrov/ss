@@ -15,10 +15,7 @@ import {
   Spinner,
 } from '@shared/ui'
 
-import {
-  representativeFormSchema,
-  type RepresentativeFormValues,
-} from '../model/schemas'
+import { representativeFormSchema, type RepresentativeFormValues } from '../model/schemas'
 import {
   toRepresentativeInput,
   useCompanyOptionsForReps,
@@ -115,11 +112,7 @@ export function RepresentativeFormDialog({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Отмена
           </Button>
-          <Button
-            type="button"
-            disabled={upsertMutation.isPending}
-            onClick={() => void submit()}
-          >
+          <Button type="button" disabled={upsertMutation.isPending} onClick={() => void submit()}>
             {upsertMutation.isPending ? <Spinner size="sm" className="text-current" /> : null}
             {isEdit ? 'Сохранить' : 'Создать'}
           </Button>
@@ -176,10 +169,7 @@ export function RepresentativeFormDialog({
           />
         </FormField>
 
-        <FormField
-          label="Username в Telegram"
-          error={errors.telegramUsername}
-        >
+        <FormField label="Username в Telegram" error={errors.telegramUsername}>
           <Input
             value={values.telegramUsername ?? ''}
             onChange={(event) => patch('telegramUsername', event.target.value)}
@@ -187,10 +177,7 @@ export function RepresentativeFormDialog({
           />
         </FormField>
 
-        <FormField
-          label="Username в Max"
-          error={errors.maxUsername}
-        >
+        <FormField label="Username в Max" error={errors.maxUsername}>
           <Input
             value={values.maxUsername ?? ''}
             onChange={(event) => patch('maxUsername', event.target.value)}
@@ -219,7 +206,7 @@ export function RepresentativeFormDialog({
           Основной представитель компании
         </label>
         {errors.isPrimary ? (
-          <p className="text-sm font-medium text-destructive sm:col-span-2">{errors.isPrimary}</p>
+          <p className="text-destructive text-sm font-medium sm:col-span-2">{errors.isPrimary}</p>
         ) : null}
       </div>
     </Modal>

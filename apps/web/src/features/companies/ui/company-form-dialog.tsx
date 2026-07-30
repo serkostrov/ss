@@ -42,10 +42,7 @@ function toFormValues(company?: Company | null): CompanyFormValues {
     participationLevelId: company?.participation_level_id ?? '',
     accessStatus: company?.access_status ?? 'active',
     notes: company?.notes ?? '',
-    balance:
-      company?.balance != null
-        ? String(company.balance).replace('.', ',')
-        : '0',
+    balance: company?.balance != null ? String(company.balance).replace('.', ',') : '0',
   }
 }
 
@@ -142,11 +139,7 @@ export function CompanyFormDialog({
     >
       <div className="grid gap-4 sm:grid-cols-2">
         {isEdit && company ? (
-          <FormField
-            label="ID"
-            description="Назначается автоматически"
-            className="sm:col-span-2"
-          >
+          <FormField label="ID" description="Назначается автоматически" className="sm:col-span-2">
             <Input value={formatCompanyAutoId(company.auto_id)} readOnly disabled />
           </FormField>
         ) : null}

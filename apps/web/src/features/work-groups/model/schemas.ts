@@ -11,12 +11,7 @@ export const workGroupFormSchema = z.object({
     .trim()
     .min(2, 'Название слишком короткое')
     .max(200, 'Название слишком длинное'),
-  description: z
-    .string()
-    .trim()
-    .max(4000, 'Не более 4000 символов')
-    .optional()
-    .or(z.literal('')),
+  description: z.string().trim().max(4000, 'Не более 4000 символов').optional().or(z.literal('')),
   responsibleRepresentativeId: z.string().uuid().optional().or(z.literal('')),
   categoryId: z.string().uuid().optional().or(z.literal('')),
   status: z.enum(['active', 'paused', 'archived'] satisfies [

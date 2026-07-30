@@ -66,20 +66,20 @@ function UploadField({
         }}
       >
         <div className="flex flex-col items-center gap-2 text-center">
-          <FileUp className="size-8 text-muted-foreground" aria-hidden />
+          <FileUp className="text-muted-foreground size-8" aria-hidden />
           <p className="text-sm">
             Перетащите файл сюда или{' '}
             <button
               type="button"
-              className="font-medium text-primary underline-offset-4 hover:underline"
+              className="text-primary font-medium underline-offset-4 hover:underline"
               disabled={disabled}
               onClick={() => inputRef.current?.click()}
             >
               выберите на диске
             </button>
           </p>
-          {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
-          <p className="text-xs text-muted-foreground">Макс. {maxSizeMb} МБ</p>
+          {description ? <p className="text-muted-foreground text-xs">{description}</p> : null}
+          <p className="text-muted-foreground text-xs">Макс. {maxSizeMb} МБ</p>
         </div>
         <input
           ref={inputRef}
@@ -101,7 +101,7 @@ function UploadField({
             >
               <div className="min-w-0">
                 <p className="truncate font-medium">{file.name}</p>
-                <p className="text-xs text-muted-foreground">{formatBytes(file.size)}</p>
+                <p className="text-muted-foreground text-xs">{formatBytes(file.size)}</p>
               </div>
               <Button
                 type="button"
@@ -119,7 +119,7 @@ function UploadField({
         </ul>
       ) : null}
 
-      {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
+      {error ? <p className="text-destructive text-sm font-medium">{error}</p> : null}
     </div>
   )
 }

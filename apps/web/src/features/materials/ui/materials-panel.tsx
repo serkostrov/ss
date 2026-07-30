@@ -16,16 +16,10 @@ import {
   StatusBadge,
   type FilterFieldConfig,
 } from '@shared/ui'
-import {
-  BulkMaterialAccessDialog,
-  MaterialAccessBadges,
-} from '@features/material-access'
+import { BulkMaterialAccessDialog, MaterialAccessBadges } from '@features/material-access'
 import { useActiveMaterialCategories } from '@features/material-categories'
 
-import {
-  materialStatusFilterLabel,
-  type MaterialStatusFilter,
-} from '../model/schemas'
+import { materialStatusFilterLabel, type MaterialStatusFilter } from '../model/schemas'
 import {
   useLevelsForMaterialAcl,
   useMaterialSections,
@@ -143,7 +137,7 @@ export function MaterialsPanel() {
         cell: ({ row }) => (
           <div className="min-w-0">
             <p className="truncate font-medium">{row.original.title}</p>
-            <p className="truncate text-xs text-muted-foreground">
+            <p className="text-muted-foreground truncate text-xs">
               {row.original.slug || 'без slug'}
             </p>
           </div>
@@ -153,7 +147,7 @@ export function MaterialsPanel() {
         id: 'category',
         header: 'Категория',
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-muted-foreground text-sm">
             {row.original.category?.name ?? '—'}
           </span>
         ),

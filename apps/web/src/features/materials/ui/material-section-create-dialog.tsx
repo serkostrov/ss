@@ -20,10 +20,7 @@ import {
 import { MaterialLevelsPicker } from '@features/material-access'
 import { useActiveMaterialCategories } from '@features/material-categories'
 
-import {
-  materialSectionFormSchema,
-  type MaterialSectionFormValues,
-} from '../model/schemas'
+import { materialSectionFormSchema, type MaterialSectionFormValues } from '../model/schemas'
 import {
   toMaterialSectionInput,
   useCreateMaterialSectionMutation,
@@ -104,11 +101,7 @@ export function MaterialSectionCreateDialog({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Отмена
           </Button>
-          <Button
-            type="button"
-            disabled={createMutation.isPending}
-            onClick={() => void submit()}
-          >
+          <Button type="button" disabled={createMutation.isPending} onClick={() => void submit()}>
             {createMutation.isPending ? <Spinner size="sm" className="text-current" /> : null}
             Создать
           </Button>
@@ -127,7 +120,11 @@ export function MaterialSectionCreateDialog({
             autoFocus
           />
         </FormField>
-        <FormField label="Slug" error={errors.slug} description="URL кабинета: /cabinet/materials/{slug}">
+        <FormField
+          label="Slug"
+          error={errors.slug}
+          description="URL кабинета: /cabinet/materials/{slug}"
+        >
           <Input
             value={values.slug ?? ''}
             onChange={(event) => {

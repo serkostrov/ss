@@ -34,8 +34,10 @@ export type LevelsPanelHandle = {
   openCreate: () => void
 }
 
-export const LevelsPanel = forwardRef<LevelsPanelHandle, LevelsPanelProps>(
-  function LevelsPanel({ embedded = false }, ref) {
+export const LevelsPanel = forwardRef<LevelsPanelHandle, LevelsPanelProps>(function LevelsPanel(
+  { embedded = false },
+  ref,
+) {
   const [search, setSearch] = useState('')
   const [active, setActive] = useState<LevelActiveFilter>('all')
   const [formOpen, setFormOpen] = useState(false)
@@ -89,7 +91,7 @@ export const LevelsPanel = forwardRef<LevelsPanelHandle, LevelsPanelProps>(
           <div className="min-w-0">
             <p className="font-medium">{row.original.name}</p>
             {row.original.description ? (
-              <p className="line-clamp-2 text-xs text-muted-foreground">
+              <p className="text-muted-foreground line-clamp-2 text-xs">
                 {row.original.description}
               </p>
             ) : null}
@@ -122,9 +124,7 @@ export const LevelsPanel = forwardRef<LevelsPanelHandle, LevelsPanelProps>(
                 className="size-7"
                 disabled={isFirst || moveMutation.isPending}
                 aria-label="Выше"
-                onClick={() =>
-                  moveMutation.mutate({ id: row.original.id, direction: 'up' })
-                }
+                onClick={() => moveMutation.mutate({ id: row.original.id, direction: 'up' })}
               >
                 <ArrowUp className="size-3.5" />
               </Button>
@@ -135,9 +135,7 @@ export const LevelsPanel = forwardRef<LevelsPanelHandle, LevelsPanelProps>(
                 className="size-7"
                 disabled={isLast || moveMutation.isPending}
                 aria-label="Ниже"
-                onClick={() =>
-                  moveMutation.mutate({ id: row.original.id, direction: 'down' })
-                }
+                onClick={() => moveMutation.mutate({ id: row.original.id, direction: 'down' })}
               >
                 <ArrowDown className="size-3.5" />
               </Button>
@@ -158,9 +156,7 @@ export const LevelsPanel = forwardRef<LevelsPanelHandle, LevelsPanelProps>(
                 variant="ghost"
                 size="icon"
                 className="size-7"
-                onClick={() =>
-                  toggleMutation.mutate({ id: level.id, isActive: !level.is_active })
-                }
+                onClick={() => toggleMutation.mutate({ id: level.id, isActive: !level.is_active })}
                 disabled={toggleMutation.isPending}
                 aria-label={level.is_active ? 'Скрыть' : 'Показать'}
               >
@@ -183,7 +179,7 @@ export const LevelsPanel = forwardRef<LevelsPanelHandle, LevelsPanelProps>(
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="size-7 text-destructive"
+                className="text-destructive size-7"
                 onClick={() => setDeleting(level)}
                 aria-label="Удалить"
               >

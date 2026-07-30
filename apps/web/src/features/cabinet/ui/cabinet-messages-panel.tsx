@@ -40,9 +40,7 @@ export function CabinetMessagesPanel() {
         description="Лента постов из каналов Telegram и Max по вашим рабочим группам."
       />
 
-      {groupsQuery.isLoading && !groupsQuery.data ? (
-        <LoadingState label="Загрузка групп…" />
-      ) : null}
+      {groupsQuery.isLoading && !groupsQuery.data ? <LoadingState label="Загрузка групп…" /> : null}
 
       {groupsQuery.isError ? (
         <ErrorState error={groupsQuery.error} onRetry={() => void groupsQuery.refetch()} />
@@ -73,11 +71,7 @@ export function CabinetMessagesPanel() {
           </div>
 
           {selectedId ? (
-            <MessagesFeedPanel
-              workGroupId={selectedId}
-              showPageHeader={false}
-              hideGroupFilter
-            />
+            <MessagesFeedPanel workGroupId={selectedId} showPageHeader={false} hideGroupFilter />
           ) : null}
         </div>
       ) : null}

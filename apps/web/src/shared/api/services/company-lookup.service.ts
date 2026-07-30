@@ -43,10 +43,10 @@ function toLookupErrorCode(raw?: string): ApiErrorCode {
 function isCompanyPayload(value: unknown): value is CompanyByInn {
   return Boolean(
     value &&
-      typeof value === 'object' &&
-      'name' in value &&
-      typeof (value as { name: unknown }).name === 'string' &&
-      (value as { name: string }).name.trim().length > 0,
+    typeof value === 'object' &&
+    'name' in value &&
+    typeof (value as { name: unknown }).name === 'string' &&
+    (value as { name: string }).name.trim().length > 0,
   )
 }
 
@@ -81,9 +81,7 @@ function friendlyLookupFailure(error: unknown, fallbackMessage?: string): ApiErr
 
 async function parseLookupResponse(response: Response): Promise<CompanyByInn> {
   const body = (await response.json().catch(() => null)) as
-    | (CompanyByInn & LookupErrorBody)
-    | LookupErrorBody
-    | null
+    (CompanyByInn & LookupErrorBody) | LookupErrorBody | null
 
   if (!response.ok) {
     throw new ApiError(body?.message || 'Не удалось найти организацию', {
@@ -144,7 +142,9 @@ async function lookupViaEdgeFunction(inn: string): Promise<CompanyByInn> {
 
   if (data && typeof data === 'object' && 'message' in data && typeof data.message === 'string') {
     throw new ApiError(data.message, {
-      code: toLookupErrorCode('error' in data && typeof data.error === 'string' ? data.error : undefined),
+      code: toLookupErrorCode(
+        'error' in data && typeof data.error === 'string' ? data.error : undefined,
+      ),
       details: data,
     })
   }

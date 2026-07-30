@@ -18,10 +18,7 @@ import {
 
 import { messengerPlatformLabel } from '@features/messengers'
 
-import {
-  workGroupStatusLabel,
-  type WorkGroupStatusFilter,
-} from '../model/schemas'
+import { workGroupStatusLabel, type WorkGroupStatusFilter } from '../model/schemas'
 import { useWorkGroupCategories, useWorkGroups } from '../model/use-work-groups'
 import { WorkGroupFormDialog } from './work-group-form-dialog'
 
@@ -81,7 +78,7 @@ export function WorkGroupsPanel() {
         cell: ({ row }) => (
           <div className="min-w-0">
             <p className="truncate font-medium">{row.original.name}</p>
-            <p className="truncate text-xs text-muted-foreground">
+            <p className="text-muted-foreground truncate text-xs">
               {row.original.description || 'Без описания'}
             </p>
           </div>
@@ -91,7 +88,7 @@ export function WorkGroupsPanel() {
         id: 'category',
         header: 'Направление',
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-muted-foreground text-sm">
             {row.original.category?.name ?? '—'}
           </span>
         ),
@@ -101,13 +98,11 @@ export function WorkGroupsPanel() {
         header: 'Ответственный',
         cell: ({ row }) => {
           const rep = row.original.responsible
-          if (!rep) return <span className="text-sm text-muted-foreground">Не назначен</span>
+          if (!rep) return <span className="text-muted-foreground text-sm">Не назначен</span>
           return (
             <div className="min-w-0 text-sm">
               <p className="truncate font-medium">{rep.full_name}</p>
-              <p className="truncate text-xs text-muted-foreground">
-                {rep.company?.name ?? '—'}
-              </p>
+              <p className="text-muted-foreground truncate text-xs">{rep.company?.name ?? '—'}</p>
             </div>
           )
         },
@@ -132,7 +127,7 @@ export function WorkGroupsPanel() {
         id: 'members',
         header: 'Участники',
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">{row.original.members_count}</span>
+          <span className="text-muted-foreground text-sm">{row.original.members_count}</span>
         ),
       },
       {
@@ -141,7 +136,7 @@ export function WorkGroupsPanel() {
         cell: ({ row }) => {
           const connections = row.original.messenger_connections
           if (!connections.length) {
-            return <span className="text-sm text-muted-foreground">—</span>
+            return <span className="text-muted-foreground text-sm">—</span>
           }
           return (
             <div className="flex flex-wrap gap-1">

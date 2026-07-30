@@ -2,13 +2,7 @@ import type { ReactNode } from 'react'
 
 import { cn } from '@shared/lib/utils'
 import { Label } from './label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select'
 import { SearchInput } from './search-input'
 import { Button } from './button'
 
@@ -35,17 +29,11 @@ type FiltersProps = {
   className?: string
 }
 
-function Filters({
-  fields,
-  onReset,
-  resetLabel = 'Сбросить',
-  actions,
-  className,
-}: FiltersProps) {
+function Filters({ fields, onReset, resetLabel = 'Сбросить', actions, className }: FiltersProps) {
   return (
     <div
       className={cn(
-        'flex flex-col gap-3 rounded-lg border bg-card p-4 sm:flex-row sm:flex-wrap sm:items-end',
+        'bg-card flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:flex-wrap sm:items-end',
         className,
       )}
     >

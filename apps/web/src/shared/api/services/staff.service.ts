@@ -100,9 +100,9 @@ export const staffService = {
   },
 
   /** Candidates: members that can be promoted (pending or confirmed). */
-  async listPromoteCandidates(search?: string): Promise<
-    Array<Pick<TableRow<'users'>, 'id' | 'email' | 'full_name' | 'status'>>
-  > {
+  async listPromoteCandidates(
+    search?: string,
+  ): Promise<Array<Pick<TableRow<'users'>, 'id' | 'email' | 'full_name' | 'status'>>> {
     let query = supabaseClient
       .from('users')
       .select('id, email, full_name, status')

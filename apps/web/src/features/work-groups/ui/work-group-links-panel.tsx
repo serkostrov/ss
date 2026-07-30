@@ -143,14 +143,14 @@ export function WorkGroupLinksPanel({ workGroupId }: WorkGroupLinksPanelProps) {
   }
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4 sm:p-6" aria-labelledby="wg-links">
+    <section className="bg-card space-y-4 rounded-lg border p-4 sm:p-6" aria-labelledby="wg-links">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 id="wg-links" className="flex items-center gap-2 text-base font-semibold">
             <Link2 className="size-4" />
             Ссылки и файлы
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Внешние URL и файлы в Storage (до {MAX_MB} МБ). Сортировка стрелками.
           </p>
         </div>
@@ -172,7 +172,7 @@ export function WorkGroupLinksPanel({ workGroupId }: WorkGroupLinksPanelProps) {
       />
 
       {uploadFile.isPending ? (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="text-muted-foreground flex items-center gap-2 text-sm">
           <Spinner size="sm" />
           <FileUp className="size-4" />
           Загрузка в Storage…
@@ -309,7 +309,7 @@ export function WorkGroupLinksPanel({ workGroupId }: WorkGroupLinksPanelProps) {
               rows={3}
             />
           </FormField>
-          {formError ? <p className="text-sm font-medium text-destructive">{formError}</p> : null}
+          {formError ? <p className="text-destructive text-sm font-medium">{formError}</p> : null}
         </div>
       </Modal>
 
@@ -355,7 +355,9 @@ export function WorkGroupLinksPanel({ workGroupId }: WorkGroupLinksPanelProps) {
               />
             ) : (
               <div className="space-y-3 text-sm">
-                <p className="text-muted-foreground">Предпросмотр ограничен. Откройте или скачайте.</p>
+                <p className="text-muted-foreground">
+                  Предпросмотр ограничен. Откройте или скачайте.
+                </p>
                 <Button asChild variant="outline" size="sm">
                   <a href={preview.url} target="_blank" rel="noreferrer">
                     Открыть во вкладке

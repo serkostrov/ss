@@ -163,7 +163,7 @@ export function WorkGroupMembersPanel({ workGroupId }: WorkGroupMembersPanelProp
 
         {members.length > 0 ? (
           <>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="text-muted-foreground flex items-center justify-between text-xs">
               <label className="flex items-center gap-2">
                 <Checkbox
                   checked={
@@ -203,7 +203,7 @@ export function WorkGroupMembersPanel({ workGroupId }: WorkGroupMembersPanelProp
                         <Badge variant="outline">неактивен</Badge>
                       ) : null}
                     </div>
-                    <p className="truncate text-xs text-muted-foreground">
+                    <p className="text-muted-foreground truncate text-xs">
                       {[
                         member.representative?.company?.name,
                         member.representative?.position,
@@ -212,7 +212,7 @@ export function WorkGroupMembersPanel({ workGroupId }: WorkGroupMembersPanelProp
                         .filter(Boolean)
                         .join(' · ') || '—'}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-muted-foreground text-xs">
                       Добавлен: {formatWorkGroupDate(member.created_at)}
                     </p>
                   </div>
@@ -220,7 +220,7 @@ export function WorkGroupMembersPanel({ workGroupId }: WorkGroupMembersPanelProp
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="size-8 shrink-0 text-destructive"
+                    className="text-destructive size-8 shrink-0"
                     disabled={removeMutation.isPending}
                     aria-label="Удалить участника"
                     onClick={() => setRemoveOne(member)}

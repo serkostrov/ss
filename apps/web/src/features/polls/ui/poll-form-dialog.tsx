@@ -49,19 +49,12 @@ function toFormValues(poll?: Poll | null): PollFormValues {
     startsAt: toDatetimeLocalValue(poll?.starts_at),
     endsAt: toDatetimeLocalValue(poll?.ends_at),
     status: poll?.status ?? 'draft',
-    options: poll?.options?.length
-      ? poll.options.map((item) => item.text)
-      : emptyOptions(),
+    options: poll?.options?.length ? poll.options.map((item) => item.text) : emptyOptions(),
     levelIds: poll?.level_ids ?? [],
   }
 }
 
-export function PollFormDialog({
-  open,
-  onOpenChange,
-  poll,
-  onCreated,
-}: PollFormDialogProps) {
+export function PollFormDialog({ open, onOpenChange, poll, onCreated }: PollFormDialogProps) {
   const isEdit = Boolean(poll)
   const levels = useLevelsForPollAcl()
   const createMutation = useCreatePollMutation()
@@ -175,18 +168,12 @@ export function PollFormDialog({
         <FormField
           label="Режим голосования"
           error={errors.voteMode}
-          description={
-            voteModeLocked
-              ? 'Режим нельзя менять после первых голосов'
-              : undefined
-          }
+          description={voteModeLocked ? 'Режим нельзя менять после первых голосов' : undefined}
         >
           <Select
             value={values.voteMode}
             disabled={voteModeLocked}
-            onValueChange={(value) =>
-              patch('voteMode', value as PollFormValues['voteMode'])
-            }
+            onValueChange={(value) => patch('voteMode', value as PollFormValues['voteMode'])}
           >
             <SelectTrigger>
               <SelectValue />
@@ -220,9 +207,7 @@ export function PollFormDialog({
         <FormField label="Статус" error={errors.status}>
           <Select
             value={values.status}
-            onValueChange={(value) =>
-              patch('status', value as PollFormValues['status'])
-            }
+            onValueChange={(value) => patch('status', value as PollFormValues['status'])}
           >
             <SelectTrigger>
               <SelectValue />
@@ -257,7 +242,7 @@ export function PollFormDialog({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="shrink-0 text-destructive"
+                  className="text-destructive shrink-0"
                   disabled={values.options.length <= 2}
                   onClick={() => removeOption(index)}
                   aria-label="Удалить вариант"
@@ -268,15 +253,13 @@ export function PollFormDialog({
             ))}
           </div>
           {errors.options ? (
-            <p className="text-sm font-medium text-destructive">{errors.options}</p>
+            <p className="text-destructive text-sm font-medium">{errors.options}</p>
           ) : null}
         </div>
 
         <div className="space-y-2">
           <p className="text-sm font-medium">Уровни участников</p>
-          <p className="text-xs text-muted-foreground">
-            Кто сможет голосовать после активации
-          </p>
+          <p className="text-muted-foreground text-xs">Кто сможет голосовать после активации</p>
           <MaterialLevelsPicker
             levels={levels.data ?? []}
             value={values.levelIds}

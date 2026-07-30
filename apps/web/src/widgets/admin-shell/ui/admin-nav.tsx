@@ -37,7 +37,7 @@ export function AdminNav({ onNavigate, className, compact = false }: AdminNavPro
 
         return (
           <div key={group.id}>
-            <p className="mb-1.5 px-3 text-[11px] font-medium tracking-wide text-sidebar-foreground/60 uppercase">
+            <p className="text-sidebar-foreground/60 mb-1.5 px-3 text-[11px] font-medium tracking-wide uppercase">
               {group.label}
             </p>
             <div className="flex flex-col gap-0.5">
@@ -64,7 +64,7 @@ function NavItem({ item, onNavigate }: { item: AdminNavItem; onNavigate?: () => 
         cn(
           'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors',
           isActive
-            ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+            ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
             : 'text-sidebar-foreground/78 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground',
         )
       }

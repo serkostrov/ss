@@ -81,29 +81,24 @@ export function CompanyCommentsPanel({ companyId }: CompanyCommentsPanelProps) {
 
         {!query.isLoading && !query.isError ? (
           (query.data ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">Комментариев пока нет.</p>
+            <p className="text-muted-foreground text-sm">Комментариев пока нет.</p>
           ) : (
             <ul className="space-y-3">
               {(query.data ?? []).map((comment) => {
                 const author =
-                  comment.author?.full_name?.trim() ||
-                  comment.author?.email ||
-                  'Администратор'
+                  comment.author?.full_name?.trim() || comment.author?.email || 'Администратор'
                 return (
-                  <li
-                    key={comment.id}
-                    className="rounded-md border bg-muted/30 px-3 py-2.5"
-                  >
+                  <li key={comment.id} className="bg-muted/30 rounded-md border px-3 py-2.5">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-muted-foreground text-xs">
                           {author} · {formatCompanyDate(comment.created_at)}
                         </p>
-                        <p className="mt-1 whitespace-pre-wrap text-sm">{comment.body}</p>
+                        <p className="mt-1 text-sm whitespace-pre-wrap">{comment.body}</p>
                       </div>
                       <IconButton
                         label="Удалить комментарий"
-                        className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive shrink-0"
                         disabled={deleteMutation.isPending}
                         onClick={() => void deleteMutation.mutateAsync(comment.id)}
                       >

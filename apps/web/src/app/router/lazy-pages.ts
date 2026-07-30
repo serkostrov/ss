@@ -27,7 +27,10 @@ export const UpdatePasswordPage = lazyNamed(
 
 /** Errors */
 export const NotFoundPage = lazyNamed(() => import('@pages/errors/not-found-page'), 'NotFoundPage')
-export const ForbiddenPage = lazyNamed(() => import('@pages/errors/forbidden-page'), 'ForbiddenPage')
+export const ForbiddenPage = lazyNamed(
+  () => import('@pages/errors/forbidden-page'),
+  'ForbiddenPage',
+)
 export const UnauthorizedPage = lazyNamed(
   () => import('@pages/errors/unauthorized-page'),
   'UnauthorizedPage',
@@ -83,10 +86,7 @@ export const AdminPollDetailsPage = lazyNamed(
   () => import('@pages/admin/poll-details-page'),
   'AdminPollDetailsPage',
 )
-export const AdminAuditPage = lazyNamed(
-  () => import('@pages/admin/audit-page'),
-  'AdminAuditPage',
-)
+export const AdminAuditPage = lazyNamed(() => import('@pages/admin/audit-page'), 'AdminAuditPage')
 export const AdminSettingsPage = lazyNamed(
   () => import('@pages/admin/settings-page'),
   'AdminSettingsPage',
@@ -97,6 +97,10 @@ export const AdminStaffPage = lazyNamed(() => import('@pages/admin/staff-page'),
 export const CabinetHomePage = lazyNamed(
   () => import('@pages/cabinet/home-page'),
   'CabinetHomePage',
+)
+export const CabinetAccountPage = lazyNamed(
+  () => import('@pages/cabinet/account-page'),
+  'CabinetAccountPage',
 )
 export const CabinetPendingPage = lazyNamed(
   () => import('@pages/cabinet/pending-page'),
@@ -122,7 +126,10 @@ export const CabinetMaterialDetailsPage = lazyNamed(
   () => import('@pages/cabinet/material-details-page'),
   'CabinetMaterialDetailsPage',
 )
-export const CabinetPollsPage = lazyNamed(() => import('@pages/cabinet/polls-page'), 'CabinetPollsPage')
+export const CabinetPollsPage = lazyNamed(
+  () => import('@pages/cabinet/polls-page'),
+  'CabinetPollsPage',
+)
 export const CabinetPollDetailsPage = lazyNamed(
   () => import('@pages/cabinet/poll-details-page'),
   'CabinetPollDetailsPage',

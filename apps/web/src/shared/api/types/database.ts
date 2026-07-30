@@ -3,13 +3,7 @@
  * Replace with `supabase gen types` when migrations are applied.
  */
 
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type UserRole = 'admin' | 'member'
 export type UserStatus = 'pending' | 'confirmed' | 'blocked'
@@ -999,6 +993,17 @@ export type Database = {
           p_max_username?: string | null
         }
         Returns: Database['public']['Tables']['representatives']['Row']
+      }
+      update_own_member_profile: {
+        Args: {
+          p_full_name: string
+          p_position?: string | null
+          p_phone?: string | null
+          p_telegram_username?: string | null
+          p_max_username?: string | null
+          p_show_contacts_to_members?: boolean
+        }
+        Returns: Database['public']['Tables']['users']['Row']
       }
       list_member_assign_candidates: {
         Args: {

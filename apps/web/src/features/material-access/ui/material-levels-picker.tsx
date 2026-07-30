@@ -38,7 +38,7 @@ export function MaterialLevelsPicker({
   const clearAll = () => onChange([])
 
   if (!visible.length) {
-    return <p className="text-sm text-muted-foreground">{emptyLabel}</p>
+    return <p className="text-muted-foreground text-sm">{emptyLabel}</p>
   }
 
   return (
@@ -83,15 +83,13 @@ export function MaterialLevelsPicker({
             />
             <span>
               {level.name}
-              {!level.is_active ? (
-                <span className="text-muted-foreground"> (скрыт)</span>
-              ) : null}
+              {!level.is_active ? <span className="text-muted-foreground"> (скрыт)</span> : null}
             </span>
           </label>
         ))}
       </div>
 
-      {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
+      {error ? <p className="text-destructive text-sm font-medium">{error}</p> : null}
     </div>
   )
 }

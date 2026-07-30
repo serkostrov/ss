@@ -11,10 +11,10 @@ export function ForbiddenPage() {
   const home = isAuthenticated && profile ? getPostLoginPath(profile) : routes.home
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-muted/30 px-4 py-10">
+    <div className="bg-muted/30 flex min-h-full items-center justify-center px-4 py-10">
       <Card className="w-full max-w-lg">
         <CardHeader>
-          <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+          <div className="bg-destructive/10 text-destructive mb-2 flex size-10 items-center justify-center rounded-full">
             <ShieldOff className="size-5" aria-hidden />
           </div>
           <CardTitle>403 — Доступ запрещён</CardTitle>

@@ -94,7 +94,7 @@ export const messengerConnectionsService = {
     const botStatus = input.bot_status ?? existing?.bot_status ?? 'connected'
     const lastError =
       botStatus === 'error'
-        ? (input.last_error?.trim() || existing?.last_error || null)
+        ? input.last_error?.trim() || existing?.last_error || null
         : input.last_error === undefined
           ? botStatus === 'connected'
             ? null
@@ -184,9 +184,7 @@ export const messengerConnectionsService = {
       .update({
         chat_id: chatId,
         chat_title:
-          input.chat_title !== undefined
-            ? input.chat_title?.trim() || null
-            : existing.chat_title,
+          input.chat_title !== undefined ? input.chat_title?.trim() || null : existing.chat_title,
         bot_status: botStatus,
         last_error: lastError,
         connected_at: connectedAt,

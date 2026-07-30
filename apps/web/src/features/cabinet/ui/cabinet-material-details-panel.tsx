@@ -2,13 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
 
 import { routes } from '@shared/config'
-import {
-  Button,
-  ErrorState,
-  MarkdownViewer,
-  PageHeader,
-  Skeleton,
-} from '@shared/ui'
+import { Button, ErrorState, MarkdownViewer, PageHeader, Skeleton } from '@shared/ui'
 
 import { useCabinetMaterialBySlug } from '../model/use-cabinet-materials'
 import { CabinetDocumentsPanel } from './cabinet-documents-panel'
@@ -85,17 +79,17 @@ export function CabinetMaterialDetailsPanel() {
         <PageHeader title={section.title} description={section.description || undefined} />
       </div>
       {contentPending ? (
-        <div className="space-y-3 rounded-lg border bg-card p-4 sm:p-6">
+        <div className="bg-card space-y-3 rounded-lg border p-4 sm:p-6">
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-4/5" />
         </div>
       ) : contentReady ? (
-        <article className="rounded-lg border bg-card p-4 sm:p-6">
+        <article className="bg-card rounded-lg border p-4 sm:p-6">
           <MarkdownViewer content={section.content ?? ''} />
         </article>
       ) : (
-        <p className="text-sm text-muted-foreground">Содержание пока не заполнено.</p>
+        <p className="text-muted-foreground text-sm">Содержание пока не заполнено.</p>
       )}
 
       <CabinetDocumentsPanel sectionId={section.id} />

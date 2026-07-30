@@ -107,8 +107,7 @@ export function boundChatIds(
     connections
       .filter(
         (item) =>
-          item.platform === platform &&
-          (!exceptConnectionId || item.id !== exceptConnectionId),
+          item.platform === platform && (!exceptConnectionId || item.id !== exceptConnectionId),
       )
       .map((item) => item.chat_id),
   )

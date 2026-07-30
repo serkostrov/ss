@@ -64,13 +64,7 @@ export function buildPollResultsCsv(
       formatPercent(option.share),
     ]),
     [],
-    [
-      'Дата голоса',
-      'Представитель',
-      'Email',
-      'Компания',
-      'Вариант',
-    ],
+    ['Дата голоса', 'Представитель', 'Email', 'Компания', 'Вариант'],
     ...votes.map((vote) => [
       formatPollDate(vote.voted_at),
       vote.representative_name,

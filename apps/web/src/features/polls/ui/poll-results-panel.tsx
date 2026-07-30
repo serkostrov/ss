@@ -57,20 +57,12 @@ type PollResultsPanelProps = {
   className?: string
 }
 
-function StatTile({
-  label,
-  value,
-  hint,
-}: {
-  label: string
-  value: string
-  hint?: string
-}) {
+function StatTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-lg border bg-card px-4 py-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
+    <div className="bg-card rounded-lg border px-4 py-3">
+      <p className="text-muted-foreground text-xs">{label}</p>
       <p className="mt-1 text-2xl font-semibold tracking-tight">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
+      {hint ? <p className="text-muted-foreground mt-1 text-xs">{hint}</p> : null}
     </div>
   )
 }
@@ -104,8 +96,7 @@ export function PollResultsPanel({ pollId, className }: PollResultsPanelProps) {
     () =>
       (results?.options ?? []).map((option) => ({
         id: option.id,
-        name:
-          option.text.length > 28 ? `${option.text.slice(0, 28)}…` : option.text,
+        name: option.text.length > 28 ? `${option.text.slice(0, 28)}…` : option.text,
         fullName: option.text,
         votes: option.votes_count,
         share: option.share,
@@ -119,7 +110,7 @@ export function PollResultsPanel({ pollId, className }: PollResultsPanelProps) {
         accessorKey: 'voted_at',
         header: 'Когда',
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-muted-foreground text-sm">
             {formatPollDate(row.original.voted_at)}
           </span>
         ),
@@ -130,7 +121,7 @@ export function PollResultsPanel({ pollId, className }: PollResultsPanelProps) {
         cell: ({ row }) => (
           <div className="min-w-0">
             <p className="truncate font-medium">{row.original.representative_name}</p>
-            <p className="truncate text-xs text-muted-foreground">
+            <p className="text-muted-foreground truncate text-xs">
               {row.original.representative_email || '—'}
             </p>
           </div>
@@ -139,9 +130,7 @@ export function PollResultsPanel({ pollId, className }: PollResultsPanelProps) {
       {
         accessorKey: 'company_name',
         header: 'Компания',
-        cell: ({ row }) => (
-          <span className="text-sm">{row.original.company_name}</span>
-        ),
+        cell: ({ row }) => <span className="text-sm">{row.original.company_name}</span>,
       },
       {
         accessorKey: 'option_text',
@@ -179,13 +168,7 @@ export function PollResultsPanel({ pollId, className }: PollResultsPanelProps) {
   }
 
   if (error) {
-    return (
-      <ErrorState
-        title="Не удалось загрузить результаты"
-        error={error}
-        onRetry={refresh}
-      />
-    )
+    return <ErrorState title="Не удалось загрузить результаты" error={error} onRetry={refresh} />
   }
 
   if (!results) {
@@ -284,16 +267,13 @@ export function PollResultsPanel({ pollId, className }: PollResultsPanelProps) {
                       <Tooltip
                         formatter={(value) => [`${value ?? 0}`, 'Голосов']}
                         labelFormatter={(_, payload) =>
-                          (payload?.[0]?.payload as { fullName?: string } | undefined)
-                            ?.fullName ?? ''
+                          (payload?.[0]?.payload as { fullName?: string } | undefined)?.fullName ??
+                          ''
                         }
                       />
                       <Bar dataKey="votes" radius={[4, 4, 0, 0]}>
                         {chartData.map((entry, index) => (
-                          <Cell
-                            key={entry.id}
-                            fill={CHART_COLORS[index % CHART_COLORS.length]}
-                          />
+                          <Cell key={entry.id} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                         ))}
                       </Bar>
                     </BarChart>
@@ -317,10 +297,7 @@ export function PollResultsPanel({ pollId, className }: PollResultsPanelProps) {
                         paddingAngle={2}
                       >
                         {chartData.map((entry, index) => (
-                          <Cell
-                            key={entry.id}
-                            fill={CHART_COLORS[index % CHART_COLORS.length]}
-                          />
+                          <Cell key={entry.id} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                         ))}
                       </Pie>
                       <Tooltip
@@ -335,10 +312,7 @@ export function PollResultsPanel({ pollId, className }: PollResultsPanelProps) {
                 </div>
                 <ul className="mt-2 space-y-1.5">
                   {results.options.map((option, index) => (
-                    <li
-                      key={option.id}
-                      className="flex items-center justify-between gap-2 text-sm"
-                    >
+                    <li key={option.id} className="flex items-center justify-between gap-2 text-sm">
                       <span className="flex min-w-0 items-center gap-2">
                         <span
                           className="size-2.5 shrink-0 rounded-full"
@@ -348,7 +322,7 @@ export function PollResultsPanel({ pollId, className }: PollResultsPanelProps) {
                         />
                         <span className="truncate">{option.text}</span>
                       </span>
-                      <span className="shrink-0 text-muted-foreground">
+                      <span className="text-muted-foreground shrink-0">
                         {option.votes_count} · {formatPercent(option.share)}
                       </span>
                     </li>

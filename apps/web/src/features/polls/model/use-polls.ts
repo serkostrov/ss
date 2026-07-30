@@ -11,10 +11,7 @@ import {
 } from '@shared/api'
 import { notify } from '@shared/lib/notify'
 
-import {
-  fromDatetimeLocalValue,
-  type PollFormValues,
-} from './schemas'
+import { fromDatetimeLocalValue, type PollFormValues } from './schemas'
 
 function listKey(filters: PollsListFilters) {
   return queryKeys.polls.list({

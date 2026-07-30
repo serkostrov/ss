@@ -28,11 +28,7 @@ import {
   pollStatusName,
   voteModeLabel,
 } from '../model/schemas'
-import {
-  useDeletePollMutation,
-  usePoll,
-  useSetPollStatusMutation,
-} from '../model/use-polls'
+import { useDeletePollMutation, usePoll, useSetPollStatusMutation } from '../model/use-polls'
 import { PollFormDialog } from './poll-form-dialog'
 import { PollResultsPanel } from './poll-results-panel'
 
@@ -92,13 +88,7 @@ export function PollDetailsCard() {
             disabled={statusMutation.isPending}
             onClick={() => setStatusTarget(status)}
           >
-            {status === 'active' ? (
-              <CheckCircle2 />
-            ) : status === 'closed' ? (
-              <Lock />
-            ) : (
-              <FileEdit />
-            )}
+            {status === 'active' ? <CheckCircle2 /> : status === 'closed' ? <Lock /> : <FileEdit />}
           </IconButton>
         ))}
         <IconButton
@@ -131,7 +121,7 @@ export function PollDetailsCard() {
             </div>
             <Separator />
             <div>
-              <p className="mb-2 text-muted-foreground">Уровни участников</p>
+              <p className="text-muted-foreground mb-2">Уровни участников</p>
               {poll.levels.length ? (
                 <div className="flex flex-wrap gap-1">
                   {poll.levels.map((level) => (
@@ -150,9 +140,7 @@ export function PollDetailsCard() {
               )}
             </div>
             <Separator />
-            <p className="text-muted-foreground">
-              Создано: {formatPollDate(poll.created_at)}
-            </p>
+            <p className="text-muted-foreground">Создано: {formatPollDate(poll.created_at)}</p>
             <p className="text-muted-foreground">Голосов: {poll.votes_count}</p>
             <p className="text-muted-foreground">Вариантов: {poll.options.length}</p>
           </CardContent>
@@ -171,7 +159,7 @@ export function PollDetailsCard() {
                     key={option.id}
                     className="flex items-start gap-3 rounded-md border px-3 py-2 text-sm"
                   >
-                    <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
+                    <span className="bg-muted mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-medium">
                       {index + 1}
                     </span>
                     <span>{option.text}</span>
@@ -179,7 +167,7 @@ export function PollDetailsCard() {
                 ))}
               </ol>
             ) : (
-              <p className="text-sm text-muted-foreground">Варианты не заданы</p>
+              <p className="text-muted-foreground text-sm">Варианты не заданы</p>
             )}
           </CardContent>
         </Card>

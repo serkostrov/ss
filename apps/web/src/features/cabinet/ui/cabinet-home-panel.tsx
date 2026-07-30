@@ -100,7 +100,7 @@ export function CabinetHomePanel() {
                   </p>
                 ) : null}
                 <Button asChild variant="outline" size="sm" className="mt-2">
-                  <Link to={routes.cabinet.company}>Редактировать компанию</Link>
+                  <Link to={`${routes.cabinet.account}?tab=company`}>Открыть компанию</Link>
                 </Button>
               </>
             ) : (
@@ -124,7 +124,7 @@ export function CabinetHomePanel() {
           <CardContent className="space-y-3">
             {materials.isLoading ? <LoadingState label="Загрузка…" /> : null}
             {!materials.isLoading ? (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Доступно разделов: {(materials.data ?? []).length}
               </p>
             ) : null}

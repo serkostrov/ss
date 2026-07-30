@@ -89,7 +89,9 @@ export function useToggleRepresentativeActiveMutation() {
       ensureFreshSession: true,
       invalidateKeys: invalidateAll,
       onSuccess: (_data, variables) => {
-        notify.success(variables.isActive ? 'Представитель активирован' : 'Представитель деактивирован')
+        notify.success(
+          variables.isActive ? 'Представитель активирован' : 'Представитель деактивирован',
+        )
       },
       onError: (error) => notify.fromError(error, 'Не удалось изменить статус'),
     },
@@ -107,7 +109,11 @@ export function useDeleteRepresentativeMutation() {
 
 export function useMemberAssignCandidates(companyId: string | undefined, search = '') {
   return useSupabaseQuery(
-    [...queryKeys.representatives.byCompany(companyId ?? 'none'), 'assign-candidates', search] as const,
+    [
+      ...queryKeys.representatives.byCompany(companyId ?? 'none'),
+      'assign-candidates',
+      search,
+    ] as const,
     () => {
       if (!companyId) return Promise.resolve([])
       return representativesService.listAssignCandidates(companyId, search)

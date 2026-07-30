@@ -9,7 +9,13 @@ import {
 import { downloadCsv, slugifyFilename } from '@shared/lib/csv'
 import { notify } from '@shared/lib/notify'
 
-import { auditActorLabel, actionLabel, entityTypeLabel, formatAuditDate, formatAuditPayload } from './schemas'
+import {
+  auditActorLabel,
+  actionLabel,
+  entityTypeLabel,
+  formatAuditDate,
+  formatAuditPayload,
+} from './schemas'
 
 function listKey(filters: AuditLogListFilters) {
   return queryKeys.audit.list({
@@ -32,15 +38,11 @@ export function useAuditLog(filters: AuditLogListFilters) {
 }
 
 export function useAuditActionOptions() {
-  return useSupabaseQuery(
-    queryKeys.audit.actionOptions,
-    () => auditService.listActionOptions(),
-    {
-      ensureFreshSession: true,
-      staleTime: 60_000,
-      meta: { suppressErrorToast: true },
-    },
-  )
+  return useSupabaseQuery(queryKeys.audit.actionOptions, () => auditService.listActionOptions(), {
+    ensureFreshSession: true,
+    staleTime: 60_000,
+    meta: { suppressErrorToast: true },
+  })
 }
 
 export function useAuditEntityTypeOptions() {

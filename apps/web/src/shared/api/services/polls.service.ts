@@ -158,12 +158,10 @@ type QueryResult<T> = {
 
 type RawPoll = TableRow<'polls'> & {
   poll_options: PollOption[] | null
-  poll_level_access:
-    | Array<{
-        participation_level_id: string
-        participation_levels: PollLevelRef | PollLevelRef[] | null
-      }>
-    | null
+  poll_level_access: Array<{
+    participation_level_id: string
+    participation_levels: PollLevelRef | PollLevelRef[] | null
+  }> | null
   poll_votes: Array<{ count: number }> | null
 }
 
@@ -291,7 +289,11 @@ function mapCastVoteError(error: unknown): never {
     const key = resolveCastVoteErrorKey(error.message)
     const mapped = key ? CAST_VOTE_ERRORS[key] : undefined
     if (mapped) {
-      throw new ApiError(mapped.message, { code: mapped.code, cause: error, details: error.details })
+      throw new ApiError(mapped.message, {
+        code: mapped.code,
+        cause: error,
+        details: error.details,
+      })
     }
     if (error.code === 'conflict') {
       throw new ApiError(CAST_VOTE_ERRORS.already_voted.message, {
@@ -305,10 +307,7 @@ function mapCastVoteError(error: unknown): never {
   throw error
 }
 
-function normalizeMemberPoll(
-  row: MemberPollRow,
-  vote: MemberPollVote | null,
-): CabinetPoll {
+function normalizeMemberPoll(row: MemberPollRow, vote: MemberPollVote | null): CabinetPoll {
   const options = [...(row.poll_options ?? [])].sort(
     (a, b) => a.sort_order - b.sort_order || a.text.localeCompare(b.text, 'ru'),
   )
@@ -386,12 +385,13 @@ export const pollsService = {
 
     const search = filters.search?.trim()
     if (search) {
-      const safe = search.replace(/[%_,()"]/g, ' ').replace(/\s+/g, ' ').trim()
+      const safe = search
+        .replace(/[%_,()"]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
       if (safe) {
         const pattern = `%${safe}%`
-        query = query.or(
-          [`title.ilike."${pattern}"`, `description.ilike."${pattern}"`].join(','),
-        )
+        query = query.or([`title.ilike."${pattern}"`, `description.ilike."${pattern}"`].join(','))
       }
     }
 
@@ -425,7 +425,7 @@ export const pollsService = {
       created_by: user?.id ?? null,
     }
 
-    if (payload.status === 'active' && !(input.level_ids?.length)) {
+    if (payload.status === 'active' && !input.level_ids?.length) {
       throw new ApiError('Для публикации выберите уровни доступа', { code: 'validation' })
     }
 

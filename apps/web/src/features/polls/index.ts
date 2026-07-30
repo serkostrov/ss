@@ -33,8 +33,4 @@ export {
   toDatetimeLocalValue,
   fromDatetimeLocalValue,
 } from './model/schemas'
-export type {
-  PollFormValues,
-  PollStatusFilter,
-  PollVoteModeFilter,
-} from './model/schemas'
+export type { PollFormValues, PollStatusFilter, PollVoteModeFilter } from './model/schemas'

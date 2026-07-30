@@ -97,9 +97,7 @@ function assertResult<T>(result: QueryResult<T>): T {
           ? 'forbidden'
           : 'unknown'
     throw new ApiError(
-      code === 'conflict'
-        ? 'Представитель уже состоит в этой группе'
-        : result.error.message,
+      code === 'conflict' ? 'Представитель уже состоит в этой группе' : result.error.message,
       {
         code,
         details: result.error,
@@ -137,17 +135,10 @@ function normalizeMember(row: RawMember): WorkGroupMember {
   }
 }
 
-function matchesSearch(
-  haystack: Array<string | null | undefined>,
-  search: string,
-): boolean {
+function matchesSearch(haystack: Array<string | null | undefined>, search: string): boolean {
   const q = search.trim().toLowerCase().replace(/\s+/g, ' ')
   if (!q) return true
-  return haystack
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase()
-    .includes(q)
+  return haystack.filter(Boolean).join(' ').toLowerCase().includes(q)
 }
 
 /**
@@ -158,9 +149,7 @@ export const workGroupMembersService = {
     const result = (await supabaseClient
       .from('work_group_members')
       .select('representative_id')
-      .eq('work_group_id', workGroupId)) as QueryResult<
-      Array<{ representative_id: string }>
-    >
+      .eq('work_group_id', workGroupId)) as QueryResult<Array<{ representative_id: string }>>
 
     return assertResult(result).map((row) => row.representative_id)
   },
@@ -310,13 +299,18 @@ export const workGroupMembersService = {
 
     const search = filters.search?.trim()
     if (search) {
-      const safe = search.replace(/[%_,()"]/g, ' ').replace(/\s+/g, ' ').trim()
+      const safe = search
+        .replace(/[%_,()"]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
       if (safe) {
         const pattern = `%${safe}%`
         query = query.or(
-          [`full_name.ilike."${pattern}"`, `email.ilike."${pattern}"`, `position.ilike."${pattern}"`].join(
-            ',',
-          ),
+          [
+            `full_name.ilike."${pattern}"`,
+            `email.ilike."${pattern}"`,
+            `position.ilike."${pattern}"`,
+          ].join(','),
         )
       }
     }

@@ -9,9 +9,7 @@ export type AccessState = {
   profile: AuthProfile | null
 }
 
-export type AccessDecision =
-  | { allow: true }
-  | { allow: false; redirectTo: string; reason: string }
+export type AccessDecision = { allow: true } | { allow: false; redirectTo: string; reason: string }
 
 function isRole(value: unknown): value is UserRole {
   return value === 'admin' || value === 'member'
@@ -38,6 +36,15 @@ export function resolveAuthProfile(user: User, dbProfile: AuthProfile | null): A
     status: isStatus(metaStatus) ? metaStatus : 'pending',
     representativeId: null,
     fullName: typeof metaName === 'string' ? metaName : null,
+    position: null,
+    phone: typeof user.user_metadata?.phone === 'string' ? user.user_metadata.phone : null,
+    telegramUsername:
+      typeof user.user_metadata?.telegram_username === 'string'
+        ? user.user_metadata.telegram_username
+        : null,
+    maxUsername:
+      typeof user.user_metadata?.max_username === 'string' ? user.user_metadata.max_username : null,
+    showContactsToMembers: user.user_metadata?.show_contacts_to_members === true,
     companyNameHint:
       typeof user.user_metadata?.company_name_hint === 'string'
         ? user.user_metadata.company_name_hint
@@ -114,10 +121,7 @@ export function assertRole(state: AccessState, role: UserRole): AccessDecision {
   return { allow: true }
 }
 
-export function assertMemberStatus(
-  state: AccessState,
-  required: UserStatus,
-): AccessDecision {
+export function assertMemberStatus(state: AccessState, required: UserStatus): AccessDecision {
   const roleCheck = assertRole(state, 'member')
   if (!roleCheck.allow) return roleCheck
 

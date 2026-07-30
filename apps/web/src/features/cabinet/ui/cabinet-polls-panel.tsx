@@ -25,7 +25,7 @@ function PollsListSkeleton() {
   return (
     <div className="grid gap-3 sm:grid-cols-2" aria-hidden>
       {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="rounded-lg border bg-card p-4">
+        <div key={index} className="bg-card rounded-lg border p-4">
           <Skeleton className="mb-3 h-5 w-2/3" />
           <Skeleton className="h-4 w-full" />
           <Skeleton className="mt-2 h-4 w-4/5" />
@@ -35,7 +35,11 @@ function PollsListSkeleton() {
   )
 }
 
-function emptyHintDescription(reason: string | undefined, companyName?: string, activeTotal?: number) {
+function emptyHintDescription(
+  reason: string | undefined,
+  companyName?: string,
+  activeTotal?: number,
+) {
   switch (reason) {
     case 'no_representative':
     case 'no_company':
@@ -93,7 +97,7 @@ export function CabinetPollsPanel() {
           disabled={query.isLoading && query.totalCount === 0}
         />
         {!query.isLoading && query.totalCount > 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             {search.trim()
               ? `Найдено: ${query.items.length} из ${query.totalCount}`
               : `Доступно: ${query.totalCount}`}
@@ -138,10 +142,10 @@ export function CabinetPollsPanel() {
             <Link
               key={poll.id}
               to={routes.cabinet.poll(poll.id)}
-              className="rounded-lg border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="bg-card hover:border-primary/40 hover:bg-accent/30 focus-visible:ring-ring rounded-lg border p-4 transition-colors focus-visible:ring-2 focus-visible:outline-none"
             >
               <div className="flex items-start justify-between gap-2">
-                <p className="min-w-0 font-medium leading-snug">{poll.title}</p>
+                <p className="min-w-0 leading-snug font-medium">{poll.title}</p>
                 {poll.hasVoted ? (
                   <StatusBadge status="confirmed" label="Голос учтён" className="shrink-0" />
                 ) : (
@@ -149,17 +153,17 @@ export function CabinetPollsPanel() {
                 )}
               </div>
               {poll.description ? (
-                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+                <p className="text-muted-foreground mt-2 line-clamp-2 text-sm">
                   {poll.description}
                 </p>
               ) : null}
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <div className="text-muted-foreground mt-3 flex flex-wrap items-center gap-2 text-xs">
                 <Badge variant="outline" className="font-normal">
                   {voteModeLabel(poll.vote_mode)}
                 </Badge>
                 <span>до {formatPollDate(poll.ends_at)}</span>
                 {poll.myVote ? (
-                  <span className="inline-flex items-center gap-1 text-foreground">
+                  <span className="text-foreground inline-flex items-center gap-1">
                     <CheckCircle2 className="size-3.5 text-emerald-600" />
                     {poll.myVote.optionText}
                   </span>

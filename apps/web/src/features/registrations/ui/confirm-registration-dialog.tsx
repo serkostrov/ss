@@ -18,10 +18,7 @@ import {
   Spinner,
 } from '@shared/ui'
 
-import {
-  confirmRegistrationSchema,
-  type ConfirmRegistrationFormValues,
-} from '../model/schemas'
+import { confirmRegistrationSchema, type ConfirmRegistrationFormValues } from '../model/schemas'
 import {
   useCompanyOptions,
   useConfirmRegistrationMutation,
@@ -39,8 +36,7 @@ function buildDefaults(application: RegistrationApplication): ConfirmRegistratio
   return {
     mode: 'create',
     representativeId: undefined,
-    companyMode:
-      application.company_name_hint || application.company_inn_hint ? 'new' : 'existing',
+    companyMode: application.company_name_hint || application.company_inn_hint ? 'new' : 'existing',
     companyId: undefined,
     companyName: application.company_name_hint ?? '',
     companyInn: application.company_inn_hint ?? '',
@@ -136,7 +132,7 @@ export function ConfirmRegistrationDialog({
             <Link2 className="size-4 shrink-0" />
             <span>
               <span className="block font-medium">Существующий</span>
-              <span className="text-xs text-muted-foreground">Привязать представителя</span>
+              <span className="text-muted-foreground text-xs">Привязать представителя</span>
             </span>
           </button>
           <button
@@ -150,18 +146,14 @@ export function ConfirmRegistrationDialog({
             <UserPlus className="size-4 shrink-0" />
             <span>
               <span className="block font-medium">Создать</span>
-              <span className="text-xs text-muted-foreground">Новый представитель</span>
+              <span className="text-muted-foreground text-xs">Новый представитель</span>
             </span>
           </button>
         </div>
 
         {values.mode === 'link' ? (
           <div className="space-y-3">
-            <FormField
-              label="Представитель"
-              error={fieldErrors.representativeId}
-              required
-            >
+            <FormField label="Представитель" error={fieldErrors.representativeId} required>
               <Select
                 value={values.representativeId}
                 onValueChange={(value) => patch('representativeId', value)}
@@ -179,7 +171,7 @@ export function ConfirmRegistrationDialog({
               </Select>
             </FormField>
             {!representatives.isLoading && availableReps.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Свободных представителей нет — создайте нового.
               </p>
             ) : null}
@@ -276,10 +268,7 @@ export function ConfirmRegistrationDialog({
               </FormField>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <FormField
-                label="Username в Telegram"
-                error={fieldErrors.telegramUsername}
-              >
+              <FormField label="Username в Telegram" error={fieldErrors.telegramUsername}>
                 <Input
                   value={values.telegramUsername ?? ''}
                   onChange={(event) => patch('telegramUsername', event.target.value)}

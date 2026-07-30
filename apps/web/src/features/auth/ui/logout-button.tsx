@@ -10,11 +10,7 @@ type LogoutButtonProps = {
   label?: string
 }
 
-export function LogoutButton({
-  variant = 'ghost',
-  className,
-  label = 'Выйти',
-}: LogoutButtonProps) {
+export function LogoutButton({ variant = 'ghost', className, label = 'Выйти' }: LogoutButtonProps) {
   const logout = useLogoutMutation()
 
   return (

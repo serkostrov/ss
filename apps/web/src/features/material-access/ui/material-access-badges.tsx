@@ -16,7 +16,7 @@ export function MaterialAccessBadges({
   maxVisible = 4,
 }: MaterialAccessBadgesProps) {
   if (!levels.length) {
-    return <span className={cn('text-sm text-muted-foreground', className)}>{emptyLabel}</span>
+    return <span className={cn('text-muted-foreground text-sm', className)}>{emptyLabel}</span>
   }
 
   const visible = levels.slice(0, maxVisible)

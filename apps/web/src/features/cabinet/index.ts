@@ -1,4 +1,5 @@
 export { CabinetHomePanel } from './ui/cabinet-home-panel'
+export { CabinetAccountPanel } from './ui/cabinet-account-panel'
 export { CabinetCompanyPanel } from './ui/cabinet-company-panel'
 export { CabinetDirectoryPanel } from './ui/cabinet-directory-panel'
 export { CabinetMaterialsPanel } from './ui/cabinet-materials-panel'

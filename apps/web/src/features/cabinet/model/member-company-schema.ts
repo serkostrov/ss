@@ -17,16 +17,19 @@ const optionalUrl = z
   .trim()
   .optional()
   .or(z.literal(''))
-  .refine((value) => {
-    if (!value) return true
-    try {
-      const normalized = /^https?:\/\//i.test(value) ? value : `https://${value}`
-      new URL(normalized)
-      return true
-    } catch {
-      return false
-    }
-  }, { message: 'Некорректный сайт' })
+  .refine(
+    (value) => {
+      if (!value) return true
+      try {
+        const normalized = /^https?:\/\//i.test(value) ? value : `https://${value}`
+        new URL(normalized)
+        return true
+      } catch {
+        return false
+      }
+    },
+    { message: 'Некорректный сайт' },
+  )
 
 export const memberCompanyFormSchema = z.object({
   name: z

@@ -44,7 +44,9 @@ function ConfirmDialog({
           <AlertDialogCancel disabled={loading}>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction
             disabled={loading}
-            className={destructive ? 'bg-destructive text-white hover:bg-destructive/90' : undefined}
+            className={
+              destructive ? 'bg-destructive hover:bg-destructive/90 text-white' : undefined
+            }
             onClick={(event) => {
               event.preventDefault()
               void onConfirm()

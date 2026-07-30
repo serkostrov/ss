@@ -14,19 +14,17 @@ export function UnauthorizedPage() {
   const state = location.state as LoginLocationState | null
   const intended = state?.from
 
-  const loginState: LoginLocationState | undefined = intended
-    ? { from: intended }
-    : undefined
+  const loginState: LoginLocationState | undefined = intended ? { from: intended } : undefined
 
   if (intended) {
     saveIntendedRoute(intended)
   }
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-muted/30 px-4 py-10">
+    <div className="bg-muted/30 flex min-h-full items-center justify-center px-4 py-10">
       <Card className="w-full max-w-lg">
         <CardHeader>
-          <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-muted">
+          <div className="bg-muted mb-2 flex size-10 items-center justify-center rounded-full">
             <LockKeyhole className="size-5" aria-hidden />
           </div>
           <CardTitle>401 — Требуется вход</CardTitle>

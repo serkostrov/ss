@@ -72,11 +72,8 @@ function buildCreatePayload(
     phone: values.phone || application.phone || null,
     email: values.email || application.email || null,
     telegram_username:
-      values.telegramUsername?.replace(/^@+/, '') ||
-      application.telegram_username ||
-      null,
-    max_username:
-      values.maxUsername?.replace(/^@+/, '') || application.max_username || null,
+      values.telegramUsername?.replace(/^@+/, '') || application.telegram_username || null,
+    max_username: values.maxUsername?.replace(/^@+/, '') || application.max_username || null,
     pd_consent: true,
     is_primary: values.isPrimary,
     show_contacts_to_members: application.show_contacts_to_members,
@@ -128,7 +125,9 @@ export function useSetUserStatusMutation() {
       invalidateKeys: invalidateAll,
       onSuccess: (_data, variables) => {
         notify.success(
-          variables.status === 'blocked' ? 'Пользователь заблокирован' : 'Пользователь разблокирован',
+          variables.status === 'blocked'
+            ? 'Пользователь заблокирован'
+            : 'Пользователь разблокирован',
         )
       },
       onError: (error) => notify.fromError(error, 'Не удалось изменить статус'),

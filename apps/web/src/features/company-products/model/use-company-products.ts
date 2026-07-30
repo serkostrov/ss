@@ -41,9 +41,7 @@ export function useCreateCompanyProductMutation(companyId: string) {
 
   return useMutation({
     mutationFn: (input: Omit<CompanyProductInput, 'companyId'>) =>
-      withSession(() =>
-        companyProductsService.create({ ...input, companyId }),
-      ),
+      withSession(() => companyProductsService.create({ ...input, companyId })),
     onSuccess: () => notify.success('Продукция добавлена'),
     onError: (error) => notify.fromError(error, 'Не удалось добавить продукцию'),
     onSettled: async () => {

@@ -68,6 +68,7 @@ export type {
   MemberMembership,
   SignInInput,
   SignUpInput,
+  UpdateOwnMemberProfileInput,
   CompanyByInn,
   DirectoryCompany,
   DirectoryRepresentative,

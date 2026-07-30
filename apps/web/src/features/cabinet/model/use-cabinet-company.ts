@@ -47,11 +47,10 @@ export function useUpdateOwnCompanyMutation(companyId: string) {
 }
 
 export function useAssociationDirectory(search = '') {
-  const query = useSupabaseQuery(
-    queryKeys.directory.list,
-    () => directoryService.list(),
-    { ensureFreshSession: true, staleTime: 30_000 },
-  )
+  const query = useSupabaseQuery(queryKeys.directory.list, () => directoryService.list(), {
+    ensureFreshSession: true,
+    staleTime: 30_000,
+  })
 
   const term = search.trim().toLowerCase()
   const items = (query.data ?? []).filter((company) => {
@@ -88,7 +87,9 @@ export function useCabinetPollAccessHint(enabled: boolean) {
   )
 }
 
-export function toMemberCompanyFormValues(company: Company | null | undefined): MemberCompanyFormValues {
+export function toMemberCompanyFormValues(
+  company: Company | null | undefined,
+): MemberCompanyFormValues {
   return {
     name: company?.name ?? '',
     inn: company?.inn ?? '',

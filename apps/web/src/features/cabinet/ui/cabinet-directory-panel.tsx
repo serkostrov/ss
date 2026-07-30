@@ -1,14 +1,7 @@
 import { useState } from 'react'
 import { Building2, ExternalLink, Package, SearchX, Users } from 'lucide-react'
 
-import {
-  Badge,
-  EmptyState,
-  ErrorState,
-  PageHeader,
-  SearchInput,
-  Skeleton,
-} from '@shared/ui'
+import { Badge, EmptyState, ErrorState, PageHeader, SearchInput, Skeleton } from '@shared/ui'
 
 import { useAssociationDirectory } from '../model/use-cabinet-company'
 
@@ -16,7 +9,7 @@ function DirectorySkeleton() {
   return (
     <div className="grid gap-3" aria-hidden>
       {Array.from({ length: 3 }).map((_, index) => (
-        <div key={index} className="rounded-lg border bg-card p-4">
+        <div key={index} className="bg-card rounded-lg border p-4">
           <Skeleton className="mb-3 h-5 w-1/2" />
           <Skeleton className="h-4 w-full" />
           <Skeleton className="mt-2 h-4 w-3/4" />
@@ -76,12 +69,12 @@ export function CabinetDirectoryPanel() {
       {query.items.length > 0 ? (
         <div className="grid gap-3">
           {query.items.map((company) => (
-            <article key={company.id} className="rounded-lg border bg-card p-4">
+            <article key={company.id} className="bg-card rounded-lg border p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <h2 className="font-medium">{company.name}</h2>
                   {company.inn ? (
-                    <p className="text-xs text-muted-foreground">ИНН {company.inn}</p>
+                    <p className="text-muted-foreground text-xs">ИНН {company.inn}</p>
                   ) : null}
                 </div>
                 {company.participation_level_name ? (
@@ -90,44 +83,42 @@ export function CabinetDirectoryPanel() {
               </div>
 
               {company.description ? (
-                <p className="mt-2 text-sm text-muted-foreground">{company.description}</p>
+                <p className="text-muted-foreground mt-2 text-sm">{company.description}</p>
               ) : null}
 
-              <dl className="mt-3 grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
+              <dl className="text-muted-foreground mt-3 grid gap-1 text-sm sm:grid-cols-2">
                 {company.address ? (
                   <div>
-                    <dt className="inline text-foreground">Адрес: </dt>
+                    <dt className="text-foreground inline">Адрес: </dt>
                     <dd className="inline">{company.address}</dd>
                   </div>
                 ) : null}
                 {company.website ? (
                   <div>
-                    <dt className="inline text-foreground">Сайт: </dt>
+                    <dt className="text-foreground inline">Сайт: </dt>
                     <dd className="inline">{company.website}</dd>
                   </div>
                 ) : null}
                 {company.phone ? (
                   <div>
-                    <dt className="inline text-foreground">Телефон: </dt>
+                    <dt className="text-foreground inline">Телефон: </dt>
                     <dd className="inline">{company.phone}</dd>
                   </div>
                 ) : null}
                 {company.email ? (
                   <div>
-                    <dt className="inline text-foreground">Email: </dt>
+                    <dt className="text-foreground inline">Email: </dt>
                     <dd className="inline">{company.email}</dd>
                   </div>
                 ) : null}
               </dl>
 
-              <div className="mt-4 border-t pt-3">
-                <p className="mb-2 flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  <Package className="size-3.5" />
-                  Продукция
-                </p>
-                {company.products.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Не указана</p>
-                ) : (
+              {company.products.length > 0 ? (
+                <div className="mt-4 border-t pt-3">
+                  <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase">
+                    <Package className="size-3.5" />
+                    Продукция
+                  </p>
                   <ul className="flex flex-wrap gap-2">
                     {company.products.map((product) => (
                       <li key={product.id}>
@@ -136,7 +127,7 @@ export function CabinetDirectoryPanel() {
                             href={product.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-sm hover:border-primary/40 hover:bg-accent/30"
+                            className="hover:border-primary/40 hover:bg-accent/30 inline-flex items-center gap-1 rounded-md border px-2 py-1 text-sm"
                           >
                             {product.name}
                             <ExternalLink className="size-3" />
@@ -149,16 +140,16 @@ export function CabinetDirectoryPanel() {
                       </li>
                     ))}
                   </ul>
-                )}
-              </div>
+                </div>
+              ) : null}
 
               <div className="mt-4 border-t pt-3">
-                <p className="mb-2 flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase">
                   <Users className="size-3.5" />
                   Представители
                 </p>
                 {company.representatives.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Не указаны</p>
+                  <p className="text-muted-foreground text-sm">Не указаны</p>
                 ) : (
                   <ul className="space-y-2">
                     {company.representatives.map((rep) => (
@@ -172,11 +163,8 @@ export function CabinetDirectoryPanel() {
                         {rep.position ? (
                           <span className="text-muted-foreground"> · {rep.position}</span>
                         ) : null}
-                        {(rep.phone ||
-                          rep.email ||
-                          rep.telegram_username ||
-                          rep.max_username) && (
-                          <p className="text-xs text-muted-foreground">
+                        {(rep.phone || rep.email || rep.telegram_username || rep.max_username) && (
+                          <p className="text-muted-foreground text-xs">
                             {[
                               rep.phone,
                               rep.email,

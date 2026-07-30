@@ -229,7 +229,7 @@ export function MaterialSectionEditor() {
             <CardHeader>
               <CardTitle className="text-base">Служебное</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <CardContent className="text-muted-foreground space-y-2 text-sm">
               <p>Создан: {formatMaterialDate(section.created_at)}</p>
               <p>Обновлён: {formatMaterialDate(section.updated_at)}</p>
               <p>Порядок: {section.sort_order + 1}</p>

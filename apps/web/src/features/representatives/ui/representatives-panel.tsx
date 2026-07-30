@@ -21,10 +21,7 @@ import {
   type RepresentativeActiveFilter,
   type RepresentativePrimaryFilter,
 } from '../model/schemas'
-import {
-  useCompanyOptionsForReps,
-  useRepresentatives,
-} from '../model/use-representatives'
+import { useCompanyOptionsForReps, useRepresentatives } from '../model/use-representatives'
 import { RepresentativeFormDialog } from './representative-form-dialog'
 
 export function RepresentativesPanel() {
@@ -105,7 +102,7 @@ export function RepresentativesPanel() {
               ) : null}
               {row.original.full_name}
             </p>
-            <p className="truncate text-xs text-muted-foreground">
+            <p className="text-muted-foreground truncate text-xs">
               {row.original.position || 'Должность не указана'}
             </p>
           </div>
@@ -115,9 +112,7 @@ export function RepresentativesPanel() {
         id: 'company',
         header: 'Компания',
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">
-            {row.original.company?.name ?? '—'}
-          </span>
+          <span className="text-muted-foreground text-sm">{row.original.company?.name ?? '—'}</span>
         ),
       },
       {
@@ -134,15 +129,13 @@ export function RepresentativesPanel() {
         accessorKey: 'email',
         header: 'Контакты',
         cell: ({ row }) => (
-          <div className="min-w-0 text-sm text-muted-foreground">
+          <div className="text-muted-foreground min-w-0 text-sm">
             <p className="truncate">{row.original.email || '—'}</p>
             <p className="truncate">{row.original.phone || ''}</p>
             {row.original.telegram_username || row.original.max_username ? (
-              <p className="truncate text-muted-foreground">
+              <p className="text-muted-foreground truncate">
                 {[
-                  row.original.telegram_username
-                    ? `TG @${row.original.telegram_username}`
-                    : null,
+                  row.original.telegram_username ? `TG @${row.original.telegram_username}` : null,
                   row.original.max_username ? `Max @${row.original.max_username}` : null,
                 ]
                   .filter(Boolean)

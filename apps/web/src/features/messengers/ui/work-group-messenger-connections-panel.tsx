@@ -92,18 +92,18 @@ function ConnectionsList({
                     {connection.chat_title?.trim() || 'Без названия'}
                   </span>
                 </p>
-                <p className="truncate font-mono text-xs text-muted-foreground">
+                <p className="text-muted-foreground truncate font-mono text-xs">
                   ID: {connection.chat_id}
                 </p>
               </div>
 
               {connection.last_error ? (
-                <p className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                <p className="border-destructive/30 bg-destructive/5 text-destructive rounded-md border px-3 py-2 text-sm">
                   {connection.last_error}
                 </p>
               ) : null}
 
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs">
                 <span>Создано: {formatMessengerDate(connection.created_at)}</span>
                 <span>Подключено: {formatMessengerDate(connection.connected_at)}</span>
                 <span>Обновление: {formatMessengerDate(connectionLastUpdate(connection))}</span>

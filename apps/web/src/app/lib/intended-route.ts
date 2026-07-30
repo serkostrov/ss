@@ -102,8 +102,8 @@ export function resolvePostAuthRedirect(
   profile: AuthProfile,
   locationState?: LoginLocationState | null,
 ): string {
-  const candidates = [locationState?.from, peekIntendedRoute()].filter(
-    (value): value is string => Boolean(value),
+  const candidates = [locationState?.from, peekIntendedRoute()].filter((value): value is string =>
+    Boolean(value),
   )
 
   for (const candidate of candidates) {

@@ -19,11 +19,7 @@ function toFormValues(direction?: WorkGroupCategory | null): DirectionFormValues
   }
 }
 
-export function DirectionFormDialog({
-  open,
-  onOpenChange,
-  direction,
-}: DirectionFormDialogProps) {
+export function DirectionFormDialog({ open, onOpenChange, direction }: DirectionFormDialogProps) {
   const isEdit = Boolean(direction)
   const createMutation = useCreateDirectionMutation()
   const updateMutation = useUpdateDirectionMutation()
@@ -38,10 +34,7 @@ export function DirectionFormDialog({
 
   const pending = createMutation.isPending || updateMutation.isPending
 
-  const patch = <K extends keyof DirectionFormValues>(
-    key: K,
-    value: DirectionFormValues[K],
-  ) => {
+  const patch = <K extends keyof DirectionFormValues>(key: K, value: DirectionFormValues[K]) => {
     setValues((prev) => ({ ...prev, [key]: value }))
     setErrors((prev) => {
       const next = { ...prev }

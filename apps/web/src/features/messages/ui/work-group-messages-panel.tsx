@@ -7,10 +7,7 @@ type WorkGroupMessagesPanelProps = {
   lockedSource?: MessageSource
 }
 
-export function WorkGroupMessagesPanel({
-  workGroupId,
-  lockedSource,
-}: WorkGroupMessagesPanelProps) {
+export function WorkGroupMessagesPanel({ workGroupId, lockedSource }: WorkGroupMessagesPanelProps) {
   return (
     <MessagesFeedPanel
       workGroupId={workGroupId}

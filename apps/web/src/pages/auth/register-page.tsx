@@ -9,13 +9,11 @@ export function RegisterPage() {
     <Card>
       <CardHeader>
         <CardTitle>Регистрация</CardTitle>
-        <CardDescription>
-          После регистрации заявка попадёт на рассмотрение админа
-        </CardDescription>
+        <CardDescription>После регистрации заявка попадёт на рассмотрение админа</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <RegisterForm />
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Уже есть аккаунт?{' '}
           <Link className="text-primary underline-offset-4 hover:underline" to={routes.login}>
             Войти

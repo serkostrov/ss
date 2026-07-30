@@ -163,12 +163,10 @@ type QueryResult<T> = {
 type RawSection = Omit<TableRow<'material_sections'>, 'content'> & {
   content?: string | null
   category: MaterialCategoryRef | MaterialCategoryRef[] | null
-  material_section_levels:
-    | Array<{
-        participation_level_id: string
-        participation_levels: MaterialLevelRef | MaterialLevelRef[] | null
-      }>
-    | null
+  material_section_levels: Array<{
+    participation_level_id: string
+    participation_levels: MaterialLevelRef | MaterialLevelRef[] | null
+  }> | null
 }
 
 function assertResult<T>(result: QueryResult<T>): T {
@@ -324,7 +322,9 @@ export const materialsService = {
         .eq('participation_level_id', levelId)) as QueryResult<
         Array<{ material_section_id: string }>
       >
-      sectionIdsFilter = [...new Set(assertResult(linksResult).map((row) => row.material_section_id))]
+      sectionIdsFilter = [
+        ...new Set(assertResult(linksResult).map((row) => row.material_section_id)),
+      ]
       if (!sectionIdsFilter.length) return []
     }
 
@@ -351,13 +351,18 @@ export const materialsService = {
 
     const search = filters.search?.trim()
     if (search) {
-      const safe = search.replace(/[%_,()"]/g, ' ').replace(/\s+/g, ' ').trim()
+      const safe = search
+        .replace(/[%_,()"]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
       if (safe) {
         const pattern = `%${safe}%`
         query = query.or(
-          [`title.ilike."${pattern}"`, `description.ilike."${pattern}"`, `slug.ilike."${pattern}"`].join(
-            ',',
-          ),
+          [
+            `title.ilike."${pattern}"`,
+            `description.ilike."${pattern}"`,
+            `slug.ilike."${pattern}"`,
+          ].join(','),
         )
       }
     }

@@ -26,11 +26,7 @@ type MessageDetailSheetProps = {
   onOpenChange: (open: boolean) => void
 }
 
-export function MessageDetailSheet({
-  messageId,
-  fallback,
-  onOpenChange,
-}: MessageDetailSheetProps) {
+export function MessageDetailSheet({ messageId, fallback, onOpenChange }: MessageDetailSheetProps) {
   const query = useMessage(messageId ?? undefined)
   const message = query.data ?? fallback
 
@@ -39,9 +35,7 @@ export function MessageDetailSheet({
       <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
         <SheetHeader>
           <SheetTitle>Сообщение</SheetTitle>
-          <SheetDescription>
-            Источник, статус доставки и детали пересылки
-          </SheetDescription>
+          <SheetDescription>Источник, статус доставки и детали пересылки</SheetDescription>
         </SheetHeader>
 
         {message ? (
@@ -63,7 +57,7 @@ export function MessageDetailSheet({
               <p className="text-muted-foreground">Автор</p>
               <p className="font-medium">{message.author_name?.trim() || 'Без имени'}</p>
               {message.author_external_id ? (
-                <p className="font-mono text-xs text-muted-foreground">
+                <p className="text-muted-foreground font-mono text-xs">
                   ID: {message.author_external_id}
                 </p>
               ) : null}
@@ -75,15 +69,15 @@ export function MessageDetailSheet({
             </div>
 
             <div>
-              <p className="mb-1 text-muted-foreground">Текст</p>
-              <p className="whitespace-pre-wrap rounded-md border bg-muted/30 px-3 py-2">
+              <p className="text-muted-foreground mb-1">Текст</p>
+              <p className="bg-muted/30 rounded-md border px-3 py-2 whitespace-pre-wrap">
                 {message.text}
               </p>
             </div>
 
             <Separator />
 
-            <div className="space-y-1 text-xs text-muted-foreground">
+            <div className="text-muted-foreground space-y-1 text-xs">
               <p>Внешний ID: {message.external_message_id}</p>
               <p>Чат: {message.external_chat_id}</p>
               <p>Сохранено: {formatMessageDate(message.created_at)}</p>
@@ -104,17 +98,14 @@ export function MessageDetailSheet({
                         <p className="font-medium">
                           → {messengerPlatformLabel(relay.target_platform)}
                         </p>
-                        <p className="truncate font-mono text-xs text-muted-foreground">
+                        <p className="text-muted-foreground truncate font-mono text-xs">
                           {relay.target_chat_id}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-muted-foreground text-xs">
                           {formatMessageDate(relay.relayed_at)}
                         </p>
                       </div>
-                      <StatusBadge
-                        status={relay.status}
-                        label={relayStatusLabel(relay.status)}
-                      />
+                      <StatusBadge status={relay.status} label={relayStatusLabel(relay.status)} />
                     </li>
                   ))}
                 </ul>
@@ -126,7 +117,7 @@ export function MessageDetailSheet({
             </Button>
           </div>
         ) : (
-          <p className="mt-6 text-sm text-muted-foreground">Загрузка…</p>
+          <p className="text-muted-foreground mt-6 text-sm">Загрузка…</p>
         )}
       </SheetContent>
     </Sheet>

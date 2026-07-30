@@ -133,28 +133,28 @@ export function ChatComposer({
   }
 
   return (
-    <div className={cn('border-t bg-background/95 px-3 py-3 backdrop-blur sm:px-4', className)}>
+    <div className={cn('bg-background/95 border-t px-3 py-3 backdrop-blur sm:px-4', className)}>
       {files.length > 0 ? (
         <ul className="mb-2 flex flex-wrap gap-2">
           {files.map((item) => (
             <li
               key={item.id}
-              className="group relative flex max-w-[11rem] items-center gap-2 rounded-xl border bg-muted/40 p-1.5 pr-8"
+              className="group bg-muted/40 relative flex max-w-[11rem] items-center gap-2 rounded-xl border p-1.5 pr-8"
             >
               {item.previewUrl ? (
                 <img src={item.previewUrl} alt="" className="size-10 rounded-lg object-cover" />
               ) : (
-                <div className="flex size-10 items-center justify-center rounded-lg bg-background text-muted-foreground">
+                <div className="bg-background text-muted-foreground flex size-10 items-center justify-center rounded-lg">
                   <Paperclip className="size-4" />
                 </div>
               )}
               <div className="min-w-0">
                 <p className="truncate text-xs font-medium">{item.file.name}</p>
-                <p className="text-[10px] text-muted-foreground">{formatSize(item.file.size)}</p>
+                <p className="text-muted-foreground text-[10px]">{formatSize(item.file.size)}</p>
               </div>
               <button
                 type="button"
-                className="absolute top-1 right-1 rounded-full p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
+                className="text-muted-foreground hover:bg-background hover:text-foreground absolute top-1 right-1 rounded-full p-0.5"
                 aria-label="Убрать файл"
                 onClick={() => removeFile(item.id)}
               >
@@ -166,12 +166,12 @@ export function ChatComposer({
       ) : null}
 
       {maxBlocksAttachments ? (
-        <p className="mb-2 text-[11px] text-muted-foreground">
+        <p className="text-muted-foreground mb-2 text-[11px]">
           Для Max пока только текст. Фото и файлы доступны в Telegram.
         </p>
       ) : null}
 
-      <div className="flex items-end gap-2 rounded-2xl border bg-card p-2 shadow-sm">
+      <div className="bg-card flex items-end gap-2 rounded-2xl border p-2 shadow-sm">
         <div className="flex shrink-0 gap-0.5 pb-0.5">
           <input
             id={photoInputId}

@@ -126,7 +126,10 @@ export const registrationsService = {
 
     const search = filters.search?.trim()
     if (search) {
-      const safe = search.replace(/[%_,()"]/g, ' ').replace(/\s+/g, ' ').trim()
+      const safe = search
+        .replace(/[%_,()"]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
       if (safe) {
         const pattern = `%${safe}%`
         query = query.or(

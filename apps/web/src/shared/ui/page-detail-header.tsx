@@ -19,13 +19,7 @@ type PageDetailHeaderProps = {
  * - top row: back link (left) + action buttons in a row (right)
  * - title block below
  */
-function PageDetailHeader({
-  backTo,
-  title,
-  description,
-  status,
-  children,
-}: PageDetailHeaderProps) {
+function PageDetailHeader({ backTo, title, description, status, children }: PageDetailHeaderProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">

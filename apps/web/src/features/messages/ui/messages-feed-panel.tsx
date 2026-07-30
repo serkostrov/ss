@@ -79,16 +79,16 @@ function MessageBubble({ message, showGroup }: { message: Message; showGroup: bo
           </Badge>
         ) : null}
         {showGroup && message.work_group?.name ? (
-          <span className="text-xs text-muted-foreground">{message.work_group.name}</span>
+          <span className="text-muted-foreground text-xs">{message.work_group.name}</span>
         ) : null}
-        <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+        <span className="text-muted-foreground ml-auto text-xs tabular-nums">
           {formatMessageTime(message.sent_at)}
         </span>
       </div>
       {message.author_name ? (
-        <p className="mb-1 text-sm font-medium text-foreground/90">{message.author_name}</p>
+        <p className="text-foreground/90 mb-1 text-sm font-medium">{message.author_name}</p>
       ) : null}
-      <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{message.text}</p>
+      <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
     </article>
   )
 }
@@ -196,11 +196,11 @@ export function MessagesFeedPanel({
           {dayGroups.map((group) => (
             <section key={group.key} className="space-y-3">
               <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-border" />
-                <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                <div className="bg-border h-px flex-1" />
+                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                   {group.label}
                 </p>
-                <div className="h-px flex-1 bg-border" />
+                <div className="bg-border h-px flex-1" />
               </div>
               <div className="flex flex-col gap-3">
                 {group.items.map((message) => (

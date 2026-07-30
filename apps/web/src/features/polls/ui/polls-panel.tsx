@@ -79,7 +79,7 @@ export function PollsPanel() {
         cell: ({ row }) => (
           <div className="min-w-0">
             <p className="truncate font-medium">{row.original.title}</p>
-            <p className="truncate text-xs text-muted-foreground">
+            <p className="text-muted-foreground truncate text-xs">
               {row.original.description || 'Без описания'}
             </p>
           </div>
@@ -94,7 +94,7 @@ export function PollsPanel() {
         id: 'vote_mode',
         header: 'Режим',
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-muted-foreground text-sm">
             {voteModeLabel(row.original.vote_mode)}
           </span>
         ),
@@ -103,7 +103,7 @@ export function PollsPanel() {
         id: 'period',
         header: 'Период',
         cell: ({ row }) => (
-          <div className="text-sm text-muted-foreground">
+          <div className="text-muted-foreground text-sm">
             <p>{formatPollDate(row.original.starts_at)}</p>
             <p>{formatPollDate(row.original.ends_at)}</p>
           </div>
@@ -113,7 +113,7 @@ export function PollsPanel() {
         id: 'options',
         header: 'Варианты',
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">{row.original.options.length}</span>
+          <span className="text-muted-foreground text-sm">{row.original.options.length}</span>
         ),
       },
       {
@@ -122,7 +122,7 @@ export function PollsPanel() {
         cell: ({ row }) => {
           const levels = row.original.levels
           if (!levels.length) {
-            return <span className="text-sm text-muted-foreground">—</span>
+            return <span className="text-muted-foreground text-sm">—</span>
           }
           return (
             <div className="flex max-w-[12rem] items-center gap-1 overflow-hidden">
@@ -142,7 +142,7 @@ export function PollsPanel() {
         id: 'votes',
         header: 'Голоса',
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">{row.original.votes_count}</span>
+          <span className="text-muted-foreground text-sm">{row.original.votes_count}</span>
         ),
       },
     ],

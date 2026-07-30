@@ -9,12 +9,7 @@ export const participationLevelFormSchema = z.object({
     .trim()
     .min(2, 'Название слишком короткое')
     .max(120, 'Название слишком длинное'),
-  description: z
-    .string()
-    .trim()
-    .max(1000, 'Описание слишком длинное')
-    .optional()
-    .or(z.literal('')),
+  description: z.string().trim().max(1000, 'Описание слишком длинное').optional().or(z.literal('')),
   isActive: z.boolean(),
 })
 

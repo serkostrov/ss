@@ -67,7 +67,7 @@ function MarkdownEditor({
 
   return (
     <div className={cn('overflow-hidden rounded-md border', className)}>
-      <div className="flex flex-wrap items-center gap-1 border-b bg-muted/40 p-1.5">
+      <div className="bg-muted/40 flex flex-wrap items-center gap-1 border-b p-1.5">
         <Button
           type="button"
           size="sm"
@@ -86,7 +86,7 @@ function MarkdownEditor({
           <Eye className="size-3.5" />
           Превью
         </Button>
-        <div className="mx-1 h-5 w-px bg-border" />
+        <div className="bg-border mx-1 h-5 w-px" />
         <Button
           type="button"
           size="icon"
@@ -154,16 +154,18 @@ function MarkdownEditor({
           style={{ minHeight: `${minRows * 1.5}rem` }}
         />
       ) : (
-        <div className="min-h-[280px] bg-background p-4">
+        <div className="bg-background min-h-[280px] p-4">
           {value.trim() ? (
             <MarkdownViewer content={value} />
           ) : (
-            <p className="text-sm text-muted-foreground">Пока нечего показывать.</p>
+            <p className="text-muted-foreground text-sm">Пока нечего показывать.</p>
           )}
         </div>
       )}
 
-      {error ? <p className="border-t px-3 py-2 text-sm font-medium text-destructive">{error}</p> : null}
+      {error ? (
+        <p className="text-destructive border-t px-3 py-2 text-sm font-medium">{error}</p>
+      ) : null}
     </div>
   )
 }

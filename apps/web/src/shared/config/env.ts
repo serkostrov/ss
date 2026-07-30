@@ -16,10 +16,7 @@ declare global {
 const emptyToUndefined = (value: unknown) =>
   typeof value === 'string' && value.trim() === '' ? undefined : value
 
-const optionalUrl = z.preprocess(
-  emptyToUndefined,
-  z.string().url('must be a valid URL').optional(),
-)
+const optionalUrl = z.preprocess(emptyToUndefined, z.string().url('must be a valid URL').optional())
 
 const clientEnvSchema = z.object({
   VITE_SUPABASE_URL: z
@@ -51,7 +48,9 @@ export type ClientEnv = {
 }
 
 function formatEnvError(error: z.ZodError): string {
-  const details = error.issues.map((issue) => `- ${issue.path.join('.')}: ${issue.message}`).join('\n')
+  const details = error.issues
+    .map((issue) => `- ${issue.path.join('.')}: ${issue.message}`)
+    .join('\n')
   return [
     'Invalid environment configuration.',
     'Copy `.env.example` to `.env` and fill in the values.',

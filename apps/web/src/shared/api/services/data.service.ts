@@ -29,7 +29,10 @@ function recordDataAudit(
 
 type EqFilter = { column: string; value: string | number | boolean | null }
 
-type QueryResult<T> = { data: T; error: { message: string; code?: string; details?: string; hint?: string } | null }
+type QueryResult<T> = {
+  data: T
+  error: { message: string; code?: string; details?: string; hint?: string } | null
+}
 
 function assertResult<T>(result: QueryResult<T>): T {
   if (result.error) {

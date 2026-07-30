@@ -54,12 +54,56 @@ export type AuthProfile = {
   status: UserStatus | null
   representativeId: string | null
   fullName: string | null
+  position: string | null
+  phone: string | null
+  telegramUsername: string | null
+  maxUsername: string | null
+  showContactsToMembers: boolean
   companyNameHint: string | null
   companyInnHint: string | null
   staffPosition: string | null
   isCeo: boolean
   canManageWorkGroups: boolean
   membership: MemberMembership | null
+}
+
+export type UpdateOwnMemberProfileInput = {
+  fullName: string
+  position?: string | null
+  phone?: string | null
+  telegramUsername?: string | null
+  maxUsername?: string | null
+  showContactsToMembers: boolean
+}
+
+type ProfileCompanyRow = {
+  id: string
+  name: string
+  access_status: CompanyAccessStatus
+  participation_level_id: string | null
+  participation_levels:
+    | {
+        id: string
+        name: string
+        is_active: boolean
+      }
+    | Array<{
+        id: string
+        name: string
+        is_active: boolean
+      }>
+    | null
+}
+
+type ProfileRepresentativeRow = {
+  id: string
+  full_name: string
+  position: string | null
+  phone: string | null
+  telegram_username: string | null
+  max_username: string | null
+  show_contacts_to_members: boolean
+  companies: ProfileCompanyRow | ProfileCompanyRow[] | null
 }
 
 type ProfileQueryRow = Pick<
@@ -70,65 +114,17 @@ type ProfileQueryRow = Pick<
   | 'status'
   | 'representative_id'
   | 'full_name'
+  | 'phone'
+  | 'telegram_username'
+  | 'max_username'
+  | 'show_contacts_to_members'
   | 'company_name_hint'
   | 'company_inn_hint'
   | 'staff_position'
   | 'is_ceo'
   | 'can_manage_work_groups'
 > & {
-  representatives:
-    | {
-        id: string
-        full_name: string
-        companies:
-          | {
-              id: string
-              name: string
-              access_status: CompanyAccessStatus
-              participation_level_id: string | null
-              participation_levels:
-                | {
-                    id: string
-                    name: string
-                    is_active: boolean
-                  }
-                | Array<{
-                    id: string
-                    name: string
-                    is_active: boolean
-                  }>
-                | null
-            }
-          | Array<{
-              id: string
-              name: string
-              access_status: CompanyAccessStatus
-              participation_level_id: string | null
-              participation_levels:
-                | {
-                    id: string
-                    name: string
-                    is_active: boolean
-                  }
-                | Array<{
-                    id: string
-                    name: string
-                    is_active: boolean
-                  }>
-                | null
-            }>
-          | null
-      }
-    | Array<{
-        id: string
-        full_name: string
-        companies: ProfileQueryRow['representatives'] extends Array<infer R>
-          ? R extends { companies: infer C }
-            ? C
-            : never
-          : never
-      }>
-    | null
+  representatives: ProfileRepresentativeRow | ProfileRepresentativeRow[] | null
 }
 
 function firstRelation<T>(value: T | T[] | null | undefined): T | null {
@@ -158,13 +154,21 @@ function mapMembership(row: ProfileQueryRow): MemberMembership | null {
 }
 
 function mapProfile(row: ProfileQueryRow): AuthProfile {
+  const representative = firstRelation(row.representatives)
+
   return {
     id: row.id,
     email: row.email,
     role: row.role,
     status: row.status,
     representativeId: row.representative_id,
-    fullName: row.full_name,
+    fullName: representative?.full_name ?? row.full_name,
+    position: representative?.position ?? null,
+    phone: representative?.phone ?? row.phone,
+    telegramUsername: representative?.telegram_username ?? row.telegram_username,
+    maxUsername: representative?.max_username ?? row.max_username,
+    showContactsToMembers:
+      representative?.show_contacts_to_members ?? row.show_contacts_to_members ?? false,
     companyNameHint: row.company_name_hint,
     companyInnHint: row.company_inn_hint,
     staffPosition: row.staff_position,
@@ -187,6 +191,10 @@ const PROFILE_SELECT = `
   status,
   representative_id,
   full_name,
+  phone,
+  telegram_username,
+  max_username,
+  show_contacts_to_members,
   company_name_hint,
   company_inn_hint,
   staff_position,
@@ -195,6 +203,11 @@ const PROFILE_SELECT = `
   representatives (
     id,
     full_name,
+    position,
+    phone,
+    telegram_username,
+    max_username,
+    show_contacts_to_members,
     companies (
       id,
       name,
@@ -326,11 +339,20 @@ export const authService = {
             status,
             representative_id,
             full_name,
+            phone,
+            telegram_username,
+            max_username,
+            show_contacts_to_members,
             company_name_hint,
             company_inn_hint,
             representatives (
               id,
               full_name,
+              position,
+              phone,
+              telegram_username,
+              max_username,
+              show_contacts_to_members,
               companies (
                 id,
                 name,
@@ -365,9 +387,22 @@ export const authService = {
     return row ? mapProfile(row) : null
   },
 
-  onAuthStateChange(
-    callback: (event: AuthChangeEvent, session: Session | null) => void,
-  ): { subscription: Subscription } {
+  async updateOwnMemberProfile(input: UpdateOwnMemberProfileInput): Promise<void> {
+    const { error } = await supabaseClient.rpc('update_own_member_profile', {
+      p_full_name: input.fullName,
+      p_position: input.position ?? null,
+      p_phone: input.phone ?? null,
+      p_telegram_username: input.telegramUsername ?? null,
+      p_max_username: input.maxUsername ?? null,
+      p_show_contacts_to_members: input.showContactsToMembers,
+    })
+
+    if (error) throw fromSupabaseError(error)
+  },
+
+  onAuthStateChange(callback: (event: AuthChangeEvent, session: Session | null) => void): {
+    subscription: Subscription
+  } {
     const { data } = supabaseClient.auth.onAuthStateChange((event, session) => {
       // Never log session tokens
       if (import.meta.env.DEV) {

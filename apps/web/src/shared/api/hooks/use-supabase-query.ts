@@ -74,7 +74,9 @@ export function useSupabaseMutation<TData, TVariables = void>(
     ...mutationOptions,
     onSuccess: async (data, variables, onMutateResult, context) => {
       if (invalidateKeys?.length) {
-        await Promise.all(invalidateKeys.map((key) => queryClient.invalidateQueries({ queryKey: key })))
+        await Promise.all(
+          invalidateKeys.map((key) => queryClient.invalidateQueries({ queryKey: key })),
+        )
       }
       await mutationOptions.onSuccess?.(data, variables, onMutateResult, context)
     },

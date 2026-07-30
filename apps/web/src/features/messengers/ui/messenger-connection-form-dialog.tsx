@@ -88,19 +88,22 @@ function BindDialogDescription({ platform }: { platform: MessengerPlatform }) {
 
   return (
     <span>
-      Работа с ботом в {platformLabel} {botUrl ? (
+      Работа с ботом в {platformLabel}{' '}
+      {botUrl ? (
         <>
           :{' '}
           <a
             href={botUrl}
             target="_blank"
             rel="noreferrer"
-            className="font-medium text-primary underline-offset-4 hover:underline"
+            className="text-primary font-medium underline-offset-4 hover:underline"
           >
             {botLinkLabel(botUrl)}
           </a>
         </>
-      ) : "АПСС"}
+      ) : (
+        'АПСС'
+      )}
     </span>
   )
 }
@@ -137,10 +140,7 @@ export function MessengerConnectionFormDialog({
   )
   const channels = useMemo(() => {
     const list = catalogFromApi.filter((item) => !takenChatIds.has(item.external_chat_id))
-    if (
-      values.chatId &&
-      !list.some((item) => item.external_chat_id === values.chatId)
-    ) {
+    if (values.chatId && !list.some((item) => item.external_chat_id === values.chatId)) {
       list.unshift({
         id: `current-${values.chatId}`,
         platform: values.platform,
@@ -242,10 +242,7 @@ export function MessengerConnectionFormDialog({
           <Button
             type="button"
             disabled={
-              pending ||
-              channelsQuery.isLoading ||
-              noChannelsFound ||
-              !values.chatId.trim()
+              pending || channelsQuery.isLoading || noChannelsFound || !values.chatId.trim()
             }
             onClick={() => void submit()}
           >
@@ -299,19 +296,16 @@ export function MessengerConnectionFormDialog({
           }
         >
           {channelsQuery.isLoading ? (
-            <div className="flex h-9 items-center gap-2 rounded-md border border-input px-3 text-sm text-muted-foreground">
+            <div className="border-input text-muted-foreground flex h-9 items-center gap-2 rounded-md border px-3 text-sm">
               <Spinner size="sm" />
               Загрузка…
             </div>
           ) : noChannelsFound ? (
-            <div className="flex h-9 items-center rounded-md border border-dashed border-input bg-muted/30 px-3 text-sm text-muted-foreground">
+            <div className="border-input bg-muted/30 text-muted-foreground flex h-9 items-center rounded-md border border-dashed px-3 text-sm">
               Не найдено чатов
             </div>
           ) : (
-            <Select
-              value={values.chatId || undefined}
-              onValueChange={selectChannel}
-            >
+            <Select value={values.chatId || undefined} onValueChange={selectChannel}>
               <SelectTrigger>
                 <SelectValue placeholder="Выберите чат" />
               </SelectTrigger>

@@ -61,7 +61,7 @@ export function RegistrationsPanel() {
         cell: ({ row }) => (
           <div className="min-w-0">
             <p className="truncate font-medium">{row.original.full_name || 'Без имени'}</p>
-            <p className="truncate text-xs text-muted-foreground">{row.original.email}</p>
+            <p className="text-muted-foreground truncate text-xs">{row.original.email}</p>
           </div>
         ),
       },
@@ -69,10 +69,8 @@ export function RegistrationsPanel() {
         accessorKey: 'company_name_hint',
         header: 'Компания (заявка)',
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">
-            {row.original.company_name_hint ||
-              row.original.representative?.company?.name ||
-              '—'}
+          <span className="text-muted-foreground text-sm">
+            {row.original.company_name_hint || row.original.representative?.company?.name || '—'}
             {row.original.company_inn_hint ? (
               <span className="mt-0.5 block text-xs">ИНН {row.original.company_inn_hint}</span>
             ) : null}
@@ -93,7 +91,7 @@ export function RegistrationsPanel() {
         accessorKey: 'created_at',
         header: 'Создана',
         cell: ({ row }) => (
-          <span className="whitespace-nowrap text-sm text-muted-foreground">
+          <span className="text-muted-foreground text-sm whitespace-nowrap">
             {formatRegistrationDate(row.original.created_at)}
           </span>
         ),

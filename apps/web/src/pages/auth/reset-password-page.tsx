@@ -13,7 +13,7 @@ export function ResetPasswordPage() {
       </CardHeader>
       <CardContent className="space-y-4">
         <ResetPasswordForm />
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           <Link className="text-primary underline-offset-4 hover:underline" to={routes.login}>
             Вернуться ко входу
           </Link>

@@ -15,13 +15,7 @@ type CanAccessProps = {
  * Conditionally renders UI by permission.
  * Prefer route guards for hard redirects; use this for nav/actions/sections.
  */
-export function CanAccess({
-  permission,
-  anyOf,
-  allOf,
-  fallback = null,
-  children,
-}: CanAccessProps) {
+export function CanAccess({ permission, anyOf, allOf, fallback = null, children }: CanAccessProps) {
   const { can, canAny, canAll } = usePermissions()
 
   let allowed = true

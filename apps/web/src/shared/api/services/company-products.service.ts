@@ -37,8 +37,7 @@ function assertResult<T>(result: QueryResult<T>): T {
   return result.data
 }
 
-const PRODUCT_SELECT =
-  'id, company_id, name, url, sort_order, is_active, created_at, updated_at'
+const PRODUCT_SELECT = 'id, company_id, name, url, sort_order, is_active, created_at, updated_at'
 
 /**
  * Company products (name + URL) for directory / partner discovery.

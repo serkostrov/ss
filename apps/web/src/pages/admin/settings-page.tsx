@@ -3,10 +3,7 @@ import { Plus } from 'lucide-react'
 
 import { CanAccess } from '@features/auth/ui/can-access'
 import { permissions } from '@features/auth/model/permissions'
-import {
-  DirectionsPanel,
-  type DirectionsPanelHandle,
-} from '@features/directions'
+import { DirectionsPanel, type DirectionsPanelHandle } from '@features/directions'
 import { LevelsPanel, type LevelsPanelHandle } from '@features/levels'
 import {
   MaterialCategoriesPanel,
@@ -40,20 +37,12 @@ export function AdminSettingsPage() {
   return (
     <CanAccess
       permission={permissions['admin.settings']}
-      fallback={
-        <ErrorState title="Нет доступа" description="Недостаточно прав для настроек." />
-      }
+      fallback={<ErrorState title="Нет доступа" description="Недостаточно прав для настроек." />}
     >
       <div className="space-y-6">
-        <PageHeader
-          title="Настройки"
-          description="Параметры системы и справочники."
-        />
+        <PageHeader title="Настройки" description="Параметры системы и справочники." />
 
-        <Tabs
-          value={tab}
-          onValueChange={(value) => setTab(value as SettingsTab)}
-        >
+        <Tabs value={tab} onValueChange={(value) => setTab(value as SettingsTab)}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <TabsList className="w-auto">
               <TabsTrigger value="levels">Уровни</TabsTrigger>

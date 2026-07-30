@@ -108,7 +108,7 @@ export function AssignExistingMemberDialog({
         </FormField>
 
         {selected?.current_company_name ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             Сейчас в «{selected.current_company_name}» — будет переведён в эту компанию.
           </p>
         ) : null}

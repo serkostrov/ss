@@ -29,7 +29,7 @@ export function CabinetBlockedPage() {
   return (
     <Card>
       <CardHeader>
-        <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+        <div className="bg-destructive/10 text-destructive mb-2 flex size-10 items-center justify-center rounded-full">
           <Ban className="size-5" aria-hidden />
         </div>
         <CardTitle>Доступ ограничен</CardTitle>

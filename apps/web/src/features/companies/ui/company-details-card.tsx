@@ -40,9 +40,7 @@ export function CompanyDetailsCard() {
 
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const [statusTarget, setStatusTarget] = useState<'active' | 'suspended' | 'archived' | null>(
-    null,
-  )
+  const [statusTarget, setStatusTarget] = useState<'active' | 'suspended' | 'archived' | null>(null)
 
   if (query.isLoading) {
     return <LoadingState label="Загрузка карточки компании…" />
@@ -80,7 +78,9 @@ export function CompanyDetailsCard() {
         title={company.name}
         description={
           `ID ${formatCompanyAutoId(company.auto_id)}` +
-          (company.description ? ` · ${company.description}` : ' · Карточка компании — участника ассоциации.')
+          (company.description
+            ? ` · ${company.description}`
+            : ' · Карточка компании — участника ассоциации.')
         }
         status={<StatusBadge status={company.access_status} />}
       >
@@ -133,10 +133,7 @@ export function CompanyDetailsCard() {
             <dl className="grid gap-4 sm:grid-cols-2">
               <Field label="ID" value={formatCompanyAutoId(company.auto_id)} />
               <Field label="ИНН" value={company.inn} />
-              <Field
-                label="Баланс"
-                value={formatCompanyBalance(company.balance ?? 0)}
-              />
+              <Field label="Баланс" value={formatCompanyBalance(company.balance ?? 0)} />
               <Field
                 label="Уровень участия"
                 value={company.participation_level?.name ?? 'Не назначен'}
@@ -145,14 +142,14 @@ export function CompanyDetailsCard() {
               <Field label="Телефон" value={company.phone} />
               <Field label="Адрес" value={company.address} className="sm:col-span-2" />
               <div className="sm:col-span-2">
-                <dt className="text-xs text-muted-foreground">Сайт</dt>
+                <dt className="text-muted-foreground text-xs">Сайт</dt>
                 <dd className="mt-0.5 font-medium break-words">
                   {websiteHref ? (
                     <a
                       href={websiteHref}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline"
+                      className="text-primary inline-flex items-center gap-1 underline-offset-4 hover:underline"
                     >
                       {company.website}
                       <ExternalLink className="size-3.5" />
@@ -175,17 +172,15 @@ export function CompanyDetailsCard() {
             <Field
               label="Представители"
               value={
-                company.representatives_count != null
-                  ? String(company.representatives_count)
-                  : '—'
+                company.representatives_count != null ? String(company.representatives_count) : '—'
               }
             />
             <Field label="Создана" value={formatCompanyDate(company.created_at)} />
             <Field label="Обновлена" value={formatCompanyDate(company.updated_at)} />
             <Separator />
             <div>
-              <p className="text-xs text-muted-foreground">Внутренние заметки</p>
-              <p className="mt-1 whitespace-pre-wrap text-sm">
+              <p className="text-muted-foreground text-xs">Внутренние заметки</p>
+              <p className="mt-1 text-sm whitespace-pre-wrap">
                 {company.notes?.trim() || 'Заметок пока нет.'}
               </p>
             </div>
@@ -258,7 +253,7 @@ function Field({
 }) {
   return (
     <div className={className}>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dt className="text-muted-foreground text-xs">{label}</dt>
       <dd className="mt-0.5 font-medium break-words">{value?.trim() || '—'}</dd>
     </div>
   )

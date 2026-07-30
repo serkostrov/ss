@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Pencil } from 'lucide-react'
 
 import { CompanyProductsPanel } from '@features/company-products'
 import { useAuth } from '@app/providers'
@@ -8,11 +9,16 @@ import {
   AlertDescription,
   AlertTitle,
   Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  ErrorState,
   FormField,
   Input,
   LoadingState,
-  PageHeader,
   Spinner,
+  StatusBadge,
   Textarea,
 } from '@shared/ui'
 
@@ -31,30 +37,32 @@ export function CabinetCompanyPanel() {
 
   const [values, setValues] = useState(() => toMemberCompanyFormValues(null))
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isEditing, setIsEditing] = useState(false)
 
   useEffect(() => {
-    if (companyQuery.data) {
+    if (companyQuery.data && !isEditing) {
       setValues(toMemberCompanyFormValues(companyQuery.data))
       setErrors({})
     }
-  }, [companyQuery.data])
+  }, [companyQuery.data, isEditing])
 
   if (!companyId) {
     return (
-      <div className="space-y-4">
-        <PageHeader title="Моя компания" description="Карточка организации в ассоциации." />
-        <Alert>
-          <AlertTitle>Компания не привязана</AlertTitle>
-          <AlertDescription>
-            После подтверждения заявки админом здесь можно будет редактировать данные организации.
-          </AlertDescription>
-        </Alert>
-      </div>
+      <Alert>
+        <AlertTitle>Компания не привязана</AlertTitle>
+        <AlertDescription>
+          После подтверждения заявки администратором здесь появится карточка организации.
+        </AlertDescription>
+      </Alert>
     )
   }
 
   if (companyQuery.isLoading && !companyQuery.data) {
     return <LoadingState label="Загрузка компании…" />
+  }
+
+  if (companyQuery.isError) {
+    return <ErrorState error={companyQuery.error} onRetry={() => void companyQuery.refetch()} />
   }
 
   const patch = <K extends keyof typeof values>(key: K, value: (typeof values)[K]) => {
@@ -78,16 +86,64 @@ export function CabinetCompanyPanel() {
       return
     }
     await updateMutation.mutateAsync(parsed.data)
+    setIsEditing(false)
+  }
+
+  const company = companyQuery.data
+
+  if (company && !isEditing) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader className="flex-row items-start justify-between gap-3">
+            <div>
+              <CardTitle>{company.name}</CardTitle>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Публичная карточка организации в ассоциации.
+              </p>
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+              <Pencil className="size-4" />
+              Редактировать
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
+              <CompanyField label="ИНН" value={company.inn} />
+              <CompanyField label="Статус" value={<StatusBadge status={company.access_status} />} />
+              <CompanyField
+                label="Уровень участия"
+                value={profile?.membership?.participationLevelName}
+              />
+              <CompanyField label="Телефон" value={company.phone} />
+              <CompanyField label="Email" value={company.email} />
+              <CompanyField label="Сайт" value={company.website} />
+              <CompanyField label="Адрес" value={company.address} />
+              <CompanyField
+                label="Описание"
+                value={company.description}
+                className="sm:col-span-2"
+              />
+            </dl>
+          </CardContent>
+        </Card>
+
+        <div className="border-t pt-6 empty:hidden">
+          <CompanyProductsPanel companyId={companyId} editable={false} />
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="Моя компания"
-        description="Редактируйте публичные сведения об организации. Уровень участия и статус доступа меняет только администратор АПСС."
-      />
-
-      <div className="grid w-full gap-4">
+    <Card>
+      <CardHeader>
+        <CardTitle>Редактирование компании</CardTitle>
+        <p className="text-muted-foreground text-sm">
+          Уровень участия и статус доступа меняет только администратор АПСС.
+        </p>
+      </CardHeader>
+      <CardContent className="grid w-full gap-4">
         <FormField label="Название" required error={errors.name}>
           <Input value={values.name} onChange={(event) => patch('name', event.target.value)} />
         </FormField>
@@ -137,7 +193,15 @@ export function CabinetCompanyPanel() {
           </FormField>
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={updateMutation.isPending}
+            onClick={() => setIsEditing(false)}
+          >
+            Отмена
+          </Button>
           <Button
             type="button"
             disabled={updateMutation.isPending || !companyId}
@@ -147,13 +211,27 @@ export function CabinetCompanyPanel() {
             Сохранить
           </Button>
         </div>
-      </div>
-
-      {companyId ? (
-        <div className="w-full border-t pt-6">
-          <CompanyProductsPanel companyId={companyId} />
+        <div className="border-t pt-6">
+          <CompanyProductsPanel companyId={companyId} editable />
         </div>
-      ) : null}
+      </CardContent>
+    </Card>
+  )
+}
+
+function CompanyField({
+  label,
+  value,
+  className,
+}: {
+  label: string
+  value: ReactNode
+  className?: string
+}) {
+  return (
+    <div className={className}>
+      <dt className="text-muted-foreground text-xs font-medium">{label}</dt>
+      <dd className="mt-1 text-sm break-words">{value || 'Не указано'}</dd>
     </div>
   )
 }

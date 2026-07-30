@@ -13,7 +13,9 @@ export function PagePlaceholder({ title, description }: PagePlaceholderProps) {
         {description ? <CardDescription>{description}</CardDescription> : null}
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground">Раздел подготовлен. Бизнес-логика будет добавлена позже.</p>
+        <p className="text-muted-foreground text-sm">
+          Раздел подготовлен. Бизнес-логика будет добавлена позже.
+        </p>
       </CardContent>
     </Card>
   )

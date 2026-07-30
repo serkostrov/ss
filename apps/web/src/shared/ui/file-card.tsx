@@ -38,12 +38,12 @@ function FileCard({
   return (
     <Card className={cn('overflow-hidden', className)}>
       <CardContent className="flex items-center gap-3 p-4">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+        <div className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-md">
           <FileText className="size-5" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{title}</p>
-          <p className="truncate text-xs text-muted-foreground">
+          <p className="text-muted-foreground truncate text-xs">
             {[mimeType, meta].filter(Boolean).join(' · ') || 'Файл'}
           </p>
         </div>
@@ -111,7 +111,7 @@ function FileCard({
               type="button"
               variant="ghost"
               size="icon"
-              className="size-8 text-destructive"
+              className="text-destructive size-8"
               disabled={busy}
               onClick={onRemove}
               aria-label="Удалить"

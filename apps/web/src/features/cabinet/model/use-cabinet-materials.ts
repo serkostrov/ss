@@ -1,12 +1,7 @@
 import { useDeferredValue, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
-import {
-  materialsService,
-  queryKeys,
-  useSupabaseQuery,
-  type CabinetMaterial,
-} from '@shared/api'
+import { materialsService, queryKeys, useSupabaseQuery, type CabinetMaterial } from '@shared/api'
 import { appConfig } from '@shared/config'
 
 /** Cabinet materials stay fresh longer — list is RLS-scoped and changes rarely. */
@@ -37,16 +32,12 @@ export function filterCabinetMaterials(
 }
 
 export function useCabinetMaterials() {
-  return useSupabaseQuery(
-    queryKeys.materials.cabinetList,
-    () => materialsService.listForMember(),
-    {
-      ensureFreshSession: true,
-      staleTime: CABINET_MATERIALS_STALE_MS,
-      gcTime: CABINET_MATERIALS_GC_MS,
-      meta: { suppressErrorToast: true },
-    },
-  )
+  return useSupabaseQuery(queryKeys.materials.cabinetList, () => materialsService.listForMember(), {
+    ensureFreshSession: true,
+    staleTime: CABINET_MATERIALS_STALE_MS,
+    gcTime: CABINET_MATERIALS_GC_MS,
+    meta: { suppressErrorToast: true },
+  })
 }
 
 export function useCabinetMaterialsSearch(search: string) {

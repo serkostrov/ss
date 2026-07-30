@@ -15,8 +15,12 @@ export function AdminSidebar({ onNavigate, className }: AdminSidebarProps) {
   return (
     <div className={className}>
       <div className="px-4 py-5">
-        <Link to={routes.admin.root} onClick={onNavigate} className="block focus-visible:outline-none">
-          <p className="mt-1 font-semibold text-sidebar-foreground">Северное сияние</p>
+        <Link
+          to={routes.admin.root}
+          onClick={onNavigate}
+          className="block focus-visible:outline-none"
+        >
+          <p className="text-sidebar-foreground mt-1 font-semibold">Северное сияние</p>
         </Link>
       </div>
       <Separator className="bg-sidebar-border" />

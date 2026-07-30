@@ -22,17 +22,20 @@ const optionalUrl = z
   .trim()
   .optional()
   .or(z.literal(''))
-  .refine((value) => {
-    if (!value) return true
-    try {
-      // allow without protocol
-      const normalized = /^https?:\/\//i.test(value) ? value : `https://${value}`
-      new URL(normalized)
-      return true
-    } catch {
-      return false
-    }
-  }, { message: 'Некорректный сайт' })
+  .refine(
+    (value) => {
+      if (!value) return true
+      try {
+        // allow without protocol
+        const normalized = /^https?:\/\//i.test(value) ? value : `https://${value}`
+        new URL(normalized)
+        return true
+      } catch {
+        return false
+      }
+    },
+    { message: 'Некорректный сайт' },
+  )
 
 export const companyBalanceFilterSchema = z.enum(['all', 'positive', 'zero', 'negative'])
 export type CompanyBalanceFilterValue = z.infer<typeof companyBalanceFilterSchema>
@@ -65,11 +68,14 @@ export const companyFormSchema = z.object({
     .trim()
     .optional()
     .or(z.literal(''))
-    .refine((value) => {
-      if (!value) return true
-      const normalized = value.replace(/\s/g, '').replace(',', '.')
-      return /^-?\d+(\.\d{1,2})?$/.test(normalized)
-    }, { message: 'Баланс: число с не более чем 2 знаками после запятой' }),
+    .refine(
+      (value) => {
+        if (!value) return true
+        const normalized = value.replace(/\s/g, '').replace(',', '.')
+        return /^-?\d+(\.\d{1,2})?$/.test(normalized)
+      },
+      { message: 'Баланс: число с не более чем 2 знаками после запятой' },
+    ),
 })
 
 export type CompanyFormValues = z.infer<typeof companyFormSchema>

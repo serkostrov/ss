@@ -20,10 +20,10 @@ export function ErrorFallback({
   resetLabel = 'Попробовать снова',
 }: ErrorFallbackProps) {
   return (
-    <div className="flex min-h-full items-center justify-center bg-muted/30 px-4 py-10">
+    <div className="bg-muted/30 flex min-h-full items-center justify-center px-4 py-10">
       <Card className="w-full max-w-lg">
         <CardHeader>
-          <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+          <div className="bg-destructive/10 text-destructive mb-2 flex size-10 items-center justify-center rounded-full">
             <AlertTriangle className="size-5" aria-hidden />
           </div>
           <CardTitle>{title}</CardTitle>
@@ -31,7 +31,7 @@ export function ErrorFallback({
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {import.meta.env.DEV && error?.message ? (
-            <pre className="overflow-auto rounded-md border bg-muted p-3 text-xs text-muted-foreground">
+            <pre className="bg-muted text-muted-foreground overflow-auto rounded-md border p-3 text-xs">
               {error.message}
             </pre>
           ) : null}
@@ -45,7 +45,7 @@ export function ErrorFallback({
               На главную
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">{APP_NAME}</p>
+          <p className="text-muted-foreground text-xs">{APP_NAME}</p>
         </CardContent>
       </Card>
     </div>

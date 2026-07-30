@@ -4,10 +4,7 @@ import { supabaseClient } from '../lib/client'
 import type { TableRow } from '../types/database'
 import { rpcService } from './rpc.service'
 
-export type RepresentativeCompanyRef = Pick<
-  TableRow<'companies'>,
-  'id' | 'name' | 'access_status'
->
+export type RepresentativeCompanyRef = Pick<TableRow<'companies'>, 'id' | 'name' | 'access_status'>
 
 export type Representative = TableRow<'representatives'> & {
   company: RepresentativeCompanyRef | null
@@ -193,7 +190,10 @@ export const representativesService = {
 
     const search = filters.search?.trim()
     if (search) {
-      const safe = search.replace(/[%_,()"]/g, ' ').replace(/\s+/g, ' ').trim()
+      const safe = search
+        .replace(/[%_,()"]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
       if (safe) {
         const pattern = `%${safe}%`
         query = query.or(
@@ -216,10 +216,7 @@ export const representativesService = {
     return this.list({ companyId, active: 'all' })
   },
 
-  async listAssignCandidates(
-    companyId: string,
-    search?: string,
-  ): Promise<MemberAssignCandidate[]> {
+  async listAssignCandidates(companyId: string, search?: string): Promise<MemberAssignCandidate[]> {
     const rows = await rpcService.call('list_member_assign_candidates', {
       p_company_id: companyId,
       p_search: search?.trim() || null,
@@ -326,9 +323,10 @@ export const representativesService = {
       )
     }
 
-    const result = (await supabaseClient.from('representatives').delete().eq('id', id)) as QueryResult<
-      unknown
-    >
+    const result = (await supabaseClient
+      .from('representatives')
+      .delete()
+      .eq('id', id)) as QueryResult<unknown>
     assertResult(result)
   },
 }

@@ -172,9 +172,7 @@ export function WorkGroupFormDialog({
         <FormField label="Статус" error={errors.status}>
           <Select
             value={values.status}
-            onValueChange={(value) =>
-              patch('status', value as WorkGroupFormValues['status'])
-            }
+            onValueChange={(value) => patch('status', value as WorkGroupFormValues['status'])}
           >
             <SelectTrigger>
               <SelectValue />

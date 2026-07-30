@@ -143,7 +143,7 @@ export function MessagesHistoryPanel({
         accessorKey: 'sent_at',
         header: 'Отправлено',
         cell: ({ row }) => (
-          <span className="whitespace-nowrap text-sm text-muted-foreground">
+          <span className="text-muted-foreground text-sm whitespace-nowrap">
             {formatMessageDate(row.original.sent_at)}
           </span>
         ),
@@ -166,7 +166,7 @@ export function MessagesHistoryPanel({
               {row.original.author_name?.trim() || 'Без имени'}
             </p>
             {row.original.author_external_id ? (
-              <p className="truncate font-mono text-xs text-muted-foreground">
+              <p className="text-muted-foreground truncate font-mono text-xs">
                 {row.original.author_external_id}
               </p>
             ) : null}
@@ -177,7 +177,7 @@ export function MessagesHistoryPanel({
         accessorKey: 'text',
         header: 'Текст',
         cell: ({ row }) => (
-          <p className="max-w-[22rem] text-sm text-muted-foreground">
+          <p className="text-muted-foreground max-w-[22rem] text-sm">
             {truncateMessageText(row.original.text)}
           </p>
         ),
@@ -188,9 +188,7 @@ export function MessagesHistoryPanel({
               id: 'work_group',
               header: 'Группа',
               cell: ({ row }: { row: { original: Message } }) => (
-                <span className="text-sm">
-                  {row.original.work_group?.name ?? '—'}
-                </span>
+                <span className="text-sm">{row.original.work_group?.name ?? '—'}</span>
               ),
             } as ColumnDef<Message, unknown>,
           ]
@@ -211,11 +209,11 @@ export function MessagesHistoryPanel({
         cell: ({ row }) => {
           const count = row.original.relays.length
           if (!count) {
-            return <span className="text-sm text-muted-foreground">—</span>
+            return <span className="text-muted-foreground text-sm">—</span>
           }
           const failed = row.original.relays.filter((item) => item.status === 'failed').length
           return (
-            <span className="text-sm text-muted-foreground">
+            <span className="text-muted-foreground text-sm">
               {count}
               {failed > 0 ? ` · ошибок ${failed}` : ''}
             </span>
@@ -228,9 +226,7 @@ export function MessagesHistoryPanel({
 
   return (
     <div className="space-y-6">
-      {showPageHeader ? (
-        <PageHeader title={title} description={description} />
-      ) : null}
+      {showPageHeader ? <PageHeader title={title} description={description} /> : null}
 
       <Filters
         fields={filterFields}

@@ -29,7 +29,9 @@ export function mapPostgrestCode(code?: string): ApiErrorCode {
   return POSTGREST_CODE_MAP[code] ?? 'unknown'
 }
 
-export function fromSupabaseError(error: PostgrestError | SupabaseAuthError | SupabaseLikeError): ApiError {
+export function fromSupabaseError(
+  error: PostgrestError | SupabaseAuthError | SupabaseLikeError,
+): ApiError {
   const pgCode = 'code' in error ? error.code : undefined
   const mapped = mapPostgrestCode(pgCode)
   const status = 'status' in error ? error.status : undefined
@@ -71,10 +73,7 @@ export function unwrap<T>(result: { data: T; error: PostgrestError | null }): T 
   return result.data
 }
 
-export function unwrapMaybe<T>(result: {
-  data: T | null
-  error: PostgrestError | null
-}): T | null {
+export function unwrapMaybe<T>(result: { data: T | null; error: PostgrestError | null }): T | null {
   if (result.error) {
     throw fromSupabaseError(result.error)
   }

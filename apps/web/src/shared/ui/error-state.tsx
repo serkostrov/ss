@@ -52,16 +52,16 @@ function ErrorState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center rounded-lg border border-destructive/20 bg-destructive/5 px-6 py-12 text-center',
+        'border-destructive/20 bg-destructive/5 flex flex-col items-center justify-center rounded-lg border px-6 py-12 text-center',
         className,
       )}
       role="alert"
     >
-      <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+      <div className="bg-destructive/10 text-destructive mb-4 flex size-12 items-center justify-center rounded-full">
         <AlertTriangle className="size-6" aria-hidden />
       </div>
       <h3 className="text-base font-semibold">{title}</h3>
-      {message ? <p className="mt-1 max-w-md text-sm text-muted-foreground">{message}</p> : null}
+      {message ? <p className="text-muted-foreground mt-1 max-w-md text-sm">{message}</p> : null}
       <div className="mt-4 flex flex-wrap justify-center gap-2">
         {onRetry ? (
           <Button type="button" onClick={onRetry}>

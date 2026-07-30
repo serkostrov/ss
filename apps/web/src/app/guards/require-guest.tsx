@@ -1,10 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 
 import { useAuth } from '@app/providers'
-import {
-  resolvePostAuthRedirect,
-  type LoginLocationState,
-} from '@app/lib/intended-route'
+import { resolvePostAuthRedirect, type LoginLocationState } from '@app/lib/intended-route'
 import { assertGuest } from '@features/auth'
 import { FullPageLoader } from '@shared/ui'
 

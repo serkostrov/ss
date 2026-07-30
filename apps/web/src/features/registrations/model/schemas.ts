@@ -2,12 +2,7 @@ import { z } from 'zod'
 
 import type { UserStatus } from '@shared/types'
 
-export const registrationStatusFilterSchema = z.enum([
-  'all',
-  'pending',
-  'confirmed',
-  'blocked',
-])
+export const registrationStatusFilterSchema = z.enum(['all', 'pending', 'confirmed', 'blocked'])
 
 export type RegistrationStatusFilter = z.infer<typeof registrationStatusFilterSchema>
 

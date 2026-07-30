@@ -29,7 +29,7 @@ export function CabinetPendingPage() {
   return (
     <Card>
       <CardHeader>
-        <div className="mb-2 flex size-10 items-center justify-center rounded-full bg-accent text-accent-foreground">
+        <div className="bg-accent text-accent-foreground mb-2 flex size-10 items-center justify-center rounded-full">
           <Clock3 className="size-5" aria-hidden />
         </div>
         <CardTitle>Заявка на рассмотрении</CardTitle>

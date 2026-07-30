@@ -19,10 +19,7 @@ function LoadingState({
     return (
       <div className={cn('space-y-3', className)} role="status" aria-label={label} aria-busy="true">
         {Array.from({ length: rows }).map((_, index) => (
-          <Skeleton
-            key={index}
-            className={variant === 'table' ? 'h-10 w-full' : 'h-4 w-full'}
-          />
+          <Skeleton key={index} className={variant === 'table' ? 'h-10 w-full' : 'h-4 w-full'} />
         ))}
       </div>
     )
@@ -36,7 +33,7 @@ function LoadingState({
       aria-busy="true"
     >
       <Spinner size="lg" label={label} />
-      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="text-muted-foreground text-sm">{label}</p>
     </div>
   )
 }

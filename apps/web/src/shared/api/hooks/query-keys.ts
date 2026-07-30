@@ -26,23 +26,15 @@ export const queryKeys = {
   },
   representatives: {
     all: ['apss', 'representatives'] as const,
-    list: (filters: {
-      search?: string
-      companyId?: string
-      active?: string
-      primary?: string
-    }) => ['apss', 'representatives', 'list', filters] as const,
+    list: (filters: { search?: string; companyId?: string; active?: string; primary?: string }) =>
+      ['apss', 'representatives', 'list', filters] as const,
     detail: (id: string) => ['apss', 'representatives', id] as const,
     byCompany: (companyId: string) => ['apss', 'representatives', 'company', companyId] as const,
   },
   materials: {
     all: ['apss', 'materials'] as const,
-    list: (filters: {
-      search?: string
-      status?: string
-      levelId?: string
-      categoryId?: string
-    }) => ['apss', 'materials', 'list', filters] as const,
+    list: (filters: { search?: string; status?: string; levelId?: string; categoryId?: string }) =>
+      ['apss', 'materials', 'list', filters] as const,
     detail: (id: string) => ['apss', 'materials', id] as const,
     bySlug: (slug: string) => ['apss', 'materials', 'slug', slug] as const,
     documents: (sectionId: string) => ['apss', 'materials', 'documents', sectionId] as const,

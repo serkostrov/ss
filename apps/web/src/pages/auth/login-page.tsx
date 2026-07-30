@@ -13,7 +13,7 @@ export function LoginPage() {
       </CardHeader>
       <CardContent className="space-y-4">
         <LoginForm />
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Нет аккаунта?{' '}
           <Link className="text-primary underline-offset-4 hover:underline" to={routes.register}>
             Регистрация

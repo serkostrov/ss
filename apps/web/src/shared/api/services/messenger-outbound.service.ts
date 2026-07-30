@@ -110,7 +110,7 @@ export const messengerOutboundService = {
                     ? 'Messenger API не проксируется. Задайте VITE_MESSENGER_API_URL на домен worker.'
                     : response.status === 405
                       ? 'Messenger API не настроен (405). Задайте VITE_MESSENGER_API_URL на HTTPS-домен messenger.'
-                      : json?.error ?? `Не удалось отправить (${response.status})`
+                      : (json?.error ?? `Не удалось отправить (${response.status})`)
       throw new ApiError(message, {
         code: response.status === 401 || response.status === 403 ? 'unauthorized' : 'unknown',
       })

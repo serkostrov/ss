@@ -105,10 +105,7 @@ export function actionLabel(action: string): string {
 }
 
 function humanizeToken(value: string): string {
-  return value
-    .replace(/[._]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+  return value.replace(/[._]+/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {

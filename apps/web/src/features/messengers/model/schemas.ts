@@ -18,7 +18,9 @@ export function messengerPlatformLabel(platform: MessengerPlatform): string {
   return platform === 'telegram' ? 'Telegram' : 'Max'
 }
 
-export function messengerChatKindLabel(kind: MessengerChatKind | string | null | undefined): string {
+export function messengerChatKindLabel(
+  kind: MessengerChatKind | string | null | undefined,
+): string {
   switch (kind) {
     case 'channel':
       return 'Канал'

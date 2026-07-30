@@ -22,7 +22,7 @@ export function AdminUserMenu({ className }: AdminUserMenuProps) {
       <IconButton
         label="Выйти"
         variant="ghost"
-        className="size-8 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+        className="text-destructive hover:bg-destructive/10 hover:text-destructive size-8 shrink-0"
         disabled={logout.isPending}
         onClick={() => logout.mutate()}
       >

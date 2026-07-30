@@ -52,9 +52,7 @@ export function useSetStaffStatusMutation() {
       invalidateKeys: invalidateStaff,
       onSuccess: (_data, variables) => {
         notify.success(
-          variables.status === 'blocked'
-            ? 'Сотрудник заблокирован'
-            : 'Сотрудник разблокирован',
+          variables.status === 'blocked' ? 'Сотрудник заблокирован' : 'Сотрудник разблокирован',
         )
       },
       onError: (error) => notify.fromError(error, 'Не удалось изменить статус'),

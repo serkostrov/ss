@@ -1,12 +1,7 @@
 import { ApiError } from '@shared/lib/errors'
 
 import { supabaseClient } from '../lib/client'
-import type {
-  TableInsert,
-  TableRow,
-  TableUpdate,
-  WorkGroupStatus,
-} from '../types/database'
+import type { TableInsert, TableRow, TableUpdate, WorkGroupStatus } from '../types/database'
 import { dataService } from './data.service'
 import {
   messengerConnectionsService,
@@ -26,13 +21,17 @@ export type { WorkGroupMember, WorkGroupMemberRepresentative }
 /** @deprecated Prefer MessengerConnection — kept for WorkGroup embeds. */
 export type WorkGroupMessengerConnection = Pick<
   MessengerConnection,
-  'id' | 'platform' | 'chat_id' | 'chat_title' | 'bot_status' | 'connected_at' | 'last_error' | 'created_at'
+  | 'id'
+  | 'platform'
+  | 'chat_id'
+  | 'chat_title'
+  | 'bot_status'
+  | 'connected_at'
+  | 'last_error'
+  | 'created_at'
 >
 
-export type WorkGroupCategoryRef = Pick<
-  TableRow<'work_group_categories'>,
-  'id' | 'name' | 'slug'
->
+export type WorkGroupCategoryRef = Pick<TableRow<'work_group_categories'>, 'id' | 'name' | 'slug'>
 
 export type WorkGroup = TableRow<'work_groups'> & {
   responsible: WorkGroupRepresentativeRef | null
@@ -134,10 +133,7 @@ function normalizeResponsible(
   const rep = firstRelation(value)
   if (!rep) return null
   const companyRaw = rep.company as
-    | { id: string; name: string }
-    | Array<{ id: string; name: string }>
-    | null
-    | undefined
+    { id: string; name: string } | Array<{ id: string; name: string }> | null | undefined
   return {
     id: rep.id,
     full_name: rep.full_name,
@@ -195,12 +191,13 @@ export const workGroupsService = {
 
     const search = filters.search?.trim()
     if (search) {
-      const safe = search.replace(/[%_,()"]/g, ' ').replace(/\s+/g, ' ').trim()
+      const safe = search
+        .replace(/[%_,()"]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
       if (safe) {
         const pattern = `%${safe}%`
-        query = query.or(
-          [`name.ilike."${pattern}"`, `description.ilike."${pattern}"`].join(','),
-        )
+        query = query.or([`name.ilike."${pattern}"`, `description.ilike."${pattern}"`].join(','))
       }
     }
 

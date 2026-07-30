@@ -18,7 +18,4 @@ export {
   materialCategoryActiveFilterSchema,
   activeFilterLabel,
 } from './model/schemas'
-export type {
-  MaterialCategoryFormValues,
-  MaterialCategoryActiveFilter,
-} from './model/schemas'
+export type { MaterialCategoryFormValues, MaterialCategoryActiveFilter } from './model/schemas'

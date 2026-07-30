@@ -1,8 +1,4 @@
-import {
-  buildLocationPath,
-  saveIntendedRoute,
-  type LoginLocationState,
-} from './intended-route'
+import { buildLocationPath, saveIntendedRoute, type LoginLocationState } from './intended-route'
 import { routes } from '@shared/config'
 
 type UnauthorizedHandler = (payload: { from: string }) => void

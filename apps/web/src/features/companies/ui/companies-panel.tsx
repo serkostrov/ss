@@ -119,7 +119,7 @@ export function CompaniesPanel() {
         header: 'ID',
         meta: { className: 'w-[4.75rem] max-w-[4.75rem] pr-3' },
         cell: ({ row }) => (
-          <span className="font-mono text-sm tabular-nums text-muted-foreground">
+          <span className="text-muted-foreground font-mono text-sm tabular-nums">
             {formatCompanyAutoId(row.original.auto_id)}
           </span>
         ),
@@ -130,8 +130,8 @@ export function CompaniesPanel() {
         meta: { className: 'pl-2' },
         cell: ({ row }) => (
           <div className="flex min-w-0 flex-col gap-0.5">
-            <p className="truncate font-medium leading-tight">{row.original.name}</p>
-            <p className="truncate text-xs leading-tight text-muted-foreground">
+            <p className="truncate leading-tight font-medium">{row.original.name}</p>
+            <p className="text-muted-foreground truncate text-xs leading-tight">
               {row.original.inn ? `ИНН ${row.original.inn}` : 'ИНН не указан'}
             </p>
           </div>
@@ -148,14 +148,18 @@ export function CompaniesPanel() {
               : balance < 0
                 ? 'text-destructive'
                 : 'text-muted-foreground'
-          return <span className={`text-sm font-medium tabular-nums ${tone}`}>{formatCompanyBalance(balance)}</span>
+          return (
+            <span className={`text-sm font-medium tabular-nums ${tone}`}>
+              {formatCompanyBalance(balance)}
+            </span>
+          )
         },
       },
       {
         id: 'level',
         header: 'Уровень',
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-muted-foreground text-sm">
             {row.original.participation_level?.name ?? '—'}
           </span>
         ),
@@ -166,11 +170,7 @@ export function CompaniesPanel() {
         cell: ({ row }) => (
           <StatusBadge
             status={row.original.access_status}
-            label={
-              row.original.access_status === 'archived'
-                ? 'Вышедшая'
-                : undefined
-            }
+            label={row.original.access_status === 'archived' ? 'Вышедшая' : undefined}
           />
         ),
       },
@@ -178,7 +178,7 @@ export function CompaniesPanel() {
         accessorKey: 'email',
         header: 'Контакты',
         cell: ({ row }) => (
-          <div className="flex min-w-0 flex-col gap-0.5 text-sm text-muted-foreground">
+          <div className="text-muted-foreground flex min-w-0 flex-col gap-0.5 text-sm">
             <p className="truncate leading-tight">{row.original.email || '—'}</p>
             {row.original.phone ? (
               <p className="truncate leading-tight">{row.original.phone}</p>

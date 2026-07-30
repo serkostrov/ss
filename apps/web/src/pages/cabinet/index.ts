@@ -1,4 +1,5 @@
 export { CabinetHomePage } from './home-page'
+export { CabinetAccountPage } from './account-page'
 export { CabinetPendingPage } from './pending-page'
 export { CabinetBlockedPage } from './blocked-page'
 export { CabinetCompanyPage } from './company-page'

@@ -28,16 +28,12 @@ export function filterCabinetPolls(items: CabinetPoll[], search: string): Cabine
 }
 
 export function useCabinetPolls() {
-  return useSupabaseQuery(
-    queryKeys.polls.cabinetList,
-    () => pollsService.listForMember(),
-    {
-      ensureFreshSession: true,
-      staleTime: CABINET_POLLS_STALE_MS,
-      gcTime: CABINET_POLLS_GC_MS,
-      meta: { suppressErrorToast: true },
-    },
-  )
+  return useSupabaseQuery(queryKeys.polls.cabinetList, () => pollsService.listForMember(), {
+    ensureFreshSession: true,
+    staleTime: CABINET_POLLS_STALE_MS,
+    gcTime: CABINET_POLLS_GC_MS,
+    meta: { suppressErrorToast: true },
+  })
 }
 
 export function useCabinetPollsSearch(search: string) {

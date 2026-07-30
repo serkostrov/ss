@@ -149,12 +149,7 @@ export { FileCard } from './file-card'
 export type { FileCardProps } from './file-card'
 export { Modal } from './modal'
 export type { ModalProps } from './modal'
-export {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider,
-} from './tooltip'
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './tooltip'
 export { IconButton } from './icon-button'
 export type { IconButtonProps } from './icon-button'
 export { PageActions } from './page-actions'
@@ -162,4 +157,3 @@ export type { PageActionsProps } from './page-actions'
 export { PageDetailHeader } from './page-detail-header'
 export type { PageDetailHeaderProps } from './page-detail-header'
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs'
-

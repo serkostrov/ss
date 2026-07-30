@@ -24,7 +24,9 @@ import { useRegisterMutation } from '../model/use-auth-mutations'
 
 export function RegisterForm() {
   const register = useRegisterMutation()
-  const [innLookupStatus, setInnLookupStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle')
+  const [innLookupStatus, setInnLookupStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>(
+    'idle',
+  )
   const [innLookupMessage, setInnLookupMessage] = useState<string | null>(null)
   const lookupSeq = useRef(0)
   const lastAutofilledName = useRef<string | null>(null)
@@ -66,8 +68,7 @@ export function RegisterForm() {
           if (seq !== lookupSeq.current) return
 
           const currentName = form.getValues('companyNameHint')?.trim() ?? ''
-          const shouldOverwrite =
-            !currentName || currentName === (lastAutofilledName.current ?? '')
+          const shouldOverwrite = !currentName || currentName === (lastAutofilledName.current ?? '')
 
           if (shouldOverwrite) {
             form.setValue('companyNameHint', company.name, {
@@ -83,10 +84,7 @@ export function RegisterForm() {
           if (seq !== lookupSeq.current) return
           setInnLookupStatus('error')
           setInnLookupMessage(
-            getErrorMessage(
-              error,
-              'Автозаполнение недоступно. Укажите название компании вручную.',
-            ),
+            getErrorMessage(error, 'Автозаполнение недоступно. Укажите название компании вручную.'),
           )
         }
       })()
@@ -125,7 +123,12 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input type="email" autoComplete="email" placeholder="name@example.com" {...field} />
+                <Input
+                  type="email"
+                  autoComplete="email"
+                  placeholder="name@example.com"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -196,20 +199,18 @@ export function RegisterForm() {
                   }}
                 />
               </FormControl>
-              <FormDescription>
-                Необязательно.
-              </FormDescription>
+              <FormDescription>Необязательно.</FormDescription>
               {innLookupStatus === 'loading' ? (
-                <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <p className="text-muted-foreground flex items-center gap-1.5 text-sm">
                   <Spinner size="sm" />
                   Ищем организацию…
                 </p>
               ) : null}
               {innLookupStatus === 'ok' && innLookupMessage ? (
-                <p className="text-sm text-muted-foreground">Найдено: {innLookupMessage}</p>
+                <p className="text-muted-foreground text-sm">Найдено: {innLookupMessage}</p>
               ) : null}
               {innLookupStatus === 'error' && innLookupMessage ? (
-                <p className="text-sm text-destructive">{innLookupMessage}</p>
+                <p className="text-destructive text-sm">{innLookupMessage}</p>
               ) : null}
               <FormMessage />
             </FormItem>
@@ -277,7 +278,7 @@ export function RegisterForm() {
                   onCheckedChange={(checked) => field.onChange(checked === true)}
                 />
               </FormControl>
-              <div className="space-y-1 leading-none ">
+              <div className="space-y-1 leading-none">
                 <FormLabel>Показывать мои контакты другим участникам</FormLabel>
                 <FormDescription>
                   Другие участники смогут видеть ваши данные в справочнике.
@@ -301,9 +302,7 @@ export function RegisterForm() {
               </FormControl>
               <div className="space-y-2 leading-snug">
                 <FormLabel>Принимаю условия регистрации</FormLabel>
-                <FormDescription>
-                  Без подтверждения зарегистрироваться нельзя.
-                </FormDescription>
+                <FormDescription>Без подтверждения зарегистрироваться нельзя.</FormDescription>
                 <FormMessage />
               </div>
             </FormItem>

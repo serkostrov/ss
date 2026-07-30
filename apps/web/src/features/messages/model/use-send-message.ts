@@ -11,10 +11,7 @@ export function useSendMessengerMessageMutation(workGroupId: string) {
     (input: MessengerOutboundInput) => messengerOutboundService.send(input),
     {
       ensureFreshSession: true,
-      invalidateKeys: [
-        queryKeys.messages.all,
-        queryKeys.workGroups.messengers(workGroupId),
-      ],
+      invalidateKeys: [queryKeys.messages.all, queryKeys.workGroups.messengers(workGroupId)],
       onSuccess: () => notify.success('Сообщение отправлено'),
       onError: (error) => notify.fromError(error, 'Не удалось отправить сообщение'),
     },

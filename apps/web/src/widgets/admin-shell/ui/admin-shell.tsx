@@ -34,8 +34,8 @@ export function AdminShell({ children }: AdminShellProps) {
         </div>
       }
     >
-      <div className="flex min-h-svh bg-background">
-        <aside className="sticky top-0 hidden h-svh w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex">
+      <div className="bg-background flex min-h-svh">
+        <aside className="border-sidebar-border bg-sidebar text-sidebar-foreground sticky top-0 hidden h-svh w-60 shrink-0 flex-col border-r lg:flex">
           <AdminSidebar className="flex h-full flex-col" />
         </aside>
 
@@ -57,7 +57,7 @@ export function AdminShell({ children }: AdminShellProps) {
                   </SheetTrigger>
                   <SheetContent
                     side="right"
-                    className="w-[min(100%,18rem)] bg-sidebar p-0 text-sidebar-foreground"
+                    className="bg-sidebar text-sidebar-foreground w-[min(100%,18rem)] p-0"
                   >
                     <SheetHeader className="sr-only">
                       <SheetTitle>Навигация</SheetTitle>

@@ -3,15 +3,7 @@ import { Download, FileText } from 'lucide-react'
 
 import type { MaterialDocument } from '@shared/api'
 import { formatFileSize } from '@shared/lib/files'
-import {
-  Button,
-  EmptyState,
-  ErrorState,
-  FileCard,
-  Modal,
-  Skeleton,
-  Spinner,
-} from '@shared/ui'
+import { Button, EmptyState, ErrorState, FileCard, Modal, Skeleton, Spinner } from '@shared/ui'
 import {
   useDownloadMaterialDocumentMutation,
   useMaterialDocuments,
@@ -20,7 +12,9 @@ import {
 
 function isPreviewable(mimeType: string | null | undefined): boolean {
   if (!mimeType) return false
-  return mimeType.startsWith('image/') || mimeType === 'application/pdf' || mimeType === 'text/plain'
+  return (
+    mimeType.startsWith('image/') || mimeType === 'application/pdf' || mimeType === 'text/plain'
+  )
 }
 
 type CabinetDocumentsPanelProps = {
@@ -54,7 +48,7 @@ export function CabinetDocumentsPanel({ sectionId }: CabinetDocumentsPanelProps)
         <h2 id="cabinet-docs-heading" className="text-base font-semibold">
           Документы
         </h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Просмотр и скачивание по временной защищённой ссылке.
         </p>
       </div>
@@ -101,9 +95,7 @@ export function CabinetDocumentsPanel({ sectionId }: CabinetDocumentsPanelProps)
                   mimeType={doc.mime_type}
                   meta={formatFileSize(doc.file_size)}
                   busy={rowBusy}
-                  onPreview={
-                    isPreviewable(doc.mime_type) ? () => void openPreview(doc) : undefined
-                  }
+                  onPreview={isPreviewable(doc.mime_type) ? () => void openPreview(doc) : undefined}
                   onDownload={() => downloadMutation.mutate(doc)}
                 />
               </li>

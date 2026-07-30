@@ -2,13 +2,7 @@ import { Navigate, createBrowserRouter } from 'react-router-dom'
 
 import { RouteErrorBoundary } from '@app/error-boundary'
 import { RequireAuth, RequireGuest, RequireMemberStatus, RequireRole } from '@app/guards'
-import {
-  AdminLayout,
-  AuthLayout,
-  CabinetLayout,
-  PublicLayout,
-  RootLayout,
-} from '@app/layouts'
+import { AdminLayout, AuthLayout, CabinetLayout, PublicLayout, RootLayout } from '@app/layouts'
 import * as pages from '@app/router/lazy-pages'
 import { routes } from '@shared/config'
 
@@ -39,9 +33,7 @@ export const router = createBrowserRouter([
           },
           {
             element: <RequireAuth />,
-            children: [
-              { path: routes.updatePassword, element: <pages.UpdatePasswordPage /> },
-            ],
+            children: [{ path: routes.updatePassword, element: <pages.UpdatePasswordPage /> }],
           },
         ],
       },
@@ -56,22 +48,25 @@ export const router = createBrowserRouter([
                 element: <AdminLayout />,
                 children: [
                   { index: true, element: <pages.AdminDashboardPage /> },
-                  { path: "registrations", element: <pages.AdminRegistrationsPage /> },
-                  { path: "levels", element: <Navigate to={routes.admin.settings} replace /> },
-                  { path: "companies", element: <pages.AdminCompaniesPage /> },
-                  { path: "companies/:id", element: <pages.AdminCompanyDetailsPage /> },
-                  { path: "representatives", element: <pages.AdminRepresentativesPage /> },
-                  { path: "representatives/:id", element: <pages.AdminRepresentativeDetailsPage /> },
-                  { path: "work-groups", element: <pages.AdminWorkGroupsPage /> },
-                  { path: "work-groups/:id", element: <pages.AdminWorkGroupDetailsPage /> },
-                  { path: "messages", element: <pages.AdminMessagesPage /> },
-                  { path: "materials", element: <pages.AdminMaterialsPage /> },
-                  { path: "materials/:id", element: <pages.AdminMaterialDetailsPage /> },
-                  { path: "polls", element: <pages.AdminPollsPage /> },
-                  { path: "polls/:id", element: <pages.AdminPollDetailsPage /> },
-                  { path: "staff", element: <pages.AdminStaffPage /> },
-                  { path: "audit", element: <pages.AdminAuditPage /> },
-                  { path: "settings", element: <pages.AdminSettingsPage /> },
+                  { path: 'registrations', element: <pages.AdminRegistrationsPage /> },
+                  { path: 'levels', element: <Navigate to={routes.admin.settings} replace /> },
+                  { path: 'companies', element: <pages.AdminCompaniesPage /> },
+                  { path: 'companies/:id', element: <pages.AdminCompanyDetailsPage /> },
+                  { path: 'representatives', element: <pages.AdminRepresentativesPage /> },
+                  {
+                    path: 'representatives/:id',
+                    element: <pages.AdminRepresentativeDetailsPage />,
+                  },
+                  { path: 'work-groups', element: <pages.AdminWorkGroupsPage /> },
+                  { path: 'work-groups/:id', element: <pages.AdminWorkGroupDetailsPage /> },
+                  { path: 'messages', element: <pages.AdminMessagesPage /> },
+                  { path: 'materials', element: <pages.AdminMaterialsPage /> },
+                  { path: 'materials/:id', element: <pages.AdminMaterialDetailsPage /> },
+                  { path: 'polls', element: <pages.AdminPollsPage /> },
+                  { path: 'polls/:id', element: <pages.AdminPollDetailsPage /> },
+                  { path: 'staff', element: <pages.AdminStaffPage /> },
+                  { path: 'audit', element: <pages.AdminAuditPage /> },
+                  { path: 'settings', element: <pages.AdminSettingsPage /> },
                 ],
               },
             ],
@@ -84,18 +79,22 @@ export const router = createBrowserRouter([
                 element: <CabinetLayout />,
                 children: [
                   { index: true, element: <pages.CabinetHomePage /> },
-                  { path: "pending", element: <pages.CabinetPendingPage /> },
-                  { path: "blocked", element: <pages.CabinetBlockedPage /> },
+                  { path: 'pending', element: <pages.CabinetPendingPage /> },
+                  { path: 'blocked', element: <pages.CabinetBlockedPage /> },
                   {
                     element: <RequireMemberStatus status="confirmed" />,
                     children: [
-                      { path: "company", element: <pages.CabinetCompanyPage /> },
-                      { path: "directory", element: <pages.CabinetDirectoryPage /> },
-                      { path: "messages", element: <pages.CabinetMessagesPage /> },
-                      { path: "materials", element: <pages.CabinetMaterialsPage /> },
-                      { path: "materials/:slug", element: <pages.CabinetMaterialDetailsPage /> },
-                      { path: "polls", element: <pages.CabinetPollsPage /> },
-                      { path: "polls/:id", element: <pages.CabinetPollDetailsPage /> },
+                      { path: 'account', element: <pages.CabinetAccountPage /> },
+                      {
+                        path: 'company',
+                        element: <Navigate to={`${routes.cabinet.account}?tab=company`} replace />,
+                      },
+                      { path: 'directory', element: <pages.CabinetDirectoryPage /> },
+                      { path: 'messages', element: <pages.CabinetMessagesPage /> },
+                      { path: 'materials', element: <pages.CabinetMaterialsPage /> },
+                      { path: 'materials/:slug', element: <pages.CabinetMaterialDetailsPage /> },
+                      { path: 'polls', element: <pages.CabinetPollsPage /> },
+                      { path: 'polls/:id', element: <pages.CabinetPollDetailsPage /> },
                     ],
                   },
                 ],
@@ -104,7 +103,7 @@ export const router = createBrowserRouter([
           },
         ],
       },
-      { path: "*", element: <pages.NotFoundPage /> },
+      { path: '*', element: <pages.NotFoundPage /> },
     ],
   },
 ])

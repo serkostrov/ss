@@ -56,10 +56,7 @@ type MaterialDocumentsPanelProps = {
   mode?: 'admin' | 'readonly'
 }
 
-export function MaterialDocumentsPanel({
-  sectionId,
-  mode = 'admin',
-}: MaterialDocumentsPanelProps) {
+export function MaterialDocumentsPanel({ sectionId, mode = 'admin' }: MaterialDocumentsPanelProps) {
   const query = useMaterialDocuments(sectionId)
   const uploadMutation = useUploadMaterialDocumentMutation(sectionId)
   const deleteMutation = useDeleteMaterialDocumentMutation(sectionId)
@@ -158,7 +155,7 @@ export function MaterialDocumentsPanel({
         ) : null}
 
         {uploadMutation.isPending ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <Spinner size="sm" />
             Загрузка в Storage…
           </div>

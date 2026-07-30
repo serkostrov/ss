@@ -44,7 +44,7 @@ function Modal({
           {description ? <DialogDescription>{description}</DialogDescription> : null}
         </DialogHeader>
         {/* px keeps input borders / focus rings from clipping on overflow */}
-        <div className="max-h-[70vh] space-y-0 overflow-y-auto overflow-x-hidden px-1 py-1">
+        <div className="max-h-[70vh] space-y-0 overflow-x-hidden overflow-y-auto px-1 py-1">
           {children}
         </div>
         {footer ? <DialogFooter>{footer}</DialogFooter> : null}

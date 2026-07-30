@@ -2,13 +2,7 @@ import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-r
 
 import { cn } from '@shared/lib/utils'
 import { Button } from './button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select'
 
 type PaginationProps = {
   page: number
@@ -41,14 +35,14 @@ function Pagination({
         className,
       )}
     >
-      <p className="text-sm text-muted-foreground">
+      <p className="text-muted-foreground text-sm">
         {total === 0 ? 'Нет записей' : `${from}–${to} из ${total}`}
       </p>
 
       <div className="flex flex-wrap items-center gap-2">
         {onPageSizeChange ? (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">На странице</span>
+            <span className="text-muted-foreground text-sm">На странице</span>
             <Select
               value={String(pageSize)}
               onValueChange={(value) => onPageSizeChange(Number(value))}

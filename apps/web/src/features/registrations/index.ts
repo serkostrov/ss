@@ -17,7 +17,4 @@ export {
   registrationStatusFilterSchema,
   formatRegistrationDate,
 } from './model/schemas'
-export type {
-  ConfirmRegistrationFormValues,
-  RegistrationStatusFilter,
-} from './model/schemas'
+export type { ConfirmRegistrationFormValues, RegistrationStatusFilter } from './model/schemas'

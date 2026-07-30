@@ -53,19 +53,13 @@ export function RegistrationDetailSheet({
         <SheetContent side="right" className="flex w-full flex-col sm:max-w-md">
           <SheetHeader>
             <SheetTitle>Карточка заявки</SheetTitle>
-            <SheetDescription>
-              Просмотр данных заявителя и действия админа.
-            </SheetDescription>
+            <SheetDescription>Просмотр данных заявителя и действия админа.</SheetDescription>
           </SheetHeader>
 
           <div className="flex-1 overflow-y-auto py-4">
             {detail.isLoading ? <LoadingState label="Загрузка заявки…" /> : null}
             {detail.isError ? (
-              <ErrorState
-                compact
-                error={detail.error}
-                onRetry={() => void detail.refetch()}
-              />
+              <ErrorState compact error={detail.error} onRetry={() => void detail.refetch()} />
             ) : null}
             {application ? <ApplicationCard application={application} /> : null}
           </div>
@@ -175,7 +169,7 @@ function ApplicationCard({ application }: { application: RegistrationApplication
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-base font-semibold">{application.full_name || 'Без имени'}</p>
-          <p className="truncate text-muted-foreground">{application.email}</p>
+          <p className="text-muted-foreground truncate">{application.email}</p>
         </div>
         <StatusBadge status={application.status} />
       </div>
@@ -186,9 +180,7 @@ function ApplicationCard({ application }: { application: RegistrationApplication
         <Field label="Телефон" value={application.phone} />
         <Field
           label="Telegram"
-          value={
-            application.telegram_username ? `@${application.telegram_username}` : null
-          }
+          value={application.telegram_username ? `@${application.telegram_username}` : null}
         />
         <Field
           label="Max"
@@ -203,7 +195,7 @@ function ApplicationCard({ application }: { application: RegistrationApplication
         <>
           <Separator />
           <div className="space-y-2">
-            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
               Представитель
             </p>
             <p className="font-medium">{application.representative.full_name}</p>
@@ -241,7 +233,7 @@ function ApplicationCard({ application }: { application: RegistrationApplication
 function Field({ label, value }: { label: string; value?: string | null }) {
   return (
     <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dt className="text-muted-foreground text-xs">{label}</dt>
       <dd className="mt-0.5 font-medium break-words">{value?.trim() || '—'}</dd>
     </div>
   )

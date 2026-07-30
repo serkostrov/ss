@@ -79,7 +79,8 @@ export function useCreateCompanyMutation() {
 
 export function useUpdateCompanyMutation() {
   return useSupabaseMutation(
-    (input: { id: string; values: CompanyInput }) => companiesService.update(input.id, input.values),
+    (input: { id: string; values: CompanyInput }) =>
+      companiesService.update(input.id, input.values),
     {
       ensureFreshSession: true,
       invalidateKeys: invalidateAll,
@@ -119,27 +120,21 @@ export function useDeleteCompanyMutation() {
 }
 
 export function useAddCompanyCommentMutation(companyId: string) {
-  return useSupabaseMutation(
-    (body: string) => companiesService.addComment(companyId, body),
-    {
-      ensureFreshSession: true,
-      invalidateKeys: [queryKeys.companies.comments(companyId)],
-      onSuccess: () => notify.success('Комментарий добавлен'),
-      onError: (error) => notify.fromError(error, 'Не удалось добавить комментарий'),
-    },
-  )
+  return useSupabaseMutation((body: string) => companiesService.addComment(companyId, body), {
+    ensureFreshSession: true,
+    invalidateKeys: [queryKeys.companies.comments(companyId)],
+    onSuccess: () => notify.success('Комментарий добавлен'),
+    onError: (error) => notify.fromError(error, 'Не удалось добавить комментарий'),
+  })
 }
 
 export function useDeleteCompanyCommentMutation(companyId: string) {
-  return useSupabaseMutation(
-    (commentId: string) => companiesService.deleteComment(commentId),
-    {
-      ensureFreshSession: true,
-      invalidateKeys: [queryKeys.companies.comments(companyId)],
-      onSuccess: () => notify.success('Комментарий удалён'),
-      onError: (error) => notify.fromError(error, 'Не удалось удалить комментарий'),
-    },
-  )
+  return useSupabaseMutation((commentId: string) => companiesService.deleteComment(commentId), {
+    ensureFreshSession: true,
+    invalidateKeys: [queryKeys.companies.comments(companyId)],
+    onSuccess: () => notify.success('Комментарий удалён'),
+    onError: (error) => notify.fromError(error, 'Не удалось удалить комментарий'),
+  })
 }
 
 export function toCompanyInput(values: {

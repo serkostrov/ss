@@ -6,9 +6,9 @@ import { InlineLoader } from '@shared/ui'
 
 export function AuthLayout() {
   return (
-    <div className="flex min-h-svh flex-col items-center bg-muted/40 px-4 py-10 sm:py-12">
+    <div className="bg-muted/40 flex min-h-svh flex-col items-center px-4 py-10 sm:py-12">
       <div className="mb-6 text-center">
-        <p className="text-sm font-medium tracking-wide text-muted-foreground uppercase">
+        <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
           {APP_NAME}
         </p>
       </div>

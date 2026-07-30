@@ -100,17 +100,17 @@ function DataTable<TData>({
                     header.column.columnDef.meta as { className?: string } | undefined
                   )?.className
                   return (
-                  <TableHead
-                    key={header.id}
-                    className={cn(headPad, isSelect && 'w-10 max-w-10', metaClassName)}
-                    style={isSelect ? { width: '2.5rem' } : undefined}
-                  >
-                    <div className={cn('min-w-0', !isSelect && 'truncate')}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </div>
-                  </TableHead>
+                    <TableHead
+                      key={header.id}
+                      className={cn(headPad, isSelect && 'w-10 max-w-10', metaClassName)}
+                      style={isSelect ? { width: '2.5rem' } : undefined}
+                    >
+                      <div className={cn('min-w-0', !isSelect && 'truncate')}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </div>
+                    </TableHead>
                   )
                 })}
               </TableRow>
@@ -161,15 +161,15 @@ function DataTable<TData>({
                     cell.column.columnDef.meta as { className?: string } | undefined
                   )?.className
                   return (
-                  <TableCell
-                    key={cell.id}
-                    className={cn(cellPad, isSelect && 'w-10 max-w-10', metaClassName)}
-                    style={isSelect ? { width: '2.5rem' } : undefined}
-                  >
-                    <div className={cn('min-w-0', !isSelect && 'overflow-hidden')}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </div>
-                  </TableCell>
+                    <TableCell
+                      key={cell.id}
+                      className={cn(cellPad, isSelect && 'w-10 max-w-10', metaClassName)}
+                      style={isSelect ? { width: '2.5rem' } : undefined}
+                    >
+                      <div className={cn('min-w-0', !isSelect && 'overflow-hidden')}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </div>
+                    </TableCell>
                   )
                 })}
               </TableRow>

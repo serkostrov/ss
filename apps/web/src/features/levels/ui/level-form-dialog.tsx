@@ -1,20 +1,9 @@
 import { useEffect, useState } from 'react'
 
 import type { ParticipationLevel } from '@shared/api'
-import {
-  Button,
-  Checkbox,
-  FormField,
-  Input,
-  Modal,
-  Spinner,
-  Textarea,
-} from '@shared/ui'
+import { Button, Checkbox, FormField, Input, Modal, Spinner, Textarea } from '@shared/ui'
 
-import {
-  participationLevelFormSchema,
-  type ParticipationLevelFormValues,
-} from '../model/schemas'
+import { participationLevelFormSchema, type ParticipationLevelFormValues } from '../model/schemas'
 import { useCreateLevelMutation, useUpdateLevelMutation } from '../model/use-levels'
 
 type LevelFormDialogProps = {

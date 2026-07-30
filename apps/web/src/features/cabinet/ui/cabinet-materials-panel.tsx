@@ -27,7 +27,7 @@ function MaterialsListSkeleton() {
   return (
     <div className="grid gap-3 sm:grid-cols-2" aria-hidden>
       {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="rounded-lg border bg-card p-4">
+        <div key={index} className="bg-card rounded-lg border p-4">
           <Skeleton className="mb-3 h-5 w-2/3" />
           <Skeleton className="h-4 w-full" />
           <Skeleton className="mt-2 h-4 w-4/5" />
@@ -90,7 +90,7 @@ export function CabinetMaterialsPanel() {
           </Select>
         </div>
         {!query.isLoading && query.totalCount > 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             {search.trim() || categoryId !== 'all'
               ? `Найдено: ${items.length} из ${query.totalCount}`
               : `Разделов: ${query.totalCount}`}
@@ -133,9 +133,7 @@ export function CabinetMaterialsPanel() {
       ) : null}
 
       {items.length > 0 ? (
-        <div
-          className={`grid gap-3 sm:grid-cols-2 ${query.isFiltering ? 'opacity-80' : ''}`}
-        >
+        <div className={`grid gap-3 sm:grid-cols-2 ${query.isFiltering ? 'opacity-80' : ''}`}>
           {items.map((section) => {
             const href = routes.cabinet.material(section.slug || section.id)
             return (
@@ -144,21 +142,21 @@ export function CabinetMaterialsPanel() {
                 to={href}
                 onMouseEnter={() => prefetch(section.slug)}
                 onFocus={() => prefetch(section.slug)}
-                className="rounded-lg border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="bg-card hover:border-primary/40 hover:bg-accent/30 focus-visible:ring-ring rounded-lg border p-4 transition-colors focus-visible:ring-2 focus-visible:outline-none"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <p className="min-w-0 font-medium leading-snug">{section.title}</p>
+                  <p className="min-w-0 leading-snug font-medium">{section.title}</p>
                   <StatusBadge status="active" label="Доступно" className="shrink-0" />
                 </div>
                 {section.category?.name ? (
-                  <p className="mt-1 text-xs text-muted-foreground">{section.category.name}</p>
+                  <p className="text-muted-foreground mt-1 text-xs">{section.category.name}</p>
                 ) : null}
                 {section.description ? (
-                  <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
+                  <p className="text-muted-foreground mt-2 line-clamp-3 text-sm">
                     {section.description}
                   </p>
                 ) : (
-                  <p className="mt-2 text-sm text-muted-foreground">Без описания</p>
+                  <p className="text-muted-foreground mt-2 text-sm">Без описания</p>
                 )}
               </Link>
             )

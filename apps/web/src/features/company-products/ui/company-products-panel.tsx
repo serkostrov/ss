@@ -29,12 +29,7 @@ const productFormSchema = z.object({
     .trim()
     .min(2, 'Название слишком короткое')
     .max(200, 'Название слишком длинное'),
-  url: z
-    .string()
-    .trim()
-    .max(500, 'Ссылка слишком длинная')
-    .optional()
-    .or(z.literal('')),
+  url: z.string().trim().max(500, 'Ссылка слишком длинная').optional().or(z.literal('')),
 })
 
 type ProductFormValues = z.infer<typeof productFormSchema>
@@ -42,11 +37,13 @@ type ProductFormValues = z.infer<typeof productFormSchema>
 type CompanyProductsPanelProps = {
   companyId: string
   title?: string
+  editable?: boolean
 }
 
 export function CompanyProductsPanel({
   companyId,
   title = 'Продукция',
+  editable = true,
 }: CompanyProductsPanelProps) {
   const query = useCompanyProducts(companyId)
   const createMutation = useCreateCompanyProductMutation(companyId)
@@ -71,6 +68,10 @@ export function CompanyProductsPanel({
 
   const pending = createMutation.isPending || updateMutation.isPending
   const products = query.data ?? []
+
+  if (!editable && !query.isLoading && !query.isError && products.length === 0) {
+    return null
+  }
 
   const openCreate = () => {
     setEditing(null)
@@ -107,10 +108,12 @@ export function CompanyProductsPanel({
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         {title ? <h3 className="text-base font-medium">{title}</h3> : <span />}
-        <Button type="button" size="sm" className="shrink-0" onClick={openCreate}>
-          <Plus className="size-4" />
-          Добавить
-        </Button>
+        {editable ? (
+          <Button type="button" size="sm" className="shrink-0" onClick={openCreate}>
+            <Plus className="size-4" />
+            Добавить
+          </Button>
+        ) : null}
       </div>
 
       {query.isLoading && !query.data ? <LoadingState label="Загрузка продукции…" /> : null}
@@ -122,7 +125,11 @@ export function CompanyProductsPanel({
       {!query.isLoading && !query.isError && products.length === 0 ? (
         <EmptyState
           title="Продукции пока нет"
-          description="Добавьте товары или услуги, чтобы другие участники могли найти вас как партнёра."
+          description={
+            editable
+              ? 'Добавьте товары или услуги, чтобы другие участники могли найти вас как партнёра.'
+              : 'Компания пока не добавила товары или услуги.'
+          }
         />
       ) : null}
 
@@ -140,135 +147,141 @@ export function CompanyProductsPanel({
                     href={product.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1 truncate text-xs text-primary underline-offset-4 hover:underline"
+                    className="text-primary inline-flex items-center gap-1 truncate text-xs underline-offset-4 hover:underline"
                   >
                     {product.url}
                     <ExternalLink className="size-3 shrink-0" />
                   </a>
                 ) : (
-                  <p className="text-xs text-muted-foreground">Без ссылки</p>
+                  <p className="text-muted-foreground text-xs">Без ссылки</p>
                 )}
               </div>
-              <div className="flex items-center gap-0.5">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-7"
-                  disabled={index === 0 || moveMutation.isPending}
-                  aria-label="Выше"
-                  onClick={() => moveMutation.mutate({ id: product.id, direction: 'up' })}
-                >
-                  <ArrowUp className="size-3.5" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-7"
-                  disabled={index >= products.length - 1 || moveMutation.isPending}
-                  aria-label="Ниже"
-                  onClick={() => moveMutation.mutate({ id: product.id, direction: 'down' })}
-                >
-                  <ArrowDown className="size-3.5" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-7"
-                  aria-label="Редактировать"
-                  onClick={() => {
-                    setEditing(product)
-                    setFormOpen(true)
-                  }}
-                >
-                  <Pencil className="size-3.5" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-7 text-destructive"
-                  aria-label="Удалить"
-                  onClick={() => setDeleting(product)}
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
-              </div>
+              {editable ? (
+                <div className="flex items-center gap-0.5">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7"
+                    disabled={index === 0 || moveMutation.isPending}
+                    aria-label="Выше"
+                    onClick={() => moveMutation.mutate({ id: product.id, direction: 'up' })}
+                  >
+                    <ArrowUp className="size-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7"
+                    disabled={index >= products.length - 1 || moveMutation.isPending}
+                    aria-label="Ниже"
+                    onClick={() => moveMutation.mutate({ id: product.id, direction: 'down' })}
+                  >
+                    <ArrowDown className="size-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7"
+                    aria-label="Редактировать"
+                    onClick={() => {
+                      setEditing(product)
+                      setFormOpen(true)
+                    }}
+                  >
+                    <Pencil className="size-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive size-7"
+                    aria-label="Удалить"
+                    onClick={() => setDeleting(product)}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>
       ) : null}
 
-      <Modal
-        open={formOpen}
-        onOpenChange={(open) => {
-          setFormOpen(open)
-          if (!open) setEditing(null)
-        }}
-        title={editing ? 'Редактировать продукцию' : 'Новая продукция'}
-        description="Укажите название и ссылку на страницу товара или услуги на сайте компании."
-        footer={
-          <>
-            <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>
-              Отмена
-            </Button>
-            <Button type="button" disabled={pending} onClick={() => void submit()}>
-              {pending ? <Spinner size="sm" className="text-current" /> : null}
-              {editing ? 'Сохранить' : 'Добавить'}
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <FormField label="Название" required error={errors.name}>
-            <Input
-              value={values.name}
-              onChange={(event) => {
-                setValues((prev) => ({ ...prev, name: event.target.value }))
-                setErrors((prev) => {
-                  const next = { ...prev }
-                  delete next.name
-                  return next
-                })
-              }}
-              placeholder="Например, Школьный светильник"
-              autoFocus
-            />
-          </FormField>
-          <FormField label="Ссылка" error={errors.url} description="Необязательно">
-            <Input
-              value={values.url ?? ''}
-              onChange={(event) => {
-                setValues((prev) => ({ ...prev, url: event.target.value }))
-                setErrors((prev) => {
-                  const next = { ...prev }
-                  delete next.url
-                  return next
-                })
-              }}
-              placeholder="https://example.ru/product"
-            />
-          </FormField>
-        </div>
-      </Modal>
+      {editable ? (
+        <Modal
+          open={formOpen}
+          onOpenChange={(open) => {
+            setFormOpen(open)
+            if (!open) setEditing(null)
+          }}
+          title={editing ? 'Редактировать продукцию' : 'Новая продукция'}
+          description="Укажите название и ссылку на страницу товара или услуги на сайте компании."
+          footer={
+            <>
+              <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>
+                Отмена
+              </Button>
+              <Button type="button" disabled={pending} onClick={() => void submit()}>
+                {pending ? <Spinner size="sm" className="text-current" /> : null}
+                {editing ? 'Сохранить' : 'Добавить'}
+              </Button>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <FormField label="Название" required error={errors.name}>
+              <Input
+                value={values.name}
+                onChange={(event) => {
+                  setValues((prev) => ({ ...prev, name: event.target.value }))
+                  setErrors((prev) => {
+                    const next = { ...prev }
+                    delete next.name
+                    return next
+                  })
+                }}
+                placeholder="Например, Школьный светильник"
+                autoFocus
+              />
+            </FormField>
+            <FormField label="Ссылка" error={errors.url} description="Необязательно">
+              <Input
+                value={values.url ?? ''}
+                onChange={(event) => {
+                  setValues((prev) => ({ ...prev, url: event.target.value }))
+                  setErrors((prev) => {
+                    const next = { ...prev }
+                    delete next.url
+                    return next
+                  })
+                }}
+                placeholder="https://example.ru/product"
+              />
+            </FormField>
+          </div>
+        </Modal>
+      ) : null}
 
-      <DeleteDialog
-        open={Boolean(deleting)}
-        onOpenChange={(open) => {
-          if (!open) setDeleting(null)
-        }}
-        entityName={deleting?.name}
-        title="Удалить продукцию?"
-        description="Запись будет удалена из карточки компании и справочника."
-        loading={deleteMutation.isPending}
-        onConfirm={async () => {
-          if (!deleting) return
-          await deleteMutation.mutateAsync(deleting.id)
-          setDeleting(null)
-        }}
-      />
+      {editable ? (
+        <DeleteDialog
+          open={Boolean(deleting)}
+          onOpenChange={(open) => {
+            if (!open) setDeleting(null)
+          }}
+          entityName={deleting?.name}
+          title="Удалить продукцию?"
+          description="Запись будет удалена из карточки компании и справочника."
+          loading={deleteMutation.isPending}
+          onConfirm={async () => {
+            if (!deleting) return
+            await deleteMutation.mutateAsync(deleting.id)
+            setDeleting(null)
+          }}
+        />
+      ) : null}
     </div>
   )
 }

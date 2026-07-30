@@ -17,7 +17,7 @@ const sizeClass = {
 export function Spinner({ className, size = 'md', label = 'Загрузка' }: SpinnerProps) {
   return (
     <Loader2
-      className={cn('animate-spin text-muted-foreground', sizeClass[size], className)}
+      className={cn('text-muted-foreground animate-spin', sizeClass[size], className)}
       aria-label={label}
       role="status"
     />

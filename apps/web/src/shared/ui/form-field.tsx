@@ -34,9 +34,9 @@ function FormField({
       </Label>
       {children}
       {description && !error ? (
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="text-muted-foreground text-sm">{description}</p>
       ) : null}
-      {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
+      {error ? <p className="text-destructive text-sm font-medium">{error}</p> : null}
     </div>
   )
 }

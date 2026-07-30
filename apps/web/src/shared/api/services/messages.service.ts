@@ -1,12 +1,7 @@
 import { ApiError } from '@shared/lib/errors'
 
 import { supabaseClient } from '../lib/client'
-import type {
-  DeliveryStatus,
-  MessageSource,
-  RelayStatus,
-  TableRow,
-} from '../types/database'
+import type { DeliveryStatus, MessageSource, RelayStatus, TableRow } from '../types/database'
 
 export type MessageRelay = Pick<
   TableRow<'message_relays'>,
@@ -153,7 +148,10 @@ export const messagesService = {
 
     const search = filters.search?.trim()
     if (search) {
-      const safe = search.replace(/[%_,()"]/g, ' ').replace(/\s+/g, ' ').trim()
+      const safe = search
+        .replace(/[%_,()"]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
       if (safe) {
         const pattern = `%${safe}%`
         query = query.or(

@@ -27,7 +27,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
   ) => {
     return (
       <div className={cn('relative', className)}>
-        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
         <Input
           ref={ref}
           value={value}
@@ -46,7 +46,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
             type="button"
             variant="ghost"
             size="icon"
-            className="absolute top-0 right-0 h-9 w-9 text-muted-foreground"
+            className="text-muted-foreground absolute top-0 right-0 h-9 w-9"
             onClick={() => onValueChange('')}
             aria-label="Очистить поиск"
           >

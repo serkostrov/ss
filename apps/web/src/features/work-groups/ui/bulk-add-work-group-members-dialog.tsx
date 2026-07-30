@@ -91,7 +91,7 @@ export function BulkAddWorkGroupMembersDialog({
           aria-label="Поиск представителей"
         />
 
-        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+        <div className="text-muted-foreground flex items-center justify-between gap-2 text-xs">
           <button
             type="button"
             className="text-primary underline-offset-4 hover:underline"
@@ -107,11 +107,7 @@ export function BulkAddWorkGroupMembersDialog({
 
         {candidates.isLoading ? <LoadingState label="Загрузка кандидатов…" /> : null}
         {candidates.isError ? (
-          <ErrorState
-            error={candidates.error}
-            onRetry={() => void candidates.refetch()}
-            compact
-          />
+          <ErrorState error={candidates.error} onRetry={() => void candidates.refetch()} compact />
         ) : null}
 
         {!candidates.isLoading && !candidates.isError && items.length === 0 ? (
@@ -130,7 +126,7 @@ export function BulkAddWorkGroupMembersDialog({
           <ul className="max-h-[40vh] space-y-1 overflow-y-auto pr-1">
             {items.map((rep) => (
               <li key={rep.id}>
-                <label className="flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2 text-sm hover:bg-accent/40">
+                <label className="hover:bg-accent/40 flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2 text-sm">
                   <Checkbox
                     checked={selectedSet.has(rep.id)}
                     onCheckedChange={() => toggle(rep.id)}
@@ -138,7 +134,7 @@ export function BulkAddWorkGroupMembersDialog({
                   />
                   <span className="min-w-0">
                     <span className="block truncate font-medium">{rep.full_name}</span>
-                    <span className="block truncate text-xs text-muted-foreground">
+                    <span className="text-muted-foreground block truncate text-xs">
                       {[rep.company?.name, rep.position, rep.email].filter(Boolean).join(' · ') ||
                         '—'}
                     </span>

@@ -127,7 +127,9 @@ function normalizeComment(row: CompanyComment): CompanyComment {
  * Admin companies access layer.
  */
 export const companiesService = {
-  async listOptions(): Promise<Array<Pick<TableRow<'companies'>, 'id' | 'name' | 'access_status'>>> {
+  async listOptions(): Promise<
+    Array<Pick<TableRow<'companies'>, 'id' | 'name' | 'access_status'>>
+  > {
     const result = (await supabaseClient
       .from('companies')
       .select('id, name, access_status')
@@ -169,7 +171,10 @@ export const companiesService = {
 
     const search = filters.search?.trim()
     if (search) {
-      const safe = search.replace(/[%_,()"]/g, ' ').replace(/\s+/g, ' ').trim()
+      const safe = search
+        .replace(/[%_,()"]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
       if (safe) {
         const pattern = `%${safe}%`
         const orParts = [
