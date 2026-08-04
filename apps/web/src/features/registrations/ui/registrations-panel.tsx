@@ -6,7 +6,6 @@ import {
   DataTable,
   ErrorState,
   Filters,
-  PageHeader,
   StatusBadge,
   type FilterFieldConfig,
 } from '@shared/ui'
@@ -101,12 +100,7 @@ export function RegistrationsPanel() {
   )
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Заявки на регистрацию"
-        description="Очередь участников: подтверждение, отклонение и управление статусами."
-      />
-
+    <div className="space-y-4">
       <Filters
         fields={filterFields}
         onReset={() => {

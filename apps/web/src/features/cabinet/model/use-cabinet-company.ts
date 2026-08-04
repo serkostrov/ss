@@ -64,7 +64,10 @@ export function useAssociationDirectory(search = '') {
         (rep) =>
           `${rep.full_name} ${rep.position ?? ''} ${rep.telegram_username ?? ''} ${rep.max_username ?? ''}`,
       ),
-      ...company.products.map((product) => product.name),
+      ...company.products.map(
+        (product) =>
+          `${product.name} ${product.okpd_code ?? ''} ${product.okpd_title ?? ''} ${product.note_name ?? ''} ${product.category_name ?? ''}`,
+      ),
     ]
       .filter(Boolean)
       .join(' ')
@@ -73,6 +76,12 @@ export function useAssociationDirectory(search = '') {
   })
 
   return { ...query, items, totalCount: query.data?.length ?? 0 }
+}
+
+export function useDirectoryCompany(companyId: string | undefined) {
+  const query = useAssociationDirectory('')
+  const company = (query.data ?? []).find((item) => item.id === companyId) ?? null
+  return { ...query, company }
 }
 
 export function useCabinetPollAccessHint(enabled: boolean) {

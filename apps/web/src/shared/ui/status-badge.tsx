@@ -4,6 +4,8 @@ export type StatusTone = 'default' | 'success' | 'warning' | 'destructive' | 'mu
 
 const STATUS_PRESETS: Record<string, { label: string; tone: StatusTone }> = {
   pending: { label: 'На рассмотрении', tone: 'warning' },
+  approved: { label: 'Одобрено', tone: 'success' },
+  rejected: { label: 'Отклонено', tone: 'destructive' },
   confirmed: { label: 'Подтверждён', tone: 'success' },
   blocked: { label: 'Заблокирован', tone: 'destructive' },
   active: { label: 'Активен', tone: 'success' },
@@ -11,6 +13,9 @@ const STATUS_PRESETS: Record<string, { label: string; tone: StatusTone }> = {
   archived: { label: 'Архив', tone: 'muted' },
   paused: { label: 'Пауза', tone: 'warning' },
   draft: { label: 'Черновик', tone: 'muted' },
+  issued: { label: 'К оплате', tone: 'warning' },
+  paid: { label: 'Оплачен', tone: 'success' },
+  cancelled: { label: 'Отменён', tone: 'muted' },
   closed: { label: 'Закрыто', tone: 'secondary' },
   connected: { label: 'Подключено', tone: 'success' },
   error: { label: 'Ошибка', tone: 'destructive' },

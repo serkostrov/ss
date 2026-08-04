@@ -4,3 +4,7 @@
 [functions.lookup-company-by-inn]
 # Public: called from registration form before login.
 verify_jwt = false
+
+[functions.send-notification-email]
+# Called from DB trigger (pg_net) with x-apss-webhook-secret.
+verify_jwt = false

@@ -1,9 +1,16 @@
 import { ApiError } from '@shared/lib/errors'
 
 import { supabaseClient } from '../lib/client'
-import type { TableInsert, TableRow, TableUpdate } from '../types/database'
+import type {
+  MaterialModerationStatus,
+  TableInsert,
+  TableRow,
+  TableUpdate,
+} from '../types/database'
 import { dataService } from './data.service'
 import { rpcService } from './rpc.service'
+
+export type { MaterialModerationStatus }
 
 export type MaterialLevelRef = Pick<
   TableRow<'participation_levels'>,
@@ -34,7 +41,7 @@ export type MaterialSectionInput = {
 
 export type MaterialsListFilters = {
   search?: string
-  status?: 'all' | 'draft' | 'published'
+  status?: 'all' | 'draft' | 'published' | 'pending'
   /** Filter sections that include this participation level. */
   levelId?: string
   categoryId?: string
@@ -49,6 +56,10 @@ const LIST_SELECT = `
   is_published,
   sort_order,
   category_id,
+  moderation_status,
+  reviewed_by,
+  reviewed_at,
+  review_note,
   created_at,
   updated_at,
   category:material_categories (
@@ -79,6 +90,10 @@ const DETAIL_SELECT = `
   is_published,
   sort_order,
   category_id,
+  moderation_status,
+  reviewed_by,
+  reviewed_at,
+  review_note,
   created_at,
   updated_at,
   category:material_categories (
@@ -109,6 +124,7 @@ const MEMBER_LIST_SELECT = `
   slug,
   description,
   is_published,
+  moderation_status,
   sort_order,
   category_id,
   created_at,
@@ -129,6 +145,7 @@ const MEMBER_DETAIL_SELECT = `
   description,
   content,
   is_published,
+  moderation_status,
   sort_order,
   category_id,
   created_at,
@@ -251,6 +268,10 @@ function normalize(row: RawSection): MaterialSection {
     description: row.description,
     content: row.content ?? null,
     is_published: row.is_published,
+    moderation_status: row.moderation_status,
+    reviewed_by: row.reviewed_by,
+    reviewed_at: row.reviewed_at,
+    review_note: row.review_note,
     sort_order: row.sort_order,
     category_id: row.category_id,
     created_at: row.created_at,
@@ -269,6 +290,7 @@ function toCabinetMaterial(
     | 'slug'
     | 'description'
     | 'is_published'
+    | 'moderation_status'
     | 'sort_order'
     | 'category_id'
     | 'created_at'
@@ -278,8 +300,8 @@ function toCabinetMaterial(
     category?: MaterialCategoryRef | MaterialCategoryRef[] | null
   },
 ): CabinetMaterial | null {
-  // Defense in depth: never surface unpublished rows to members.
-  if (!row.is_published) return null
+  // Defense in depth: never surface unpublished / unapproved rows to members.
+  if (!row.is_published || row.moderation_status !== 'approved') return null
   const category = Array.isArray(row.category) ? row.category[0] : row.category
   return {
     id: row.id,
@@ -339,9 +361,11 @@ export const materialsService = {
     }
 
     if (filters.status === 'draft') {
-      query = query.eq('is_published', false)
+      query = query.eq('is_published', false).neq('moderation_status', 'pending')
     } else if (filters.status === 'published') {
-      query = query.eq('is_published', true)
+      query = query.eq('is_published', true).eq('moderation_status', 'approved')
+    } else if (filters.status === 'pending') {
+      query = query.eq('moderation_status', 'pending')
     }
 
     const categoryId = filters.categoryId?.trim()
@@ -388,6 +412,7 @@ export const materialsService = {
       .select(DETAIL_SELECT)
       .eq('slug', slug)
       .eq('is_published', true)
+      .eq('moderation_status', 'approved')
       .maybeSingle()) as unknown as QueryResult<RawSection | null>
 
     const row = assertResult(result)
@@ -398,11 +423,44 @@ export const materialsService = {
    * Member cabinet list. Relies on RLS; additionally forces is_published
    * and omits ACL embeds so closed materials cannot be probed via API shape.
    */
+  async listForModeration(
+    status: MaterialModerationStatus | 'all' = 'pending',
+  ): Promise<MaterialSection[]> {
+    let query = supabaseClient
+      .from('material_sections')
+      .select(LIST_SELECT)
+      .order('updated_at', { ascending: false })
+      .order('title', { ascending: true })
+
+    if (status !== 'all') {
+      query = query.eq('moderation_status', status)
+    }
+
+    const result = (await query) as unknown as QueryResult<RawSection[]>
+    return assertResult(result).map(normalize)
+  },
+
+  async review(
+    id: string,
+    approve: boolean,
+    note?: string | null,
+  ): Promise<MaterialSection> {
+    await rpcService.call('review_material_section', {
+      p_section_id: id,
+      p_approve: approve,
+      p_note: note ?? null,
+    })
+    const full = await this.getById(id)
+    if (!full) throw new ApiError('Раздел не найден', { code: 'not_found' })
+    return full
+  },
+
   async listForMember(): Promise<CabinetMaterial[]> {
     const result = (await supabaseClient
       .from('material_sections')
       .select(MEMBER_LIST_SELECT)
       .eq('is_published', true)
+      .eq('moderation_status', 'approved')
       .order('sort_order', { ascending: true })
       .order('title', { ascending: true })) as unknown as QueryResult<
       Array<
@@ -413,6 +471,7 @@ export const materialsService = {
           | 'slug'
           | 'description'
           | 'is_published'
+          | 'moderation_status'
           | 'sort_order'
           | 'category_id'
           | 'created_at'
@@ -440,6 +499,7 @@ export const materialsService = {
       .select(MEMBER_DETAIL_SELECT)
       .eq('slug', normalized)
       .eq('is_published', true)
+      .eq('moderation_status', 'approved')
       .maybeSingle()) as unknown as QueryResult<
       | (Pick<
           TableRow<'material_sections'>,
@@ -448,6 +508,7 @@ export const materialsService = {
           | 'slug'
           | 'description'
           | 'is_published'
+          | 'moderation_status'
           | 'sort_order'
           | 'category_id'
           | 'created_at'

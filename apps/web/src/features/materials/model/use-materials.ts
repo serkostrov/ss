@@ -7,6 +7,7 @@ import {
   queryKeys,
   useSupabaseMutation,
   useSupabaseQuery,
+  type MaterialModerationStatus,
   type MaterialSection,
   type MaterialSectionInput,
   type MaterialsListFilters,
@@ -92,30 +93,47 @@ export function useUpdateMaterialSectionMutation() {
   )
 }
 
+export function useMaterialSectionsForModeration(
+  status: MaterialModerationStatus | 'all' = 'pending',
+) {
+  return useSupabaseQuery(
+    queryKeys.materials.moderation(status),
+    () => materialsService.listForModeration(status),
+    { ensureFreshSession: true },
+  )
+}
+
+export function useReviewMaterialSectionMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: { id: string; approve: boolean; note?: string | null }) =>
+      withSession(() => materialsService.review(input.id, input.approve, input.note)),
+    onSuccess: (_data, variables) => {
+      notify.success(variables.approve ? 'Выпуск материала подтверждён' : 'Выпуск отклонён')
+    },
+    onError: (error) => notify.fromError(error, 'Не удалось рассмотреть материал'),
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.materials.all })
+    },
+  })
+}
+
 export function usePublishMaterialSectionMutation() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (input: { id: string; isPublished: boolean }) =>
       withSession(() => materialsService.setPublished(input.id, input.isPublished)),
-    onMutate: async ({ id, isPublished }) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.materials.all })
-      const previous = queryClient.getQueriesData<MaterialSection[]>({
-        queryKey: queryKeys.materials.all,
-      })
-      queryClient.setQueriesData<MaterialSection[]>(
-        { queryKey: queryKeys.materials.all },
-        (current) =>
-          current?.map((item) => (item.id === id ? { ...item, is_published: isPublished } : item)),
-      )
-      return { previous }
-    },
-    onError: (error, _vars, context) => {
-      context?.previous.forEach(([key, data]) => queryClient.setQueryData(key, data))
+    onError: (error) => {
       notify.fromError(error, 'Не удалось изменить статус публикации')
     },
     onSuccess: (_data, variables) => {
-      notify.success(variables.isPublished ? 'Раздел опубликован' : 'Раздел снят с публикации')
+      notify.success(
+        variables.isPublished
+          ? 'Материал отправлен на подтверждение выпуска'
+          : 'Раздел снят с публикации',
+      )
     },
     onSettled: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.materials.all })

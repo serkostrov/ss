@@ -8,6 +8,7 @@ import {
   type MaterialCategoriesListFilters,
   type MaterialCategory,
   type MaterialCategoryInput,
+  type MaterialModerationStatus,
 } from '@shared/api'
 import { toApiError } from '@shared/lib/errors'
 import { notify } from '@shared/lib/notify'
@@ -60,6 +61,32 @@ export function useMaterialCategoryUsage(categoryId: string | null) {
   )
 }
 
+export function useMaterialCategoriesForModeration(
+  status: MaterialModerationStatus | 'all' = 'pending',
+) {
+  return useSupabaseQuery(
+    queryKeys.materials.categoriesModeration(status),
+    () => materialCategoriesService.listForModeration(status),
+    { ensureFreshSession: true },
+  )
+}
+
+export function useReviewMaterialCategoryMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: { id: string; approve: boolean; note?: string | null }) =>
+      withSession(() => materialCategoriesService.review(input.id, input.approve, input.note)),
+    onSuccess: (_data, variables) => {
+      notify.success(variables.approve ? 'Категория подтверждена' : 'Категория отклонена')
+    },
+    onError: (error) => notify.fromError(error, 'Не удалось рассмотреть категорию'),
+    onSettled: async () => {
+      await invalidateCategories(queryClient)
+    },
+  })
+}
+
 export function useCreateMaterialCategoryMutation() {
   const queryClient = useQueryClient()
 
@@ -67,7 +94,7 @@ export function useCreateMaterialCategoryMutation() {
     mutationFn: (input: MaterialCategoryInput) =>
       withSession(() => materialCategoriesService.create(input)),
     onError: (error) => notify.fromError(error, 'Не удалось создать категорию'),
-    onSuccess: () => notify.success('Категория создана'),
+    onSuccess: () => notify.success('Категория отправлена на подтверждение'),
     onSettled: async () => {
       await invalidateCategories(queryClient)
     },

@@ -92,12 +92,19 @@ export const MaterialCategoriesPanel = forwardRef<
       {
         accessorKey: 'is_active',
         header: 'Статус',
-        cell: ({ row }) =>
-          row.original.is_active ? (
-            <StatusBadge status="active" />
-          ) : (
-            <StatusBadge status="archived" label="Скрыто" tone="muted" />
-          ),
+        cell: ({ row }) => {
+          const category = row.original
+          if (category.moderation_status === 'pending') {
+            return <StatusBadge status="pending" />
+          }
+          if (category.moderation_status === 'rejected') {
+            return <StatusBadge status="rejected" />
+          }
+          if (category.is_active) {
+            return <StatusBadge status="active" />
+          }
+          return <StatusBadge status="archived" label="Скрыто" tone="muted" />
+        },
       },
       {
         accessorKey: 'sort_order',
@@ -153,7 +160,9 @@ export const MaterialCategoriesPanel = forwardRef<
                     isActive: !category.is_active,
                   })
                 }
-                disabled={toggleMutation.isPending}
+                disabled={
+                  toggleMutation.isPending || category.moderation_status !== 'approved'
+                }
                 aria-label={category.is_active ? 'Скрыть' : 'Показать'}
               >
                 {category.is_active ? (
@@ -202,7 +211,7 @@ export const MaterialCategoriesPanel = forwardRef<
       {embedded ? null : (
         <PageHeader
           title="Категории материалов"
-          description="Справочник категорий разделов материалов: порядок, скрытие и защита от удаления используемых."
+          description="Новые категории проходят подтверждение во вкладке «Заявки», затем доступны в справочнике."
           actions={
             <PageHeaderAction type="button" onClick={openCreate}>
               <Plus className="size-4" />

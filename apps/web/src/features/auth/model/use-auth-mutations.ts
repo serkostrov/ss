@@ -55,6 +55,7 @@ export function useRegisterMutation() {
         companyNameHint: values.companyNameHint || undefined,
         companyInnHint: values.companyInnHint || undefined,
         showContactsToMembers: values.showContactsToMembers,
+        emailNotificationsEnabled: values.emailNotificationsEnabled,
         telegramUsername: values.telegramUsername || undefined,
         maxUsername: values.maxUsername || undefined,
         accepted: true,

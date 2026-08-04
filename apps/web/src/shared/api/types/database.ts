@@ -18,6 +18,15 @@ export type DeliveryStatus = 'received' | 'stored' | 'relayed' | 'failed'
 export type RelayStatus = 'pending' | 'sent' | 'failed'
 export type MessengerChatKind = 'channel' | 'group' | 'supergroup' | 'private' | 'other'
 export type MessageContentType = 'text' | 'photo' | 'video' | 'document' | 'other'
+export type ProductCategorySuggestionStatus = 'pending' | 'approved' | 'rejected'
+export type ProductModerationStatus = 'pending' | 'approved' | 'rejected'
+export type MaterialModerationStatus = 'pending' | 'approved' | 'rejected'
+export type InvoiceStatus = 'issued' | 'paid'
+export type NotificationType =
+  | 'invoice_issued'
+  | 'invoice_paid'
+  | 'product_approved'
+  | 'product_rejected'
 
 /** Payload for confirm_registration → create representative (+ optional company). */
 export type CreateRepresentativePayload = {
@@ -54,6 +63,7 @@ export type Database = {
           can_manage_work_groups: boolean
           pd_consent_at: string | null
           show_contacts_to_members: boolean
+          email_notifications_enabled: boolean
           messenger_username: string | null
           telegram_username: string | null
           max_username: string | null
@@ -74,6 +84,7 @@ export type Database = {
           can_manage_work_groups?: boolean
           pd_consent_at?: string | null
           show_contacts_to_members?: boolean
+          email_notifications_enabled?: boolean
           messenger_username?: string | null
           telegram_username?: string | null
           max_username?: string | null
@@ -93,6 +104,7 @@ export type Database = {
           can_manage_work_groups?: boolean
           pd_consent_at?: string | null
           show_contacts_to_members?: boolean
+          email_notifications_enabled?: boolean
           messenger_username?: string | null
           telegram_username?: string | null
           max_username?: string | null
@@ -314,33 +326,197 @@ export type Database = {
         }
         Relationships: []
       }
-      company_products: {
+      product_categories: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          sort_order: number
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          name?: string
+          slug?: string
+          sort_order?: number
+          is_active?: boolean
+        }
+        Relationships: []
+      }
+      invoices: {
         Row: {
           id: string
           company_id: string
-          name: string
-          url: string | null
-          sort_order: number
-          is_active: boolean
+          number: string
+          title: string
+          amount: number
+          currency: string
+          status: InvoiceStatus
+          due_date: string | null
+          issued_at: string
+          paid_at: string | null
+          file_url: string | null
+          file_name: string | null
+          created_by: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           company_id: string
-          name: string
-          url?: string | null
-          sort_order?: number
-          is_active?: boolean
+          number: string
+          title: string
+          amount: number
+          currency?: string
+          status?: InvoiceStatus
+          due_date?: string | null
+          issued_at?: string
+          paid_at?: string | null
+          file_url?: string | null
+          file_name?: string | null
+          created_by?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           company_id?: string
+          number?: string
+          title?: string
+          amount?: number
+          currency?: string
+          status?: InvoiceStatus
+          due_date?: string | null
+          issued_at?: string
+          paid_at?: string | null
+          file_url?: string | null
+          file_name?: string | null
+          created_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'invoices_company_id_fkey'
+            columns: ['company_id']
+            isOneToOne: false
+            referencedRelation: 'companies'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          company_id: string | null
+          type: NotificationType
+          title: string
+          body: string | null
+          link: string | null
+          entity_type: string | null
+          entity_id: string | null
+          payload: Json
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          company_id?: string | null
+          type: NotificationType
+          title: string
+          body?: string | null
+          link?: string | null
+          entity_type?: string | null
+          entity_id?: string | null
+          payload?: Json
+          read_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          read_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'notifications_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'notifications_company_id_fkey'
+            columns: ['company_id']
+            isOneToOne: false
+            referencedRelation: 'companies'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      company_products: {
+        Row: {
+          id: string
+          company_id: string
+          category_id: string | null
+          okpd_code_id: string | null
+          note_id: string | null
+          proposed_okpd_code: string | null
+          proposed_okpd_title: string | null
+          proposed_note_name: string | null
+          name: string
+          url: string | null
+          sort_order: number
+          is_active: boolean
+          moderation_status: ProductModerationStatus
+          reviewed_by: string | null
+          reviewed_at: string | null
+          review_note: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          category_id?: string | null
+          okpd_code_id?: string | null
+          note_id?: string | null
+          proposed_okpd_code?: string | null
+          proposed_okpd_title?: string | null
+          proposed_note_name?: string | null
+          name: string
+          url?: string | null
+          sort_order?: number
+          is_active?: boolean
+          moderation_status?: ProductModerationStatus
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          review_note?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          category_id?: string | null
+          okpd_code_id?: string | null
+          note_id?: string | null
+          proposed_okpd_code?: string | null
+          proposed_okpd_title?: string | null
+          proposed_note_name?: string | null
           name?: string
           url?: string | null
           sort_order?: number
           is_active?: boolean
+          moderation_status?: ProductModerationStatus
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          review_note?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -351,7 +527,128 @@ export type Database = {
             referencedRelation: 'companies'
             referencedColumns: ['id']
           },
+          {
+            foreignKeyName: 'company_products_category_id_fkey'
+            columns: ['category_id']
+            isOneToOne: false
+            referencedRelation: 'product_categories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'company_products_okpd_code_id_fkey'
+            columns: ['okpd_code_id']
+            isOneToOne: false
+            referencedRelation: 'okpd2_codes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'company_products_note_id_fkey'
+            columns: ['note_id']
+            isOneToOne: false
+            referencedRelation: 'product_notes'
+            referencedColumns: ['id']
+          },
         ]
+      }
+      okpd2_codes: {
+        Row: {
+          id: string
+          code: string
+          title: string
+          parent_id: string | null
+          level: number
+          sort_order: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          code: string
+          title: string
+          parent_id?: string | null
+          level: number
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          title?: string
+          parent_id?: string | null
+          level?: number
+          sort_order?: number
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'okpd2_codes_parent_id_fkey'
+            columns: ['parent_id']
+            isOneToOne: false
+            referencedRelation: 'okpd2_codes'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      product_notes: {
+        Row: {
+          id: string
+          name: string
+          sort_order: number
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          name?: string
+          sort_order?: number
+          is_active?: boolean
+        }
+        Relationships: []
+      }
+      product_category_suggestions: {
+        Row: {
+          id: string
+          product_id: string
+          company_id: string
+          suggested_by: string
+          suggested_name: string
+          status: ProductCategorySuggestionStatus
+          matched_category_id: string | null
+          review_note: string | null
+          reviewed_by: string | null
+          reviewed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          company_id: string
+          suggested_by: string
+          suggested_name: string
+          status?: ProductCategorySuggestionStatus
+          matched_category_id?: string | null
+          review_note?: string | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          status?: ProductCategorySuggestionStatus
+          matched_category_id?: string | null
+          review_note?: string | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+        }
+        Relationships: []
       }
       work_groups: {
         Row: {
@@ -460,6 +757,10 @@ export type Database = {
           is_published: boolean
           sort_order: number
           category_id: string | null
+          moderation_status: MaterialModerationStatus
+          reviewed_by: string | null
+          reviewed_at: string | null
+          review_note: string | null
           created_at: string
           updated_at: string
         }
@@ -472,6 +773,10 @@ export type Database = {
           is_published?: boolean
           sort_order?: number
           category_id?: string | null
+          moderation_status?: MaterialModerationStatus
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          review_note?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -483,6 +788,10 @@ export type Database = {
           is_published?: boolean
           sort_order?: number
           category_id?: string | null
+          moderation_status?: MaterialModerationStatus
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          review_note?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -509,6 +818,10 @@ export type Database = {
           slug: string
           sort_order: number
           is_active: boolean
+          moderation_status: MaterialModerationStatus
+          reviewed_by: string | null
+          reviewed_at: string | null
+          review_note: string | null
           created_at: string
         }
         Insert: {
@@ -517,6 +830,10 @@ export type Database = {
           slug: string
           sort_order?: number
           is_active?: boolean
+          moderation_status?: MaterialModerationStatus
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          review_note?: string | null
           created_at?: string
         }
         Update: {
@@ -524,6 +841,10 @@ export type Database = {
           slug?: string
           sort_order?: number
           is_active?: boolean
+          moderation_status?: MaterialModerationStatus
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          review_note?: string | null
         }
         Relationships: []
       }
@@ -974,6 +1295,63 @@ export type Database = {
         Args: { p_company_id: string; p_ordered_ids: string[] }
         Returns: Database['public']['Tables']['company_products']['Row'][]
       }
+      review_company_product: {
+        Args: {
+          p_product_id: string
+          p_approve: boolean
+          p_note?: string | null
+        }
+        Returns: Database['public']['Tables']['company_products']['Row']
+      }
+      propose_product_category: {
+        Args: { p_product_id: string; p_name: string }
+        Returns: Database['public']['Tables']['product_category_suggestions']['Row']
+      }
+      review_product_category_suggestion: {
+        Args: {
+          p_suggestion_id: string
+          p_approve: boolean
+          p_category_id?: string | null
+          p_note?: string | null
+        }
+        Returns: Database['public']['Tables']['product_category_suggestions']['Row']
+      }
+      review_material_section: {
+        Args: {
+          p_section_id: string
+          p_approve: boolean
+          p_note?: string | null
+        }
+        Returns: Database['public']['Tables']['material_sections']['Row']
+      }
+      review_material_category: {
+        Args: {
+          p_category_id: string
+          p_approve: boolean
+          p_note?: string | null
+        }
+        Returns: Database['public']['Tables']['material_categories']['Row']
+      }
+      get_product_category_usage: {
+        Args: { p_category_id: string }
+        Returns: Json
+      }
+      delete_product_category: {
+        Args: { p_category_id: string }
+        Returns: null
+      }
+      delete_okpd2_code: {
+        Args: { p_id: string }
+        Returns: null
+      }
+      delete_product_note: {
+        Args: { p_id: string }
+        Returns: null
+      }
+      reorder_product_categories: {
+        Args: { p_ordered_ids: string[] }
+        Returns: Database['public']['Tables']['product_categories']['Row'][]
+      }
       set_primary_representative: {
         Args: { p_representative_id: string }
         Returns: Database['public']['Tables']['representatives']['Row']
@@ -1099,6 +1477,29 @@ export type Database = {
         Args: Record<string, never>
         Returns: Json
       }
+      set_invoice_status: {
+        Args: {
+          p_invoice_id: string
+          p_status: InvoiceStatus
+        }
+        Returns: Database['public']['Tables']['invoices']['Row']
+      }
+      mark_notification_read: {
+        Args: { p_notification_id: string }
+        Returns: Database['public']['Tables']['notifications']['Row']
+      }
+      mark_all_notifications_read: {
+        Args: Record<string, never>
+        Returns: number
+      }
+      mark_notifications_read_by_types: {
+        Args: { p_types: NotificationType[] }
+        Returns: number
+      }
+      set_own_email_notifications: {
+        Args: { p_enabled: boolean }
+        Returns: Database['public']['Tables']['users']['Row']
+      }
       import_companies: {
         Args: { p_rows: Json }
         Returns: Json
@@ -1118,6 +1519,7 @@ export type Database = {
       relay_status: RelayStatus
       messenger_chat_kind: MessengerChatKind
       message_content_type: MessageContentType
+      notification_type: NotificationType
     }
     CompositeTypes: Record<string, never>
   }

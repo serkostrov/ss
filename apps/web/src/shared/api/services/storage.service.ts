@@ -5,6 +5,7 @@ import { supabaseClient } from '../lib/client'
 export const STORAGE_BUCKETS = {
   materialDocuments: 'material-documents',
   workGroupFiles: 'work-group-files',
+  invoices: 'invoices',
 } as const
 
 export type StorageBucket = (typeof STORAGE_BUCKETS)[keyof typeof STORAGE_BUCKETS]

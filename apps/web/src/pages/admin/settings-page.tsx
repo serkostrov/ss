@@ -10,6 +10,12 @@ import {
   type MaterialCategoriesPanelHandle,
 } from '@features/material-categories'
 import {
+  Okpd2CodesPanel,
+  type Okpd2CodesPanelHandle,
+  ProductNotesPanel,
+  type ProductNotesPanelHandle,
+} from '@features/product-categories'
+import {
   ErrorState,
   PageHeader,
   PageHeaderAction,
@@ -19,20 +25,24 @@ import {
   TabsTrigger,
 } from '@shared/ui'
 
-type SettingsTab = 'levels' | 'directions' | 'materialCategories'
+type SettingsTab = 'levels' | 'directions' | 'materialCategories' | 'okpd2' | 'productNotes'
 
 export function AdminSettingsPage() {
   const [tab, setTab] = useState<SettingsTab>('levels')
   const levelsRef = useRef<LevelsPanelHandle>(null)
   const directionsRef = useRef<DirectionsPanelHandle>(null)
   const materialCategoriesRef = useRef<MaterialCategoriesPanelHandle>(null)
+  const okpd2Ref = useRef<Okpd2CodesPanelHandle>(null)
+  const productNotesRef = useRef<ProductNotesPanelHandle>(null)
 
   const addPermission =
     tab === 'levels'
       ? permissions['admin.levels']
       : tab === 'directions'
         ? permissions['admin.workGroups']
-        : permissions['admin.materials']
+        : tab === 'materialCategories'
+          ? permissions['admin.materials']
+          : permissions['admin.companies']
 
   return (
     <CanAccess
@@ -48,6 +58,8 @@ export function AdminSettingsPage() {
               <TabsTrigger value="levels">Уровни</TabsTrigger>
               <TabsTrigger value="directions">Направления</TabsTrigger>
               <TabsTrigger value="materialCategories">Категории материалов</TabsTrigger>
+              <TabsTrigger value="okpd2">ОКПД 2</TabsTrigger>
+              <TabsTrigger value="productNotes">Примечание продукции</TabsTrigger>
             </TabsList>
             <CanAccess permission={addPermission}>
               <PageHeaderAction
@@ -55,7 +67,13 @@ export function AdminSettingsPage() {
                 onClick={() => {
                   if (tab === 'levels') levelsRef.current?.openCreate()
                   else if (tab === 'directions') directionsRef.current?.openCreate()
-                  else materialCategoriesRef.current?.openCreate()
+                  else if (tab === 'materialCategories') {
+                    materialCategoriesRef.current?.openCreate()
+                  } else if (tab === 'okpd2') {
+                    okpd2Ref.current?.openCreate()
+                  } else {
+                    productNotesRef.current?.openCreate()
+                  }
                 }}
               >
                 <Plus className="size-4" />
@@ -103,6 +121,34 @@ export function AdminSettingsPage() {
               }
             >
               <MaterialCategoriesPanel ref={materialCategoriesRef} embedded />
+            </CanAccess>
+          </TabsContent>
+
+          <TabsContent value="okpd2">
+            <CanAccess
+              permission={permissions['admin.companies']}
+              fallback={
+                <ErrorState
+                  title="Нет доступа"
+                  description="Недостаточно прав для управления классификатором ОКПД 2."
+                />
+              }
+            >
+              <Okpd2CodesPanel ref={okpd2Ref} />
+            </CanAccess>
+          </TabsContent>
+
+          <TabsContent value="productNotes">
+            <CanAccess
+              permission={permissions['admin.companies']}
+              fallback={
+                <ErrorState
+                  title="Нет доступа"
+                  description="Недостаточно прав для управления примечаниями продукции."
+                />
+              }
+            >
+              <ProductNotesPanel ref={productNotesRef} />
             </CanAccess>
           </TabsContent>
         </Tabs>

@@ -49,6 +49,22 @@ export const AdminCompaniesPage = lazyNamed(
   () => import('@pages/admin/companies-page'),
   'AdminCompaniesPage',
 )
+export const AdminProductsPage = lazyNamed(
+  () => import('@pages/admin/products-page'),
+  'AdminProductsPage',
+)
+export const AdminProductDetailsPage = lazyNamed(
+  () => import('@pages/admin/product-details-page'),
+  'AdminProductDetailsPage',
+)
+export const AdminInvoicesPage = lazyNamed(
+  () => import('@pages/admin/invoices-page'),
+  'AdminInvoicesPage',
+)
+export const AdminInvoiceDetailsPage = lazyNamed(
+  () => import('@pages/admin/invoice-details-page'),
+  'AdminInvoiceDetailsPage',
+)
 export const AdminCompanyDetailsPage = lazyNamed(
   () => import('@pages/admin/company-details-page'),
   'AdminCompanyDetailsPage',
@@ -68,10 +84,6 @@ export const AdminWorkGroupsPage = lazyNamed(
 export const AdminWorkGroupDetailsPage = lazyNamed(
   () => import('@pages/admin/work-group-details-page'),
   'AdminWorkGroupDetailsPage',
-)
-export const AdminMessagesPage = lazyNamed(
-  () => import('@pages/admin/messages-page'),
-  'AdminMessagesPage',
 )
 export const AdminMaterialsPage = lazyNamed(
   () => import('@pages/admin/materials-page'),
@@ -118,6 +130,26 @@ export const CabinetDirectoryPage = lazyNamed(
   () => import('@pages/cabinet/directory-page'),
   'CabinetDirectoryPage',
 )
+export const CabinetDirectoryCompanyPage = lazyNamed(
+  () => import('@pages/cabinet/directory-company-page'),
+  'CabinetDirectoryCompanyPage',
+)
+export const CabinetProductsPage = lazyNamed(
+  () => import('@pages/cabinet/products-page'),
+  'CabinetProductsPage',
+)
+export const CabinetProductDetailsPage = lazyNamed(
+  () => import('@pages/cabinet/product-details-page'),
+  'CabinetProductDetailsPage',
+)
+export const CabinetInvoicesPage = lazyNamed(
+  () => import('@pages/cabinet/invoices-page'),
+  'CabinetInvoicesPage',
+)
+export const CabinetInvoiceDetailsPage = lazyNamed(
+  () => import('@pages/cabinet/invoice-details-page'),
+  'CabinetInvoiceDetailsPage',
+)
 export const CabinetMaterialsPage = lazyNamed(
   () => import('@pages/cabinet/materials-page'),
   'CabinetMaterialsPage',
@@ -134,7 +166,7 @@ export const CabinetPollDetailsPage = lazyNamed(
   () => import('@pages/cabinet/poll-details-page'),
   'CabinetPollDetailsPage',
 )
-export const CabinetMessagesPage = lazyNamed(
-  () => import('@pages/cabinet/messages-page'),
-  'CabinetMessagesPage',
+export const CabinetNotificationsPage = lazyNamed(
+  () => import('@pages/cabinet/notifications-page'),
+  'CabinetNotificationsPage',
 )

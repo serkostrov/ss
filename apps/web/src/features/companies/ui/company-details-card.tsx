@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Archive, ExternalLink, PauseCircle, Pencil, PlayCircle, Trash2 } from 'lucide-react'
 
+import { CompanyProductsPanel } from '@features/company-products'
 import { routes } from '@shared/config'
+import { useTargetHighlightFlash } from '@shared/lib/use-target-highlight-flash'
 import {
   Button,
   Card,
@@ -29,7 +31,6 @@ import {
 import { CompanyCommentsPanel } from './company-comments-panel'
 import { CompanyFormDialog } from './company-form-dialog'
 import { CompanyRepresentativesPanel } from './company-representatives-panel'
-import { CompanyProductsPanel } from '@features/company-products'
 
 export function CompanyDetailsCard() {
   const { id } = useParams<{ id: string }>()
@@ -37,6 +38,7 @@ export function CompanyDetailsCard() {
   const query = useCompany(id)
   const statusMutation = useSetCompanyStatusMutation()
   const deleteMutation = useDeleteCompanyMutation()
+  useTargetHighlightFlash()
 
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -73,17 +75,18 @@ export function CompanyDetailsCard() {
 
   return (
     <div className="space-y-6">
-      <PageDetailHeader
-        backTo={routes.admin.companies}
-        title={company.name}
-        description={
-          `ID ${formatCompanyAutoId(company.auto_id)}` +
-          (company.description
-            ? ` · ${company.description}`
-            : ' · Карточка компании — участника ассоциации.')
-        }
-        status={<StatusBadge status={company.access_status} />}
-      >
+      <div id={`company-${company.id}`} className="scroll-mt-20 rounded-lg">
+        <PageDetailHeader
+          backTo={routes.admin.companies}
+          title={company.name}
+          description={
+            `ID ${formatCompanyAutoId(company.auto_id)}` +
+            (company.description
+              ? ` · ${company.description}`
+              : ' · Карточка компании — участника ассоциации.')
+          }
+          status={<StatusBadge status={company.access_status} />}
+        >
         <IconButton label="Изменить" onClick={() => setEditOpen(true)}>
           <Pencil />
         </IconButton>
@@ -122,6 +125,7 @@ export function CompanyDetailsCard() {
           <Trash2 />
         </IconButton>
       </PageDetailHeader>
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -190,13 +194,9 @@ export function CompanyDetailsCard() {
 
       <CompanyRepresentativesPanel companyId={company.id} companyName={company.name} />
 
-      <CompanyCommentsPanel companyId={company.id} />
+      <CompanyProductsPanel companyId={company.id} />
 
-      <Card>
-        <CardContent className="pt-6">
-          <CompanyProductsPanel companyId={company.id} />
-        </CardContent>
-      </Card>
+      <CompanyCommentsPanel companyId={company.id} />
 
       <CompanyFormDialog open={editOpen} onOpenChange={setEditOpen} company={company} />
 

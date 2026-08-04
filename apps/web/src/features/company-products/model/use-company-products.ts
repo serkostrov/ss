@@ -42,11 +42,12 @@ export function useCreateCompanyProductMutation(companyId: string) {
   return useMutation({
     mutationFn: (input: Omit<CompanyProductInput, 'companyId'>) =>
       withSession(() => companyProductsService.create({ ...input, companyId })),
-    onSuccess: () => notify.success('Продукция добавлена'),
+    onSuccess: () => notify.success('Продукция отправлена на модерацию'),
     onError: (error) => notify.fromError(error, 'Не удалось добавить продукцию'),
     onSettled: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: productsKey(companyId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.companyProducts.all }),
         queryClient.invalidateQueries({ queryKey: queryKeys.directory.all }),
       ])
     },
@@ -59,12 +60,43 @@ export function useUpdateCompanyProductMutation(companyId: string) {
   return useMutation({
     mutationFn: (input: { id: string; values: CompanyProductUpdateInput }) =>
       withSession(() => companyProductsService.update(input.id, input.values)),
-    onSuccess: () => notify.success('Продукция обновлена'),
+    onSuccess: () => notify.success('Изменения отправлены на модерацию'),
     onError: (error) => notify.fromError(error, 'Не удалось сохранить продукцию'),
     onSettled: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: productsKey(companyId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.companyProducts.all }),
         queryClient.invalidateQueries({ queryKey: queryKeys.directory.all }),
+      ])
+    },
+  })
+}
+
+export function useCompanyProductsForModeration(
+  status: 'pending' | 'approved' | 'rejected' | 'all' = 'pending',
+) {
+  return useSupabaseQuery(
+    queryKeys.companyProducts.moderation(status),
+    () => companyProductsService.listForModeration(status),
+    { ensureFreshSession: true },
+  )
+}
+
+export function useReviewCompanyProductMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: { id: string; approve: boolean; note?: string | null }) =>
+      withSession(() => companyProductsService.review(input.id, input.approve, input.note)),
+    onSuccess: (_data, input) =>
+      notify.success(input.approve ? 'Продукция одобрена' : 'Продукция отклонена'),
+    onError: (error) => notify.fromError(error, 'Не удалось обработать продукцию'),
+    onSettled: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.companyProducts.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.directory.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.okpd2Codes.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.productNotes.all }),
       ])
     },
   })

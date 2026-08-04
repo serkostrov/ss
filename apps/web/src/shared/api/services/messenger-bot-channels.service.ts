@@ -44,6 +44,8 @@ export const messengerBotChannelsService = {
       )
       .eq('platform', platform)
       .eq('is_active', true)
+      // Same shapes as Telegram: channel / group / DM — hide ambiguous "other" leftovers.
+      .in('chat_kind', ['channel', 'group', 'supergroup', 'private'])
       .order('title', { ascending: true, nullsFirst: false })
       .order('external_chat_id', { ascending: true })) as QueryResult<MessengerBotChannel[]>
 

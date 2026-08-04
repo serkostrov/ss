@@ -27,6 +27,8 @@ export type SignUpInput = {
   companyInnHint?: string
   /** Whether other members may see phone/email in the association directory. */
   showContactsToMembers?: boolean
+  /** Duplicate in-app notifications to registration email. */
+  emailNotificationsEnabled?: boolean
   /** Telegram username without @. */
   telegramUsername?: string
   /** Max username without @. */
@@ -59,6 +61,7 @@ export type AuthProfile = {
   telegramUsername: string | null
   maxUsername: string | null
   showContactsToMembers: boolean
+  emailNotificationsEnabled: boolean
   companyNameHint: string | null
   companyInnHint: string | null
   staffPosition: string | null
@@ -118,6 +121,7 @@ type ProfileQueryRow = Pick<
   | 'telegram_username'
   | 'max_username'
   | 'show_contacts_to_members'
+  | 'email_notifications_enabled'
   | 'company_name_hint'
   | 'company_inn_hint'
   | 'staff_position'
@@ -169,6 +173,7 @@ function mapProfile(row: ProfileQueryRow): AuthProfile {
     maxUsername: representative?.max_username ?? row.max_username,
     showContactsToMembers:
       representative?.show_contacts_to_members ?? row.show_contacts_to_members ?? false,
+    emailNotificationsEnabled: row.email_notifications_enabled !== false,
     companyNameHint: row.company_name_hint,
     companyInnHint: row.company_inn_hint,
     staffPosition: row.staff_position,
@@ -195,6 +200,7 @@ const PROFILE_SELECT = `
   telegram_username,
   max_username,
   show_contacts_to_members,
+  email_notifications_enabled,
   company_name_hint,
   company_inn_hint,
   staff_position,
@@ -286,6 +292,7 @@ export const authService = {
           company_name_hint: input.companyNameHint ?? null,
           company_inn_hint: input.companyInnHint ?? null,
           show_contacts_to_members: input.showContactsToMembers === true,
+          email_notifications_enabled: input.emailNotificationsEnabled !== false,
           telegram_username: input.telegramUsername?.trim().replace(/^@+/, '') || null,
           max_username: input.maxUsername?.trim().replace(/^@+/, '') || null,
           pd_consent: true,
@@ -343,6 +350,7 @@ export const authService = {
             telegram_username,
             max_username,
             show_contacts_to_members,
+            email_notifications_enabled,
             company_name_hint,
             company_inn_hint,
             representatives (
@@ -397,6 +405,13 @@ export const authService = {
       p_show_contacts_to_members: input.showContactsToMembers,
     })
 
+    if (error) throw fromSupabaseError(error)
+  },
+
+  async setOwnEmailNotifications(enabled: boolean): Promise<void> {
+    const { error } = await supabaseClient.rpc('set_own_email_notifications', {
+      p_enabled: enabled,
+    })
     if (error) throw fromSupabaseError(error)
   },
 

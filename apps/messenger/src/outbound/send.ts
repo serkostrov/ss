@@ -244,3 +244,136 @@ export async function sendOutboundMessage(
 
   return result
 }
+
+export type OutboundDeleteInput = {
+  platform: 'telegram' | 'max'
+  chatId: string
+  workGroupId: string
+  externalMessageId: string
+  /** Platform message row id — preferred for DB delete. */
+  messageId?: string | null
+}
+
+function isAlreadyGoneError(message: string): boolean {
+  const lower = message.toLowerCase()
+  return (
+    lower.includes('message to delete not found') ||
+    lower.includes('message_id_invalid') ||
+    lower.includes('message not found') ||
+    lower.includes('not found') ||
+    lower.includes('404')
+  )
+}
+
+async function deleteTelegram(
+  token: string,
+  chatId: string,
+  externalMessageId: string,
+): Promise<void> {
+  const messageId = Number(externalMessageId)
+  if (!Number.isFinite(messageId)) {
+    const err = new Error('invalid_external_message_id')
+    ;(err as Error & { status: number }).status = 400
+    throw err
+  }
+
+  const response = await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_id: messageId,
+    }),
+  })
+  const json = (await response.json()) as {
+    ok?: boolean
+    description?: string
+  }
+  if (json.ok) return
+  const description = json.description ?? 'Telegram deleteMessage failed'
+  // Already gone on Telegram — still clear the platform copy.
+  if (isAlreadyGoneError(description)) return
+  throw new Error(description)
+}
+
+async function deleteMax(token: string, externalMessageId: string): Promise<void> {
+  const accessToken = token.replace(/^Bearer\s+/i, '').trim()
+  const response = await withOptionalTlsInsecure(() =>
+    fetch(
+      `https://platform-api2.max.ru/messages?message_id=${encodeURIComponent(externalMessageId)}`,
+      {
+        method: 'DELETE',
+        headers: { Authorization: accessToken },
+      },
+    ),
+  )
+
+  if (response.ok || response.status === 204) return
+  if (response.status === 404) return
+
+  const bodyText = await response.text()
+  if (isAlreadyGoneError(bodyText)) return
+  throw new Error(`Max delete failed: ${response.status} ${bodyText}`)
+}
+
+async function deleteLocalMessage(
+  db: DbClient,
+  input: OutboundDeleteInput,
+): Promise<void> {
+  if (input.messageId?.trim()) {
+    const { error } = await db.from('messages').delete().eq('id', input.messageId.trim())
+    if (error) throw error
+    return
+  }
+
+  const { error } = await db
+    .from('messages')
+    .delete()
+    .eq('work_group_id', input.workGroupId)
+    .eq('source', input.platform)
+    .eq('external_message_id', input.externalMessageId)
+
+  if (error) throw error
+}
+
+export async function deleteOutboundMessage(
+  db: DbClient,
+  config: MessengerConfig,
+  input: OutboundDeleteInput,
+): Promise<{ ok: true }> {
+  const externalMessageId = input.externalMessageId.trim()
+  if (!externalMessageId) {
+    const err = new Error('invalid_external_message_id')
+    ;(err as Error & { status: number }).status = 400
+    throw err
+  }
+
+  await assertConnection(db, input)
+
+  if (input.platform === 'telegram') {
+    if (!config.telegramBotToken) {
+      const err = new Error('telegram_not_configured')
+      ;(err as Error & { status: number }).status = 503
+      throw err
+    }
+    await deleteTelegram(config.telegramBotToken, input.chatId, externalMessageId)
+  } else {
+    if (!config.maxBotToken) {
+      const err = new Error('max_not_configured')
+      ;(err as Error & { status: number }).status = 503
+      throw err
+    }
+    await deleteMax(config.maxBotToken, externalMessageId)
+  }
+
+  await deleteLocalMessage(db, { ...input, externalMessageId })
+
+  log('info', 'Outbound message deleted', {
+    platform: input.platform,
+    chatId: input.chatId,
+    externalMessageId,
+    messageId: input.messageId ?? null,
+  })
+
+  return { ok: true }
+}

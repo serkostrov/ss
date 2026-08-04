@@ -1,5 +1,4 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Pencil } from 'lucide-react'
 
 import { CompanyProductsPanel } from '@features/company-products'
 import { useAuth } from '@app/providers'
@@ -29,7 +28,12 @@ import {
   useUpdateOwnCompanyMutation,
 } from '../model/use-cabinet-company'
 
-export function CabinetCompanyPanel() {
+type CabinetCompanyPanelProps = {
+  isEditing: boolean
+  onEditingChange: (editing: boolean) => void
+}
+
+export function CabinetCompanyPanel({ isEditing, onEditingChange }: CabinetCompanyPanelProps) {
   const { profile } = useAuth()
   const companyId = profile?.membership?.companyId
   const companyQuery = useOwnCompany(companyId)
@@ -37,7 +41,6 @@ export function CabinetCompanyPanel() {
 
   const [values, setValues] = useState(() => toMemberCompanyFormValues(null))
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [isEditing, setIsEditing] = useState(false)
 
   useEffect(() => {
     if (companyQuery.data && !isEditing) {
@@ -86,26 +89,20 @@ export function CabinetCompanyPanel() {
       return
     }
     await updateMutation.mutateAsync(parsed.data)
-    setIsEditing(false)
+    onEditingChange(false)
   }
 
   const company = companyQuery.data
 
-  if (company && !isEditing) {
-    return (
-      <div className="space-y-6">
+  return (
+    <div className="space-y-4">
+      {company && !isEditing ? (
         <Card>
-          <CardHeader className="flex-row items-start justify-between gap-3">
-            <div>
-              <CardTitle>{company.name}</CardTitle>
-              <p className="text-muted-foreground mt-1 text-sm">
-                Публичная карточка организации в ассоциации.
-              </p>
-            </div>
-            <Button type="button" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-              <Pencil className="size-4" />
-              Редактировать
-            </Button>
+          <CardHeader>
+            <CardTitle>{company.name}</CardTitle>
+            <p className="text-muted-foreground text-sm">
+              Публичная карточка организации в ассоциации.
+            </p>
           </CardHeader>
           <CardContent>
             <dl className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
@@ -127,95 +124,89 @@ export function CabinetCompanyPanel() {
             </dl>
           </CardContent>
         </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Редактирование компании</CardTitle>
+            <p className="text-muted-foreground text-sm">
+              Сохраняются только реквизиты и контакты компании. Продукцию добавляйте в блоке ниже
+              — она сохраняется отдельно. Уровень участия и статус доступа меняет администратор.
+            </p>
+          </CardHeader>
+          <CardContent className="grid w-full gap-4">
+            <FormField label="Название" required error={errors.name}>
+              <Input value={values.name} onChange={(event) => patch('name', event.target.value)} />
+            </FormField>
+            <FormField label="ИНН" error={errors.inn}>
+              <Input
+                inputMode="numeric"
+                value={values.inn ?? ''}
+                onChange={(event) => patch('inn', normalizeInnDigits(event.target.value))}
+                placeholder="10 или 12 цифр"
+              />
+            </FormField>
+            <FormField label="Описание" error={errors.description}>
+              <Textarea
+                value={values.description ?? ''}
+                onChange={(event) => patch('description', event.target.value)}
+                rows={4}
+                placeholder="Кратко о компании"
+              />
+            </FormField>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormField label="Телефон" error={errors.phone} className="min-w-0">
+                <Input
+                  value={values.phone ?? ''}
+                  onChange={(event) => patch('phone', event.target.value)}
+                />
+              </FormField>
+              <FormField label="Email" error={errors.email} className="min-w-0">
+                <Input
+                  value={values.email ?? ''}
+                  onChange={(event) => patch('email', event.target.value)}
+                />
+              </FormField>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormField label="Сайт" error={errors.website} className="min-w-0">
+                <Input
+                  value={values.website ?? ''}
+                  onChange={(event) => patch('website', event.target.value)}
+                  placeholder="example.ru"
+                />
+              </FormField>
+              <FormField label="Адрес" error={errors.address} className="min-w-0">
+                <Input
+                  value={values.address ?? ''}
+                  onChange={(event) => patch('address', event.target.value)}
+                />
+              </FormField>
+            </div>
 
-        <div className="border-t pt-6 empty:hidden">
-          <CompanyProductsPanel companyId={companyId} editable={false} />
-        </div>
-      </div>
-    )
-  }
+            <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={updateMutation.isPending}
+                onClick={() => onEditingChange(false)}
+              >
+                Отмена
+              </Button>
+              <Button
+                type="button"
+                disabled={updateMutation.isPending || !companyId}
+                onClick={() => void submit()}
+              >
+                {updateMutation.isPending ? <Spinner size="sm" className="text-current" /> : null}
+                Сохранить компанию
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Редактирование компании</CardTitle>
-        <p className="text-muted-foreground text-sm">
-          Уровень участия и статус доступа меняет только администратор АПСС.
-        </p>
-      </CardHeader>
-      <CardContent className="grid w-full gap-4">
-        <FormField label="Название" required error={errors.name}>
-          <Input value={values.name} onChange={(event) => patch('name', event.target.value)} />
-        </FormField>
-        <FormField label="ИНН" error={errors.inn}>
-          <Input
-            inputMode="numeric"
-            value={values.inn ?? ''}
-            onChange={(event) => patch('inn', normalizeInnDigits(event.target.value))}
-            placeholder="10 или 12 цифр"
-          />
-        </FormField>
-        <FormField label="Описание" error={errors.description}>
-          <Textarea
-            value={values.description ?? ''}
-            onChange={(event) => patch('description', event.target.value)}
-            rows={4}
-            placeholder="Кратко о компании"
-          />
-        </FormField>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField label="Телефон" error={errors.phone} className="min-w-0">
-            <Input
-              value={values.phone ?? ''}
-              onChange={(event) => patch('phone', event.target.value)}
-            />
-          </FormField>
-          <FormField label="Email" error={errors.email} className="min-w-0">
-            <Input
-              value={values.email ?? ''}
-              onChange={(event) => patch('email', event.target.value)}
-            />
-          </FormField>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField label="Сайт" error={errors.website} className="min-w-0">
-            <Input
-              value={values.website ?? ''}
-              onChange={(event) => patch('website', event.target.value)}
-              placeholder="example.ru"
-            />
-          </FormField>
-          <FormField label="Адрес" error={errors.address} className="min-w-0">
-            <Input
-              value={values.address ?? ''}
-              onChange={(event) => patch('address', event.target.value)}
-            />
-          </FormField>
-        </div>
-
-        <div className="flex flex-wrap justify-end gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={updateMutation.isPending}
-            onClick={() => setIsEditing(false)}
-          >
-            Отмена
-          </Button>
-          <Button
-            type="button"
-            disabled={updateMutation.isPending || !companyId}
-            onClick={() => void submit()}
-          >
-            {updateMutation.isPending ? <Spinner size="sm" className="text-current" /> : null}
-            Сохранить
-          </Button>
-        </div>
-        <div className="border-t pt-6">
-          <CompanyProductsPanel companyId={companyId} editable />
-        </div>
-      </CardContent>
-    </Card>
+      <CompanyProductsPanel companyId={companyId} editable />
+    </div>
   )
 }
 

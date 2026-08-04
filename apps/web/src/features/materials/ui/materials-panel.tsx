@@ -72,6 +72,7 @@ export function MaterialsPanel() {
       options: [
         { value: 'all', label: materialStatusFilterLabel('all') },
         { value: 'draft', label: materialStatusFilterLabel('draft') },
+        { value: 'pending', label: materialStatusFilterLabel('pending') },
         { value: 'published', label: materialStatusFilterLabel('published') },
       ],
     },
@@ -160,12 +161,19 @@ export function MaterialsPanel() {
       {
         accessorKey: 'is_published',
         header: 'Статус',
-        cell: ({ row }) =>
-          row.original.is_published ? (
-            <StatusBadge status="active" label="Опубликован" />
-          ) : (
-            <StatusBadge status="draft" />
-          ),
+        cell: ({ row }) => {
+          const section = row.original
+          if (section.moderation_status === 'pending') {
+            return <StatusBadge status="pending" label="На выпуске" />
+          }
+          if (section.moderation_status === 'rejected') {
+            return <StatusBadge status="rejected" />
+          }
+          if (section.is_published) {
+            return <StatusBadge status="active" label="Опубликован" />
+          }
+          return <StatusBadge status="draft" />
+        },
       },
       {
         accessorKey: 'sort_order',
@@ -206,22 +214,31 @@ export function MaterialsPanel() {
       {
         id: 'actions',
         header: '',
-        cell: ({ row }) => (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={publishMutation.isPending}
-            onClick={() =>
-              publishMutation.mutate({
-                id: row.original.id,
-                isPublished: !row.original.is_published,
-              })
-            }
-          >
-            {row.original.is_published ? 'В черновик' : 'Опубликовать'}
-          </Button>
-        ),
+        cell: ({ row }) => {
+          const section = row.original
+          const pendingRelease = section.moderation_status === 'pending'
+          const label = section.is_published
+            ? 'В черновик'
+            : pendingRelease
+              ? 'На выпуске'
+              : 'На выпуск'
+          return (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={publishMutation.isPending || pendingRelease}
+              onClick={() =>
+                publishMutation.mutate({
+                  id: section.id,
+                  isPublished: !section.is_published,
+                })
+              }
+            >
+              {label}
+            </Button>
+          )
+        },
         meta: { className: 'w-[8.5rem] max-w-[8.5rem]' },
       },
     ],
@@ -232,7 +249,7 @@ export function MaterialsPanel() {
     <div className="space-y-6">
       <PageHeader
         title="Материалы"
-        description="Разделы для кабинета: Markdown, черновики, публикация и доступ по уровням."
+        description="Разделы для кабинета: Markdown, черновики и доступ по уровням. Выпуск подтверждается во вкладке «Заявки»."
         actions={
           <>
             <Button

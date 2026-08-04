@@ -45,6 +45,7 @@ export function resolveAuthProfile(user: User, dbProfile: AuthProfile | null): A
     maxUsername:
       typeof user.user_metadata?.max_username === 'string' ? user.user_metadata.max_username : null,
     showContactsToMembers: user.user_metadata?.show_contacts_to_members === true,
+    emailNotificationsEnabled: user.user_metadata?.email_notifications_enabled !== false,
     companyNameHint:
       typeof user.user_metadata?.company_name_hint === 'string'
         ? user.user_metadata.company_name_hint

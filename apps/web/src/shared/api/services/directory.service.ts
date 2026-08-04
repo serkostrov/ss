@@ -19,6 +19,13 @@ export type DirectoryProduct = {
   name: string
   url: string | null
   sort_order: number
+  category_id: string | null
+  category_name: string | null
+  okpd_code_id: string | null
+  okpd_code: string | null
+  okpd_title: string | null
+  note_id: string | null
+  note_name: string | null
 }
 
 export type DirectoryCompany = {
@@ -89,6 +96,13 @@ function mapProduct(raw: unknown): DirectoryProduct | null {
     name: row.name,
     url: asString(row.url),
     sort_order: typeof row.sort_order === 'number' ? row.sort_order : 0,
+    category_id: asString(row.category_id),
+    category_name: asString(row.category_name),
+    okpd_code_id: asString(row.okpd_code_id),
+    okpd_code: asString(row.okpd_code),
+    okpd_title: asString(row.okpd_title),
+    note_id: asString(row.note_id),
+    note_name: asString(row.note_name),
   }
 }
 

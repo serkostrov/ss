@@ -48,8 +48,7 @@ export function CompanyCommentsPanel({ companyId }: CompanyCommentsPanelProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Комментарии</CardTitle>
-        <CardDescription>История служебных заметок по компании (только админ)</CardDescription>
+        <CardTitle className="text-base">Комментарии (Служебное)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <FormField label="Новый комментарий" error={error ?? undefined}>

@@ -1,4 +1,3 @@
-import { Pencil } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -23,6 +22,11 @@ import {
   useUpdateOwnMemberProfileMutation,
 } from '../model/use-cabinet-profile'
 
+type CabinetProfilePanelProps = {
+  isEditing: boolean
+  onEditingChange: (editing: boolean) => void
+}
+
 function ProfileField({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="min-w-0">
@@ -32,10 +36,9 @@ function ProfileField({ label, value }: { label: string; value: ReactNode }) {
   )
 }
 
-export function CabinetProfilePanel() {
+export function CabinetProfilePanel({ isEditing, onEditingChange }: CabinetProfilePanelProps) {
   const { profile, refreshProfile } = useAuth()
   const updateMutation = useUpdateOwnMemberProfileMutation()
-  const [isEditing, setIsEditing] = useState(false)
   const [values, setValues] = useState(() => toMemberProfileFormValues(profile))
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -69,7 +72,7 @@ export function CabinetProfilePanel() {
 
     await updateMutation.mutateAsync(parsed.data)
     await refreshProfile()
-    setIsEditing(false)
+    onEditingChange(false)
   }
 
   if (isEditing) {
@@ -77,6 +80,10 @@ export function CabinetProfilePanel() {
       <Card>
         <CardHeader>
           <CardTitle>Редактирование профиля</CardTitle>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Сохраняются только личные данные ниже. Email, статус и уровень участия меняет
+            администратор.
+          </p>
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -114,31 +121,32 @@ export function CabinetProfilePanel() {
             </FormField>
           </div>
 
-          <label className="flex cursor-pointer items-start gap-3 rounded-lg border p-4 text-sm">
+          <label className="flex cursor-pointer items-start gap-2.5 text-sm">
             <Checkbox
               checked={values.showContactsToMembers}
               onCheckedChange={(checked) => patch('showContactsToMembers', checked === true)}
+              className="mt-0.5"
             />
             <span>
               <span className="block font-medium">Показывать контакты участникам</span>
-              <span className="text-muted-foreground mt-1 block">
-                Телефон и мессенджеры будут видны в справочнике ассоциации.
+              <span className="text-muted-foreground mt-0.5 block text-xs">
+                Телефон и мессенджеры видны в справочнике.
               </span>
             </span>
           </label>
 
-          <div className="flex flex-wrap justify-end gap-2">
+          <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
             <Button
               type="button"
               variant="outline"
               disabled={updateMutation.isPending}
-              onClick={() => setIsEditing(false)}
+              onClick={() => onEditingChange(false)}
             >
               Отмена
             </Button>
             <Button type="button" disabled={updateMutation.isPending} onClick={() => void submit()}>
               {updateMutation.isPending ? <Spinner size="sm" className="text-current" /> : null}
-              Сохранить
+              Сохранить профиль
             </Button>
           </div>
         </CardContent>
@@ -148,17 +156,11 @@ export function CabinetProfilePanel() {
 
   return (
     <Card>
-      <CardHeader className="flex-row items-start justify-between gap-3">
-        <div>
-          <CardTitle>Личные данные</CardTitle>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Контактные данные представителя компании.
-          </p>
-        </div>
-        <Button type="button" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-          <Pencil className="size-4" />
-          Редактировать
-        </Button>
+      <CardHeader>
+        <CardTitle>Личные данные</CardTitle>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Контактные данные представителя компании.
+        </p>
       </CardHeader>
       <CardContent className="space-y-5">
         <dl className="grid gap-x-6 gap-y-5 sm:grid-cols-2">

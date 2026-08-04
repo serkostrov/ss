@@ -5,7 +5,11 @@ import { handleTelegramUpdate, type TelegramUpdate } from '../adapters/telegram.
 import type { MessengerConfig } from '../config/index.js'
 import type { DbClient } from '../db.js'
 import { requireAdmin } from '../outbound/auth.js'
-import { sendOutboundMessage, type OutboundFile } from '../outbound/send.js'
+import {
+  deleteOutboundMessage,
+  sendOutboundMessage,
+  type OutboundFile,
+} from '../outbound/send.js'
 import { log } from '../types.js'
 
 async function readRaw(req: IncomingMessage): Promise<Buffer> {
@@ -56,6 +60,14 @@ type OutboundBody = {
   text?: string
   authorName?: string | null
   files?: Array<{ name?: string; mime?: string; dataBase64?: string }>
+}
+
+type OutboundDeleteBody = {
+  platform?: string
+  chatId?: string
+  workGroupId?: string
+  externalMessageId?: string
+  messageId?: string | null
 }
 
 function parseOutboundFiles(body: OutboundBody): OutboundFile[] {
@@ -130,6 +142,41 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
         return
       }
 
+      if (req.method === 'POST' && path === '/v1/outbound/delete') {
+        try {
+          const admin = await requireAdmin(db, req.headers.authorization)
+          const body = (await readJson(req)) as OutboundDeleteBody
+          const platform =
+            body.platform === 'max' ? 'max' : body.platform === 'telegram' ? 'telegram' : null
+          if (
+            !platform ||
+            !body.chatId?.trim() ||
+            !body.workGroupId?.trim() ||
+            !body.externalMessageId?.trim()
+          ) {
+            send(res, 400, { ok: false, error: 'invalid_payload' })
+            return
+          }
+
+          const result = await deleteOutboundMessage(db, config, {
+            platform,
+            chatId: body.chatId.trim(),
+            workGroupId: body.workGroupId.trim(),
+            externalMessageId: body.externalMessageId.trim(),
+            messageId: body.messageId?.trim() || null,
+          })
+
+          log('info', 'Outbound delete API ok', { userId: admin.userId, ...result })
+          send(res, 200, { ok: true })
+        } catch (error) {
+          const status = statusFromError(error)
+          const message = error instanceof Error ? error.message : 'error'
+          log('warn', 'Outbound delete API failed', { status, message })
+          send(res, status, { ok: false, error: message })
+        }
+        return
+      }
+
       if (req.method === 'POST' && path === '/webhooks/telegram') {
         if (config.telegramWebhookSecret) {
           const header = req.headers['x-telegram-bot-api-secret-token']
@@ -178,17 +225,18 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
               : 'unknown'
         log('info', 'Max webhook received', { updateType })
 
+        const maxOptions = { accessToken: config.maxBotToken }
         if (Array.isArray(body)) {
           for (const item of body) {
-            await handleMaxUpdate(db, item as MaxUpdate)
+            await handleMaxUpdate(db, item as MaxUpdate, maxOptions)
           }
         } else if (body && typeof body === 'object' && 'updates' in body) {
           const updates = (body as { updates?: MaxUpdate[] }).updates ?? []
           for (const item of updates) {
-            await handleMaxUpdate(db, item)
+            await handleMaxUpdate(db, item, maxOptions)
           }
         } else {
-          await handleMaxUpdate(db, body as MaxUpdate)
+          await handleMaxUpdate(db, body as MaxUpdate, maxOptions)
         }
 
         send(res, 200, { ok: true })

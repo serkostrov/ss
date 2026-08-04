@@ -21,6 +21,7 @@ type MaxChat = {
   type?: string
   title?: string
   link?: string
+  dialog_with_user?: MaxUser
 }
 
 type MaxAttachment = {
@@ -38,6 +39,7 @@ type MaxMessage = {
   recipient?: {
     chat_id?: number
     chat_type?: string
+    user_id?: number
   }
   timestamp?: number
   body?: MaxMessageBody
@@ -51,7 +53,25 @@ export type MaxUpdate = {
   user?: MaxUser
   message?: MaxMessage
   chat?: MaxChat
+  /** Present on bot_added / bot_removed — true when the bot was added to a channel. */
+  is_channel?: boolean
 }
+
+export type MaxAdapterOptions = {
+  accessToken?: string | null
+}
+
+type ResolvedMaxChat = {
+  externalChatId: string
+  kind: ChatKind
+  title: string | null
+  username: string | null
+  /** Dialog `chat_id` when catalog key is `user_id` — deactivate stale duplicate rows. */
+  legacyChatId?: string | null
+}
+
+const chatInfoCache = new Map<string, { at: number; value: MaxChat | null }>()
+const CHAT_INFO_TTL_MS = 5 * 60 * 1000
 
 function mapChatKind(type: string | undefined): ChatKind {
   const normalized = (type ?? '').toLowerCase()
@@ -67,6 +87,16 @@ function mapChatKind(type: string | undefined): ChatKind {
     return 'private'
   }
   return 'other'
+}
+
+function userDisplayName(user?: MaxUser | null): string | null {
+  if (!user) return null
+  const name =
+    user.name?.trim() ||
+    [user.first_name, user.last_name].filter(Boolean).join(' ').trim() ||
+    user.username?.trim() ||
+    ''
+  return name || null
 }
 
 function detectContentType(message: MaxMessage): MessageContentType {
@@ -89,78 +119,240 @@ function resolveText(message: MaxMessage, contentType: MessageContentType): stri
 function resolveAuthor(message: MaxMessage): { name: string | null; externalId: string | null } {
   const sender = message.sender
   if (!sender) return { name: null, externalId: null }
-  const name =
-    sender.name ||
-    [sender.first_name, sender.last_name].filter(Boolean).join(' ') ||
-    sender.username ||
-    null
   return {
-    name,
+    name: userDisplayName(sender),
     externalId: sender.user_id != null ? String(sender.user_id) : null,
   }
 }
 
-function chatIdFromUpdate(update: MaxUpdate): string | null {
-  const fromMessage = update.message?.recipient?.chat_id
-  if (fromMessage != null) return String(fromMessage)
-  if (update.chat_id != null) return String(update.chat_id)
-  if (update.chat?.chat_id != null) return String(update.chat.chat_id)
-  return null
+function withOptionalTlsInsecure<T>(fn: () => Promise<T>): Promise<T> {
+  const insecure = process.env.MAX_TLS_INSECURE === '1'
+  const previous = process.env.NODE_TLS_REJECT_UNAUTHORIZED
+  if (insecure) process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+  return fn().finally(() => {
+    if (!insecure) return
+    if (previous === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
+    else process.env.NODE_TLS_REJECT_UNAUTHORIZED = previous
+  })
 }
 
-function chatTypeFromUpdate(update: MaxUpdate): string | undefined {
-  return update.message?.recipient?.chat_type ?? update.chat?.type
+async function fetchMaxChat(accessToken: string, chatId: string): Promise<MaxChat | null> {
+  const cached = chatInfoCache.get(chatId)
+  if (cached && Date.now() - cached.at < CHAT_INFO_TTL_MS) return cached.value
+
+  const token = accessToken.replace(/^Bearer\s+/i, '').trim()
+  try {
+    const response = await withOptionalTlsInsecure(() =>
+      fetch(`https://platform-api2.max.ru/chats/${encodeURIComponent(chatId)}`, {
+        method: 'GET',
+        headers: { Authorization: token },
+      }),
+    )
+    if (!response.ok) {
+      log('warn', 'Max get chat failed', { chatId, status: response.status })
+      chatInfoCache.set(chatId, { at: Date.now(), value: null })
+      return null
+    }
+    const json = (await response.json()) as MaxChat
+    chatInfoCache.set(chatId, { at: Date.now(), value: json })
+    return json
+  } catch (error) {
+    log('warn', 'Max get chat error', {
+      chatId,
+      message: error instanceof Error ? error.message : String(error),
+    })
+    chatInfoCache.set(chatId, { at: Date.now(), value: null })
+    return null
+  }
+}
+
+/**
+ * Max dialogs are addressed by user_id (outbound API), while groups/channels use chat_id.
+ * bot_started / messages can expose both ids — we catalog DMs by user_id like Telegram.
+ */
+function resolvePrivateChat(params: {
+  userId: number | null | undefined
+  dialogChatId: number | null | undefined
+  user?: MaxUser | null
+  titleHint?: string | null
+}): ResolvedMaxChat | null {
+  if (params.userId == null) return null
+  const externalChatId = String(params.userId)
+  const dialogChatId =
+    params.dialogChatId != null && String(params.dialogChatId) !== externalChatId
+      ? String(params.dialogChatId)
+      : null
+  return {
+    externalChatId,
+    kind: 'private',
+    title: params.titleHint?.trim() || userDisplayName(params.user),
+    username: params.user?.username ?? null,
+    legacyChatId: dialogChatId,
+  }
+}
+
+function resolveMembershipChat(update: MaxUpdate, eventType: string): ResolvedMaxChat | null {
+  if (eventType === 'bot_started' || eventType === 'bot_stopped') {
+    return resolvePrivateChat({
+      userId: update.user?.user_id,
+      dialogChatId: update.chat_id ?? update.chat?.chat_id,
+      user: update.user,
+      titleHint: update.chat?.title,
+    })
+  }
+
+  // bot_added / bot_removed — group or channel (never use adder's name as title).
+  const chatId = update.chat_id ?? update.chat?.chat_id
+  if (chatId == null) return null
+
+  const kind: ChatKind =
+    update.is_channel === true || mapChatKind(update.chat?.type) === 'channel'
+      ? 'channel'
+      : 'group'
+
+  return {
+    externalChatId: String(chatId),
+    kind,
+    title: update.chat?.title?.trim() || null,
+    username: null,
+  }
+}
+
+function resolveMessageChat(update: MaxUpdate): ResolvedMaxChat | null {
+  const message = update.message
+  if (!message) return null
+
+  const recipient = message.recipient
+  const rawType = recipient?.chat_type ?? update.chat?.type
+  let kind = mapChatKind(rawType)
+
+  // Max sometimes omits chat_type on dialogs but still sends recipient.user_id.
+  if (kind === 'other' && recipient?.user_id != null) {
+    kind = 'private'
+  }
+
+  if (kind === 'private') {
+    return resolvePrivateChat({
+      userId: recipient?.user_id ?? message.sender?.user_id ?? update.user?.user_id,
+      dialogChatId: recipient?.chat_id ?? update.chat_id ?? update.chat?.chat_id,
+      user: message.sender ?? update.user ?? update.chat?.dialog_with_user,
+      titleHint: update.chat?.title,
+    })
+  }
+
+  if (kind === 'other') {
+    // Unknown type without user_id — skip catalog (same as Telegram skips "other").
+    return null
+  }
+
+  const chatId = recipient?.chat_id ?? update.chat_id ?? update.chat?.chat_id
+  if (chatId == null) return null
+
+  return {
+    externalChatId: String(chatId),
+    kind,
+    // Never fall back to sender name — that produced "Группа: Имя Фамилия".
+    title: update.chat?.title?.trim() || null,
+    username: null,
+  }
+}
+
+async function enrichChatTitle(
+  resolved: ResolvedMaxChat,
+  accessToken: string | null | undefined,
+): Promise<ResolvedMaxChat> {
+  if (resolved.title?.trim()) return resolved
+  if (!accessToken) return resolved
+  if (resolved.kind === 'private') return resolved
+
+  const info = await fetchMaxChat(accessToken, resolved.externalChatId)
+  if (!info) return resolved
+
+  const kindFromApi = mapChatKind(info.type)
+  return {
+    ...resolved,
+    kind: kindFromApi !== 'other' ? kindFromApi : resolved.kind,
+    title: info.title?.trim() || resolved.title,
+  }
+}
+
+async function catalogChat(
+  db: DbClient,
+  resolved: ResolvedMaxChat,
+  isActive: boolean,
+  accessToken?: string | null,
+): Promise<ResolvedMaxChat | null> {
+  if (resolved.kind === 'other') return null
+
+  const enriched = isActive ? await enrichChatTitle(resolved, accessToken) : resolved
+
+  if (!isActive) {
+    await markBotChannelInactive(db, 'max', enriched.externalChatId)
+    if (enriched.legacyChatId) {
+      await markBotChannelInactive(db, 'max', enriched.legacyChatId)
+    }
+    return enriched
+  }
+
+  await upsertBotChannel(db, {
+    platform: 'max',
+    externalChatId: enriched.externalChatId,
+    title: enriched.title,
+    username: enriched.username,
+    chatKind: enriched.kind,
+    isActive: true,
+  })
+
+  // Drop duplicate dialog rows that were stored under Max dialog chat_id.
+  if (enriched.legacyChatId) {
+    await markBotChannelInactive(db, 'max', enriched.legacyChatId)
+  }
+
+  return enriched
 }
 
 async function handleBotMembership(
   db: DbClient,
   update: MaxUpdate,
+  eventType: string,
   isActive: boolean,
+  accessToken?: string | null,
 ): Promise<void> {
-  const chatId = chatIdFromUpdate(update)
-  if (!chatId) return
-
-  const kind = mapChatKind(chatTypeFromUpdate(update))
-  if (!isActive) {
-    await markBotChannelInactive(db, 'max', chatId)
-    log('info', 'Max bot membership', { chatId, kind, isActive: false })
+  const resolved = resolveMembershipChat(update, eventType)
+  if (!resolved) {
+    log('warn', 'Max membership without resolvable chat', { eventType })
     return
   }
 
-  await upsertBotChannel(db, {
-    platform: 'max',
-    externalChatId: chatId,
-    title: update.chat?.title ?? update.user?.name ?? update.user?.username ?? null,
-    username: update.user?.username ?? null,
-    chatKind: kind,
-    isActive: true,
+  const cataloged = await catalogChat(db, resolved, isActive, accessToken)
+  log('info', 'Max bot membership', {
+    chatId: cataloged?.externalChatId ?? resolved.externalChatId,
+    kind: cataloged?.kind ?? resolved.kind,
+    isActive,
+    eventType,
   })
-
-  log('info', 'Max bot membership', { chatId, kind, isActive: true })
 }
 
-async function handleMessageCreated(db: DbClient, update: MaxUpdate, isEdit: boolean): Promise<void> {
+async function handleMessageCreated(
+  db: DbClient,
+  update: MaxUpdate,
+  isEdit: boolean,
+  accessToken?: string | null,
+): Promise<void> {
   const message = update.message
   if (!message) return
 
-  const chatId = chatIdFromUpdate(update)
-  if (!chatId) return
+  const resolved = resolveMessageChat(update)
+  if (!resolved) {
+    log('warn', 'Max message without resolvable chat', {
+      chatType: message.recipient?.chat_type ?? update.chat?.type ?? null,
+    })
+    return
+  }
 
-  const kind = mapChatKind(chatTypeFromUpdate(update))
-  const title =
-    update.chat?.title ??
-    message.sender?.name ??
-    message.sender?.username ??
-    null
-
-  await upsertBotChannel(db, {
-    platform: 'max',
-    externalChatId: chatId,
-    title,
-    username: message.sender?.username ?? null,
-    chatKind: kind,
-    isActive: true,
-  })
+  const cataloged = await catalogChat(db, resolved, true, accessToken)
+  const chatId = cataloged?.externalChatId ?? resolved.externalChatId
+  const kind = cataloged?.kind ?? resolved.kind
 
   const mid = message.body?.mid
   if (!mid) {
@@ -193,23 +385,28 @@ async function handleMessageCreated(db: DbClient, update: MaxUpdate, isEdit: boo
   log('info', 'Max message processed', { chatId, kind, mid, result, isEdit })
 }
 
-export async function handleMaxUpdate(db: DbClient, update: MaxUpdate): Promise<void> {
+export async function handleMaxUpdate(
+  db: DbClient,
+  update: MaxUpdate,
+  options: MaxAdapterOptions = {},
+): Promise<void> {
   const type = (update.update_type ?? '').toLowerCase()
+  const accessToken = options.accessToken ?? null
 
   if (type === 'bot_added' || type === 'bot_started') {
-    await handleBotMembership(db, update, true)
+    await handleBotMembership(db, update, type, true, accessToken)
     return
   }
   if (type === 'bot_removed' || type === 'bot_stopped') {
-    await handleBotMembership(db, update, false)
+    await handleBotMembership(db, update, type, false, accessToken)
     return
   }
   if (type === 'message_created') {
-    await handleMessageCreated(db, update, false)
+    await handleMessageCreated(db, update, false, accessToken)
     return
   }
   if (type === 'message_edited') {
-    await handleMessageCreated(db, update, true)
+    await handleMessageCreated(db, update, true, accessToken)
   }
 }
 

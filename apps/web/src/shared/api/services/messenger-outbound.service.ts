@@ -12,6 +12,14 @@ export type MessengerOutboundInput = {
   authorName?: string | null
 }
 
+export type MessengerOutboundDeleteInput = {
+  platform: MessengerPlatform
+  chatId: string
+  workGroupId: string
+  externalMessageId: string
+  messageId?: string | null
+}
+
 export type MessengerOutboundResult = {
   ok: true
   externalMessageId: string
@@ -34,16 +42,36 @@ function fileToBase64(file: File): Promise<string> {
   })
 }
 
-function outboundUrl(): string {
+function outboundUrl(path = ''): string {
   // Production (separate messenger domain): VITE_MESSENGER_API_URL=https://messenger.example.com
   // Local / same-origin proxy: /api/messenger → worker :8787
   const base = env.messengerApiUrl
-  if (base) return `${base}/v1/outbound`
-  return '/api/messenger/v1/outbound'
+  if (base) return `${base}/v1/outbound${path}`
+  return `/api/messenger/v1/outbound${path}`
+}
+
+function mapOutboundError(error: string | undefined, status: number): string {
+  return error === 'max_attachments_unsupported'
+    ? 'Для Max пока можно отправлять только текст'
+    : error === 'telegram_not_configured'
+      ? 'Telegram-бот не настроен на messenger'
+      : error === 'max_not_configured'
+        ? 'Max-бот не настроен на messenger'
+        : error === 'chat_not_bound'
+          ? 'Чат не привязан к группе'
+          : error === 'file_too_large'
+            ? 'Файл слишком большой (макс. 8 МБ)'
+            : error === 'invalid_external_message_id'
+              ? 'Некорректный идентификатор сообщения в мессенджере'
+              : error === 'messenger_api_unavailable'
+                ? 'Messenger API не проксируется. Задайте VITE_MESSENGER_API_URL на домен worker.'
+                : status === 405
+                  ? 'Messenger API не настроен (405). Задайте VITE_MESSENGER_API_URL на HTTPS-домен messenger.'
+                  : (error ?? `Не удалось выполнить запрос (${status})`)
 }
 
 /**
- * Sends a message via messenger worker (`POST /v1/outbound`).
+ * Sends / deletes messages via messenger worker (`POST /v1/outbound`).
  */
 export const messengerOutboundService = {
   async send(input: MessengerOutboundInput): Promise<MessengerOutboundResult> {
@@ -95,27 +123,58 @@ export const messengerOutboundService = {
     } | null
 
     if (!response.ok || !json?.ok || !json.externalMessageId) {
-      const message =
-        json?.error === 'max_attachments_unsupported'
-          ? 'Для Max пока можно отправлять только текст'
-          : json?.error === 'telegram_not_configured'
-            ? 'Telegram-бот не настроен на messenger'
-            : json?.error === 'max_not_configured'
-              ? 'Max-бот не настроен на messenger'
-              : json?.error === 'chat_not_bound'
-                ? 'Чат не привязан к группе'
-                : json?.error === 'file_too_large'
-                  ? 'Файл слишком большой (макс. 8 МБ)'
-                  : json?.error === 'messenger_api_unavailable'
-                    ? 'Messenger API не проксируется. Задайте VITE_MESSENGER_API_URL на домен worker.'
-                    : response.status === 405
-                      ? 'Messenger API не настроен (405). Задайте VITE_MESSENGER_API_URL на HTTPS-домен messenger.'
-                      : (json?.error ?? `Не удалось отправить (${response.status})`)
-      throw new ApiError(message, {
+      throw new ApiError(mapOutboundError(json?.error, response.status), {
         code: response.status === 401 || response.status === 403 ? 'unauthorized' : 'unknown',
       })
     }
 
     return { ok: true, externalMessageId: json.externalMessageId }
+  },
+
+  async delete(input: MessengerOutboundDeleteInput): Promise<{ ok: true }> {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabaseClient.auth.getSession()
+    if (sessionError) throw sessionError
+    if (!session?.access_token) {
+      throw new ApiError('Нужна авторизация', { code: 'unauthorized' })
+    }
+
+    let response: Response
+    try {
+      response = await fetch(outboundUrl('/delete'), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          platform: input.platform,
+          chatId: input.chatId,
+          workGroupId: input.workGroupId,
+          externalMessageId: input.externalMessageId,
+          messageId: input.messageId ?? null,
+        }),
+      })
+    } catch {
+      throw new ApiError(
+        'Messenger недоступен. Запустите worker или задайте VITE_MESSENGER_API_URL.',
+        { code: 'unknown' },
+      )
+    }
+
+    const json = (await response.json().catch(() => null)) as {
+      ok?: boolean
+      error?: string
+    } | null
+
+    if (!response.ok || !json?.ok) {
+      throw new ApiError(mapOutboundError(json?.error, response.status), {
+        code: response.status === 401 || response.status === 403 ? 'unauthorized' : 'unknown',
+      })
+    }
+
+    return { ok: true }
   },
 }

@@ -64,6 +64,51 @@ const RPC_AUDIT: Partial<Record<RpcName, RpcAuditSpec>> = {
     entity_type: 'company_products',
     entityId: (args) => String(args.p_company_id ?? ''),
   },
+  review_company_product: {
+    action: 'company_products.review',
+    entity_type: 'company_products',
+    entityId: (args) => String(args.p_product_id ?? ''),
+  },
+  review_product_category_suggestion: {
+    action: 'product_category_suggestions.review',
+    entity_type: 'product_category_suggestions',
+    entityId: (args) => String(args.p_suggestion_id ?? ''),
+  },
+  delete_okpd2_code: {
+    action: 'okpd2_codes.delete',
+    entity_type: 'okpd2_codes',
+    entityId: (args) => String(args.p_id ?? ''),
+  },
+  delete_product_note: {
+    action: 'product_notes.delete',
+    entity_type: 'product_notes',
+    entityId: (args) => String(args.p_id ?? ''),
+  },
+  review_material_section: {
+    action: 'material_sections.review',
+    entity_type: 'material_sections',
+    entityId: (args) => String(args.p_section_id ?? ''),
+  },
+  review_material_category: {
+    action: 'material_categories.review',
+    entity_type: 'material_categories',
+    entityId: (args) => String(args.p_category_id ?? ''),
+  },
+  set_invoice_status: {
+    action: 'invoices.set_status',
+    entity_type: 'invoices',
+    entityId: (args) => String(args.p_invoice_id ?? ''),
+  },
+
+  delete_product_category: {
+    action: 'product_categories.delete',
+    entity_type: 'product_categories',
+    entityId: (args) => String(args.p_category_id ?? ''),
+  },
+  reorder_product_categories: {
+    action: 'product_categories.reorder',
+    entity_type: 'product_categories',
+  },
   set_primary_representative: {
     action: 'representatives.set_primary',
     entity_type: 'representatives',

@@ -64,6 +64,7 @@ export type {
   MaterialCategoryRef,
   MaterialsListFilters,
   CabinetMaterial,
+  MaterialModerationStatus,
 } from './materials.service'
 export { materialCategoriesService } from './material-categories.service'
 export type {
@@ -78,6 +79,26 @@ export type {
   CompanyProductInput,
   CompanyProductUpdateInput,
 } from './company-products.service'
+export { invoicesService } from './invoices.service'
+export type {
+  Invoice,
+  InvoiceInput,
+  InvoicesListFilters,
+} from './invoices.service'
+export { notificationsService, isNotificationType } from './notifications.service'
+export type {
+  AppNotification,
+  NotificationsListFilters,
+} from './notifications.service'
+export { productCategoriesService } from './product-categories.service'
+export type {
+  ProductCategory,
+  ProductCategorySuggestion,
+} from './product-categories.service'
+export { okpd2CodesService } from './okpd2-codes.service'
+export type { Okpd2Code } from './okpd2-codes.service'
+export { productNotesService } from './product-notes.service'
+export type { ProductNote } from './product-notes.service'
 export { materialAccessService } from './material-access.service'
 export type { MaterialAccessMode, BulkMaterialAccessInput } from './material-access.service'
 export { documentsService } from './documents.service'
@@ -119,7 +140,11 @@ export type { MessengerConnection, MessengerConnectionInput } from './messenger-
 export { messengerBotChannelsService } from './messenger-bot-channels.service'
 export type { MessengerBotChannel } from './messenger-bot-channels.service'
 export { messengerOutboundService } from './messenger-outbound.service'
-export type { MessengerOutboundInput, MessengerOutboundResult } from './messenger-outbound.service'
+export type {
+  MessengerOutboundDeleteInput,
+  MessengerOutboundInput,
+  MessengerOutboundResult,
+} from './messenger-outbound.service'
 export { messagesService } from './messages.service'
 export type {
   Message,

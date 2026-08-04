@@ -40,14 +40,45 @@ export const queryKeys = {
     documents: (sectionId: string) => ['apss', 'materials', 'documents', sectionId] as const,
     cabinetList: ['apss', 'materials', 'cabinet', 'list'] as const,
     cabinetBySlug: (slug: string) => ['apss', 'materials', 'cabinet', 'slug', slug] as const,
+    moderation: (status: string) => ['apss', 'materials', 'moderation', status] as const,
     categories: ['apss', 'materials', 'categories'] as const,
     categoriesList: (filters: { search?: string; active?: string }) =>
       ['apss', 'materials', 'categories', 'list', filters] as const,
+    categoriesModeration: (status: string) =>
+      ['apss', 'materials', 'categories', 'moderation', status] as const,
     categoryUsage: (id: string) => ['apss', 'materials', 'categories', 'usage', id] as const,
   },
   companyProducts: {
     all: ['apss', 'company-products'] as const,
     byCompany: (companyId: string) => ['apss', 'company-products', 'company', companyId] as const,
+    moderation: (status: string) => ['apss', 'company-products', 'moderation', status] as const,
+  },
+  invoices: {
+    all: ['apss', 'invoices'] as const,
+    list: (filters: { search?: string; status?: string; companyId?: string }) =>
+      ['apss', 'invoices', 'list', filters] as const,
+    detail: (id: string) => ['apss', 'invoices', id] as const,
+    cabinet: (companyId: string) => ['apss', 'invoices', 'cabinet', companyId] as const,
+  },
+  notifications: {
+    all: ['apss', 'notifications'] as const,
+    list: (filters: { unreadOnly?: boolean }) =>
+      ['apss', 'notifications', 'list', filters] as const,
+    unreadCount: ['apss', 'notifications', 'unread-count'] as const,
+  },
+  productCategories: {
+    all: ['apss', 'product-categories'] as const,
+    active: ['apss', 'product-categories', 'active'] as const,
+    suggestions: (status: string) =>
+      ['apss', 'product-category-suggestions', status] as const,
+  },
+  okpd2Codes: {
+    all: ['apss', 'okpd2-codes'] as const,
+    active: ['apss', 'okpd2-codes', 'active'] as const,
+  },
+  productNotes: {
+    all: ['apss', 'product-notes'] as const,
+    active: ['apss', 'product-notes', 'active'] as const,
   },
   workGroups: {
     all: ['apss', 'work-groups'] as const,

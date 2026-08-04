@@ -12,9 +12,9 @@ export const permissions = {
   'admin.registrations': 'admin.registrations',
   'admin.levels': 'admin.levels',
   'admin.companies': 'admin.companies',
+  'admin.invoices': 'admin.invoices',
   'admin.representatives': 'admin.representatives',
   'admin.workGroups': 'admin.workGroups',
-  'admin.messages': 'admin.messages',
   'admin.materials': 'admin.materials',
   'admin.polls': 'admin.polls',
   'admin.audit': 'admin.audit',
@@ -44,11 +44,7 @@ export function hasPermission(
   if (!state.isAuthenticated || !state.role) return false
   if (!getPermissionsForRole(state.role).includes(permission)) return false
 
-  if (
-    (permission === permissions['admin.workGroups'] ||
-      permission === permissions['admin.messages']) &&
-    options?.canManageWorkGroups === false
-  ) {
+  if (permission === permissions['admin.workGroups'] && options?.canManageWorkGroups === false) {
     return false
   }
 

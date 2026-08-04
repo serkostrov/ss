@@ -1,8 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FileText, ImageIcon, Video } from 'lucide-react'
+import { FileText, ImageIcon, Trash2, Video } from 'lucide-react'
 
 import type { Message, MessageContentType, MessageSource } from '@shared/api'
-import { Badge, Button, EmptyState, ErrorState, LoadingState, Spinner } from '@shared/ui'
+import {
+  Badge,
+  Button,
+  DeleteDialog,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  Spinner,
+} from '@shared/ui'
 import { cn } from '@shared/lib/utils'
 
 import {
@@ -11,9 +19,11 @@ import {
   formatMessageTime,
   messageContentTypeLabel,
   messageSourceLabel,
+  truncateMessageText,
 } from '../model/schemas'
 import { useMessages } from '../model/use-messages'
 import { useChatMessagesRealtime } from '../model/use-messages-realtime'
+import { useDeleteMessengerMessageMutation } from '../model/use-send-message'
 import { ChatComposer } from './chat-composer'
 
 type ChatThreadPanelProps = {
@@ -77,13 +87,25 @@ function authorInitial(name: string | null | undefined): string {
 function isOutboundMessage(message: Message): boolean {
   return Boolean(
     message.payload &&
-    typeof message.payload === 'object' &&
-    !Array.isArray(message.payload) &&
-    (message.payload as { outbound?: boolean }).outbound,
+      typeof message.payload === 'object' &&
+      !Array.isArray(message.payload) &&
+      (message.payload as { outbound?: boolean }).outbound,
   )
 }
 
-function MessageBubble({ message, compactTop }: { message: Message; compactTop?: boolean }) {
+function MessageBubble({
+  message,
+  compactTop,
+  canDelete,
+  deleting,
+  onDelete,
+}: {
+  message: Message
+  compactTop?: boolean
+  canDelete?: boolean
+  deleting?: boolean
+  onDelete?: () => void
+}) {
   const isOutbound = isOutboundMessage(message)
   const hasMedia = message.content_type !== 'text'
   const textLooksLikePlaceholder = /^\[.+\]$/.test(message.text.trim())
@@ -93,7 +115,7 @@ function MessageBubble({ message, compactTop }: { message: Message; compactTop?:
   return (
     <div
       className={cn(
-        'flex max-w-[min(92%,22rem)] gap-2 sm:max-w-[min(85%,26rem)]',
+        'group/msg flex max-w-[min(92%,22rem)] gap-2 sm:max-w-[min(85%,26rem)]',
         isOutbound ? 'ml-auto flex-row-reverse' : 'mr-auto',
       )}
     >
@@ -109,51 +131,71 @@ function MessageBubble({ message, compactTop }: { message: Message; compactTop?:
         </div>
       ) : null}
 
-      <article
-        className={cn(
-          'w-fit min-w-0 rounded-2xl px-3 py-2 text-sm shadow-xs',
-          isOutbound
-            ? 'bg-primary text-primary-foreground rounded-br-md'
-            : 'bg-card text-card-foreground ring-border/70 rounded-bl-md ring-1',
-        )}
-      >
-        {showAuthor ? (
-          <p className="text-primary mb-0.5 truncate text-[11px] font-semibold tracking-wide">
-            {message.author_name}
-          </p>
-        ) : null}
-
-        {hasMedia ? <AttachmentBlock type={message.content_type} outbound={isOutbound} /> : null}
-
-        {showText ? (
-          <div className="flex flex-wrap items-end gap-x-2 gap-y-0.5">
-            <p className="min-w-0 flex-1 leading-relaxed break-words whitespace-pre-wrap">
-              {message.text}
+      <div className={cn('relative flex min-w-0 items-end gap-1', isOutbound && 'flex-row-reverse')}>
+        <article
+          className={cn(
+            'w-fit min-w-0 rounded-2xl px-3 py-2 text-sm shadow-xs',
+            isOutbound
+              ? 'bg-primary text-primary-foreground rounded-br-md'
+              : 'bg-card text-card-foreground ring-border/70 rounded-bl-md ring-1',
+          )}
+        >
+          {showAuthor ? (
+            <p className="text-primary mb-0.5 truncate text-[11px] font-semibold tracking-wide">
+              {message.author_name}
             </p>
-            <time
-              dateTime={message.sent_at}
-              className={cn(
-                'ml-auto shrink-0 self-end pb-px text-[10px] leading-none tabular-nums',
-                isOutbound ? 'text-primary-foreground/70' : 'text-muted-foreground',
-              )}
-            >
-              {formatMessageTime(message.sent_at)}
-            </time>
-          </div>
-        ) : (
-          <div className="flex justify-end">
-            <time
-              dateTime={message.sent_at}
-              className={cn(
-                'text-[10px] leading-none tabular-nums',
-                isOutbound ? 'text-primary-foreground/70' : 'text-muted-foreground',
-              )}
-            >
-              {formatMessageTime(message.sent_at)}
-            </time>
-          </div>
-        )}
-      </article>
+          ) : null}
+
+          {hasMedia ? <AttachmentBlock type={message.content_type} outbound={isOutbound} /> : null}
+
+          {showText ? (
+            <div className="flex flex-wrap items-end gap-x-2 gap-y-0.5">
+              <p className="min-w-0 flex-1 leading-relaxed break-words whitespace-pre-wrap">
+                {message.text}
+              </p>
+              <time
+                dateTime={message.sent_at}
+                className={cn(
+                  'ml-auto shrink-0 self-end pb-px text-[10px] leading-none tabular-nums',
+                  isOutbound ? 'text-primary-foreground/70' : 'text-muted-foreground',
+                )}
+              >
+                {formatMessageTime(message.sent_at)}
+              </time>
+            </div>
+          ) : (
+            <div className="flex justify-end">
+              <time
+                dateTime={message.sent_at}
+                className={cn(
+                  'text-[10px] leading-none tabular-nums',
+                  isOutbound ? 'text-primary-foreground/70' : 'text-muted-foreground',
+                )}
+              >
+                {formatMessageTime(message.sent_at)}
+              </time>
+            </div>
+          )}
+        </article>
+
+        {canDelete ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className={cn(
+              'text-muted-foreground hover:text-destructive size-7 shrink-0 opacity-0 transition-opacity',
+              'group-hover/msg:opacity-100 focus-visible:opacity-100',
+              deleting && 'opacity-100',
+            )}
+            aria-label="Удалить сообщение"
+            disabled={deleting}
+            onClick={onDelete}
+          >
+            {deleting ? <Spinner size="sm" /> : <Trash2 className="size-3.5" />}
+          </Button>
+        ) : null}
+      </div>
     </div>
   )
 }
@@ -168,9 +210,11 @@ export function ChatThreadPanel({
   showComposer = true,
 }: ChatThreadPanelProps) {
   const [chunks, setChunks] = useState(1)
+  const [deleting, setDeleting] = useState<Message | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const scrollerRef = useRef<HTMLDivElement | null>(null)
   const stickToBottomRef = useRef(true)
+  const deleteMutation = useDeleteMessengerMessageMutation(workGroupId)
 
   useEffect(() => {
     setChunks(1)
@@ -273,14 +317,21 @@ export function ChatThreadPanel({
                   const prev = group.items[index - 1]
                   const compactTop = Boolean(
                     prev &&
-                    !isOutboundMessage(message) &&
-                    !isOutboundMessage(prev) &&
-                    (prev.author_external_id || prev.author_name) &&
-                    (prev.author_external_id ?? prev.author_name) ===
-                      (message.author_external_id ?? message.author_name),
+                      !isOutboundMessage(message) &&
+                      !isOutboundMessage(prev) &&
+                      (prev.author_external_id || prev.author_name) &&
+                      (prev.author_external_id ?? prev.author_name) ===
+                        (message.author_external_id ?? message.author_name),
                   )
                   return (
-                    <MessageBubble key={message.id} message={message} compactTop={compactTop} />
+                    <MessageBubble
+                      key={message.id}
+                      message={message}
+                      compactTop={compactTop}
+                      canDelete={showComposer && Boolean(message.external_message_id)}
+                      deleting={deleteMutation.isPending && deleting?.id === message.id}
+                      onDelete={() => setDeleting(message)}
+                    />
                   )
                 })}
               </div>
@@ -301,6 +352,32 @@ export function ChatThreadPanel({
           }}
         />
       ) : null}
+
+      <DeleteDialog
+        open={Boolean(deleting)}
+        onOpenChange={(open) => {
+          if (!open) setDeleting(null)
+        }}
+        title="Удалить сообщение?"
+        description={
+          deleting
+            ? `«${truncateMessageText(deleting.text, 80)}» будет удалено из чата на платформе и в мессенджере.`
+            : undefined
+        }
+        loading={deleteMutation.isPending}
+        onConfirm={async () => {
+          if (!deleting?.external_message_id) return
+          await deleteMutation.mutateAsync({
+            platform: source,
+            chatId: externalChatId,
+            workGroupId,
+            externalMessageId: deleting.external_message_id,
+            messageId: deleting.id,
+          })
+          setDeleting(null)
+          void query.refetch()
+        }}
+      />
     </div>
   )
 }

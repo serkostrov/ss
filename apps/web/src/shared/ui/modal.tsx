@@ -38,7 +38,27 @@ function Modal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
-      <DialogContent className={cn('max-w-xl', className)}>
+      <DialogContent
+        className={cn('max-w-xl', className)}
+        onPointerDownOutside={(event) => {
+          const target = event.target
+          if (target instanceof Element && target.closest('[data-radix-popper-content-wrapper]')) {
+            event.preventDefault()
+          }
+        }}
+        onInteractOutside={(event) => {
+          const target = event.target
+          if (target instanceof Element && target.closest('[data-radix-popper-content-wrapper]')) {
+            event.preventDefault()
+          }
+        }}
+        onFocusOutside={(event) => {
+          const target = event.target
+          if (target instanceof Element && target.closest('[data-radix-popper-content-wrapper]')) {
+            event.preventDefault()
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description ? <DialogDescription>{description}</DialogDescription> : null}

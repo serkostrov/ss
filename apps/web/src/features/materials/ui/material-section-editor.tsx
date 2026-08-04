@@ -168,8 +168,14 @@ export function MaterialSectionEditor() {
               {updateMutation.isPending ? <Spinner size="sm" /> : <Save />}
             </IconButton>
             <IconButton
-              label={section.is_published ? 'В черновик' : 'Опубликовать'}
-              disabled={pending}
+              label={
+                section.is_published
+                  ? 'В черновик'
+                  : section.moderation_status === 'pending'
+                    ? 'На выпуске'
+                    : 'Отправить на выпуск'
+              }
+              disabled={pending || section.moderation_status === 'pending'}
               onClick={() => {
                 if (section.is_published) {
                   void publishMutation.mutateAsync({ id: section.id, isPublished: false })
@@ -193,10 +199,14 @@ export function MaterialSectionEditor() {
 
         <PageHeader
           title={section.title}
-          description="Редактор Markdown, уровни доступа и публикация."
+          description="Редактор Markdown и уровни доступа. Выпуск подтверждается в «Заявки»."
           className="mb-0"
           status={
-            section.is_published ? (
+            section.moderation_status === 'pending' ? (
+              <StatusBadge status="pending" label="На выпуске" />
+            ) : section.moderation_status === 'rejected' ? (
+              <StatusBadge status="rejected" />
+            ) : section.is_published ? (
               <StatusBadge status="active" label="Опубликован" />
             ) : (
               <StatusBadge status="draft" />
@@ -302,13 +312,15 @@ export function MaterialSectionEditor() {
       <ConfirmDialog
         open={publishOpen}
         onOpenChange={setPublishOpen}
-        title="Опубликовать раздел?"
-        description="Раздел станет доступен участникам выбранных уровней участия."
-        confirmLabel="Опубликовать"
+        title="Отправить на выпуск?"
+        description="Материал попадёт в «Заявки». После подтверждения станет доступен участникам выбранных уровней."
+        confirmLabel="Отправить"
         loading={pending}
         onConfirm={async () => {
-          const ok = await save(true)
-          if (ok) setPublishOpen(false)
+          const ok = await save(false)
+          if (!ok) return
+          await publishMutation.mutateAsync({ id: section.id, isPublished: true })
+          setPublishOpen(false)
         }}
       />
 

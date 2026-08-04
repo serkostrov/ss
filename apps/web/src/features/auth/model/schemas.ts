@@ -66,6 +66,7 @@ export const registerSchema = z
       message: 'Необходимо принять условия регистрации',
     }),
     showContactsToMembers: z.boolean(),
+    emailNotificationsEnabled: z.boolean(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Пароли не совпадают',

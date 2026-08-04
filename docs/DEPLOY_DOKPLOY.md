@@ -113,7 +113,36 @@ MAX_TLS_INSECURE=1
 
 ---
 
-## 3. После старта ботов
+## 3. Email-уведомления (smtp.bz)
+
+1. Задеплойте Edge Function `send-notification-email`.
+2. Задайте secrets функции:
+
+```env
+SMTPBZ_API_KEY=ключ_из_кабинета_smtp.bz
+SMTP_FROM=noreply@your-domain.example
+SMTP_FROM_NAME=АПСС «Северное сияние»
+APP_URL=https://app.example.com
+EMAIL_WEBHOOK_SECRET=случайная_длинная_строка
+```
+
+3. После миграции `000046` укажите webhook в БД:
+
+```sql
+update public.app_settings
+set value = 'https://YOUR.supabase.co/functions/v1/send-notification-email'
+where key = 'notification_email_webhook_url';
+
+update public.app_settings
+set value = 'тот_же_EMAIL_WEBHOOK_SECRET'
+where key = 'notification_email_webhook_secret';
+```
+
+Пока URL пустой, in-app уведомления работают, письма не отправляются.
+
+---
+
+## 4. После старта ботов
 
 1. Добавьте бота АПСС в канал / группу / напишите ему в ЛС (Telegram или Max).
 2. В админке: **Группы → [группа] → Чаты** — выберите чат из списка.
@@ -123,7 +152,7 @@ MAX_TLS_INSECURE=1
 
 ---
 
-## 4. Альтернатива: один Compose-стек
+## 5. Альтернатива: один Compose-стек
 
 Можно задеплоить `docker-compose.yml` как Compose-приложение (web + messenger в одной сети).
 
@@ -147,7 +176,7 @@ Web nginx проксирует `/webhooks/` → messenger. Домен у web о�
 
 ---
 
-## 5. Частые проблемы
+## 6. Частые проблемы
 
 | Симптом | Что делать |
 |---------|------------|

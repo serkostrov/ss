@@ -95,7 +95,7 @@ export function MaterialSectionCreateDialog({
       open={open}
       onOpenChange={onOpenChange}
       title="Новый раздел материалов"
-      description="Черновик можно дополнить в карточке: Markdown, уровни доступа и публикация."
+      description="Черновик можно дополнить в карточке. Выпуск подтверждается во вкладке «Заявки»."
       footer={
         <>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -174,7 +174,7 @@ export function MaterialSectionCreateDialog({
             checked={values.isPublished}
             onCheckedChange={(checked) => patch('isPublished', checked === true)}
           />
-          Опубликовать сразу
+          Сразу отправить на выпуск
         </label>
       </div>
     </Modal>

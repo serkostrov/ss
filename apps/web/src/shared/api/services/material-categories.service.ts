@@ -1,12 +1,18 @@
 import { ApiError } from '@shared/lib/errors'
 
 import { supabaseClient } from '../lib/client'
-import type { TableInsert, TableRow, TableUpdate } from '../types/database'
+import type {
+  MaterialModerationStatus,
+  TableInsert,
+  TableRow,
+  TableUpdate,
+} from '../types/database'
 import { dataService } from './data.service'
 import { slugifyTitle } from './materials.service'
 import { rpcService } from './rpc.service'
 
 export type MaterialCategory = TableRow<'material_categories'>
+export type { MaterialModerationStatus }
 
 export type MaterialCategoryInput = {
   name: string
@@ -63,12 +69,44 @@ export const materialCategoriesService = {
   async listActive(): Promise<MaterialCategory[]> {
     const result = (await supabaseClient
       .from('material_categories')
-      .select('id, name, slug, sort_order, is_active, created_at')
+      .select(
+        'id, name, slug, sort_order, is_active, moderation_status, reviewed_by, reviewed_at, review_note, created_at',
+      )
       .eq('is_active', true)
+      .eq('moderation_status', 'approved')
       .order('sort_order', { ascending: true })
       .order('name', { ascending: true })) as QueryResult<MaterialCategory[]>
 
     return assertResult(result)
+  },
+
+  async listForModeration(
+    status: MaterialModerationStatus | 'all' = 'pending',
+  ): Promise<MaterialCategory[]> {
+    let query = supabaseClient
+      .from('material_categories')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .order('name', { ascending: true })
+
+    if (status !== 'all') {
+      query = query.eq('moderation_status', status)
+    }
+
+    const result = (await query) as QueryResult<MaterialCategory[]>
+    return assertResult(result)
+  },
+
+  async review(
+    id: string,
+    approve: boolean,
+    note?: string | null,
+  ): Promise<MaterialCategory> {
+    return rpcService.call('review_material_category', {
+      p_category_id: id,
+      p_approve: approve,
+      p_note: note ?? null,
+    })
   },
 
   async list(filters: MaterialCategoriesListFilters = {}): Promise<MaterialCategory[]> {
@@ -122,7 +160,8 @@ export const materialCategoriesService = {
     const payload: TableInsert<'material_categories'> = {
       name: input.name.trim(),
       slug,
-      is_active: input.is_active ?? true,
+      // Trigger forces pending + inactive until approval in «Заявки».
+      is_active: false,
       sort_order: nextOrder,
     }
 

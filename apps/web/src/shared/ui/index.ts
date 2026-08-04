@@ -19,6 +19,8 @@ export {
   useFormField,
 } from './form'
 export { Checkbox } from './checkbox'
+export { Switch } from './switch'
+export type { SwitchProps } from './switch'
 export { Alert, AlertTitle, AlertDescription } from './alert'
 export { PasswordInput } from './password-input'
 export {
@@ -148,6 +150,7 @@ export type { MarkdownEditorProps } from './markdown-editor'
 export { FileCard } from './file-card'
 export type { FileCardProps } from './file-card'
 export { Modal } from './modal'
+export { Popover, PopoverTrigger, PopoverAnchor, PopoverContent } from './popover'
 export type { ModalProps } from './modal'
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './tooltip'
 export { IconButton } from './icon-button'

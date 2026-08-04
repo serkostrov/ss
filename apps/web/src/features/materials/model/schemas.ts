@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const materialStatusFilterSchema = z.enum(['all', 'draft', 'published'])
+export const materialStatusFilterSchema = z.enum(['all', 'draft', 'published', 'pending'])
 export type MaterialStatusFilter = z.infer<typeof materialStatusFilterSchema>
 
 export const materialSectionFormSchema = z
@@ -27,7 +27,7 @@ export const materialSectionFormSchema = z
     if (values.isPublished && values.levelIds.length === 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Для публикации укажите хотя бы один уровень доступа',
+        message: 'Для отправки на выпуск укажите хотя бы один уровень доступа',
         path: ['levelIds'],
       })
     }
@@ -41,6 +41,8 @@ export function materialStatusFilterLabel(value: MaterialStatusFilter): string {
       return 'Черновики'
     case 'published':
       return 'Опубликованные'
+    case 'pending':
+      return 'На выпуске'
     default:
       return 'Все'
   }

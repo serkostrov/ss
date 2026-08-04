@@ -7,6 +7,10 @@ export { MessageDetailSheet } from './ui/message-detail-sheet'
 export { useChatMessagesRealtime } from './model/use-messages-realtime'
 
 export { useMessages, useMessage, useWorkGroupsForMessageFilter } from './model/use-messages'
+export {
+  useSendMessengerMessageMutation,
+  useDeleteMessengerMessageMutation,
+} from './model/use-send-message'
 
 export {
   messageSourceLabel,

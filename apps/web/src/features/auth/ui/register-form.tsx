@@ -45,6 +45,7 @@ export function RegisterForm() {
       companyNameHint: '',
       accepted: false,
       showContactsToMembers: true,
+      emailNotificationsEnabled: true,
     },
   })
 
@@ -267,47 +268,74 @@ export function RegisterForm() {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="showContactsToMembers"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start gap-4 space-y-0 rounded-md border p-4">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={(checked) => field.onChange(checked === true)}
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>Показывать мои контакты другим участникам</FormLabel>
-                <FormDescription>
-                  Другие участники смогут видеть ваши данные в справочнике.
-                </FormDescription>
-                <FormMessage />
-              </div>
-            </FormItem>
-          )}
-        />
+        <div className="space-y-3 rounded-md border px-3 py-3">
+          <FormField
+            control={form.control}
+            name="showContactsToMembers"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start gap-2.5 space-y-0">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={(checked) => field.onChange(checked === true)}
+                    className="mt-0.5"
+                  />
+                </FormControl>
+                <div className="min-w-0 leading-snug">
+                  <FormLabel className="font-normal">Показывать контакты участникам</FormLabel>
+                  <FormDescription className="text-xs">
+                    Видны в справочнике ассоциации
+                  </FormDescription>
+                  <FormMessage />
+                </div>
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="accepted"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start gap-4 space-y-0 rounded-md border p-4">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={(checked) => field.onChange(checked === true)}
-                />
-              </FormControl>
-              <div className="space-y-2 leading-snug">
-                <FormLabel>Принимаю условия регистрации</FormLabel>
-                <FormDescription>Без подтверждения зарегистрироваться нельзя.</FormDescription>
-                <FormMessage />
-              </div>
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="emailNotificationsEnabled"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start gap-2.5 space-y-0">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={(checked) => field.onChange(checked === true)}
+                    className="mt-0.5"
+                  />
+                </FormControl>
+                <div className="min-w-0 leading-snug">
+                  <FormLabel className="font-normal">Уведомления на email</FormLabel>
+                  <FormDescription className="text-xs">
+                    Счета, модерация и другие события — можно отключить позже
+                  </FormDescription>
+                  <FormMessage />
+                </div>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="accepted"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start gap-2.5 space-y-0 border-t pt-3">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={(checked) => field.onChange(checked === true)}
+                    className="mt-0.5"
+                  />
+                </FormControl>
+                <div className="min-w-0 leading-snug">
+                  <FormLabel className="font-normal">Принимаю условия регистрации</FormLabel>
+                  <FormDescription className="text-xs">Обязательно для регистрации</FormDescription>
+                  <FormMessage />
+                </div>
+              </FormItem>
+            )}
+          />
+        </div>
 
         <Button type="submit" className="w-full" disabled={register.isPending}>
           {register.isPending ? <Spinner size="sm" className="text-primary-foreground" /> : null}
