@@ -77,6 +77,12 @@ MAX_WEBHOOK_SECRET=случайная_строка_AZaz09_
 PUBLIC_WEBHOOK_BASE_URL=https://hooks.example.com
 PORT=8787
 LOG_LEVEL=info
+# Email (smtp.bz) — optional
+SMTPBZ_API_KEY=
+SMTP_FROM=noreply@your-domain.example
+SMTP_FROM_NAME=АПСС «Северное сияние»
+APP_URL=https://app.example.com
+EMAIL_WEBHOOK_SECRET=
 ```
 
 Важно:
@@ -113,10 +119,12 @@ MAX_TLS_INSECURE=1
 
 ---
 
-## 3. Email-уведомления (smtp.bz)
+## 3. Email-уведомления (smtp.bz через messenger)
 
-1. Задеплойте Edge Function `send-notification-email`.
-2. Задайте secrets функции:
+Письма отправляет **messenger** (`POST /v1/notification-email`), без Edge Functions.
+Триггер в БД (`pg_net`) вызывает этот endpoint после создания уведомления.
+
+1. В Environment приложения **Messenger** добавьте:
 
 ```env
 SMTPBZ_API_KEY=ключ_из_кабинета_smtp.bz
@@ -126,11 +134,11 @@ APP_URL=https://app.example.com
 EMAIL_WEBHOOK_SECRET=случайная_длинная_строка
 ```
 
-3. После миграции `000046` укажите webhook в БД:
+2. После миграции `000046` укажите webhook на messenger:
 
 ```sql
 update public.app_settings
-set value = 'https://YOUR.supabase.co/functions/v1/send-notification-email'
+set value = 'https://hooks.example.com/v1/notification-email'
 where key = 'notification_email_webhook_url';
 
 update public.app_settings
@@ -138,7 +146,7 @@ set value = 'тот_же_EMAIL_WEBHOOK_SECRET'
 where key = 'notification_email_webhook_secret';
 ```
 
-Пока URL пустой, in-app уведомления работают, письма не отправляются.
+Пока URL пустой или secrets не заданы, in-app уведомления работают, письма не уходят.
 
 ---
 

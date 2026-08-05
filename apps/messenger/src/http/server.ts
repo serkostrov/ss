@@ -4,6 +4,10 @@ import { handleMaxUpdate, type MaxUpdate } from '../adapters/max.js'
 import { handleTelegramUpdate, type TelegramUpdate } from '../adapters/telegram.js'
 import type { MessengerConfig } from '../config/index.js'
 import type { DbClient } from '../db.js'
+import {
+  dispatchNotificationEmail,
+  isEmailDispatchConfigured,
+} from '../email/send-notification.js'
 import { requireAdmin } from '../outbound/auth.js'
 import {
   deleteOutboundMessage,
@@ -32,7 +36,7 @@ function send(res: ServerResponse, status: number, body: unknown) {
     'Content-Type': 'application/json; charset=utf-8',
     'Content-Length': Buffer.byteLength(payload),
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type, x-apss-webhook-secret',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   })
   res.end(payload)
@@ -172,6 +176,41 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
           const status = statusFromError(error)
           const message = error instanceof Error ? error.message : 'error'
           log('warn', 'Outbound delete API failed', { status, message })
+          send(res, status, { ok: false, error: message })
+        }
+        return
+      }
+
+      if (req.method === 'POST' && path === '/v1/notification-email') {
+        try {
+          if (!isEmailDispatchConfigured(config) || !config.emailWebhookSecret) {
+            send(res, 503, { ok: false, error: 'email_not_configured' })
+            return
+          }
+
+          const header = req.headers['x-apss-webhook-secret']
+          const provided = Array.isArray(header) ? header[0] : header
+          if (!provided || !timingSafeEqual(provided, config.emailWebhookSecret)) {
+            send(res, 401, { ok: false, error: 'unauthorized' })
+            return
+          }
+
+          const body = (await readJson(req)) as {
+            notification_id?: string
+            record?: { id?: string }
+          } | null
+          const notificationId = body?.notification_id ?? body?.record?.id ?? null
+          if (!notificationId) {
+            send(res, 400, { ok: false, error: 'notification_id_required' })
+            return
+          }
+
+          const result = await dispatchNotificationEmail(db, config, notificationId)
+          send(res, 200, result)
+        } catch (error) {
+          const status = statusFromError(error)
+          const message = error instanceof Error ? error.message : 'error'
+          log('warn', 'Notification email API failed', { status, message })
           send(res, status, { ok: false, error: message })
         }
         return

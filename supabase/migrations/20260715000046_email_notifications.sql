@@ -118,7 +118,8 @@ revoke all on function public.set_own_email_notifications(boolean) from public;
 grant execute on function public.set_own_email_notifications(boolean) to authenticated;
 
 -- =============================================================================
--- Dispatch email after notification insert (pg_net → Edge Function)
+-- Dispatch email after notification insert (pg_net → messenger /v1/notification-email)
+-- Configure URL in public.app_settings (notification_email_webhook_url).
 -- =============================================================================
 
 create extension if not exists pg_net with schema extensions;

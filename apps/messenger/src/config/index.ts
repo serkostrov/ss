@@ -7,6 +7,12 @@ export type MessengerConfig = {
   maxBotToken: string | null
   maxWebhookSecret: string | null
   publicWebhookBaseUrl: string | null
+  /** smtp.bz API key for notification emails (optional). */
+  smtpbzApiKey: string | null
+  smtpFrom: string | null
+  smtpFromName: string
+  appUrl: string | null
+  emailWebhookSecret: string | null
   logLevel: 'debug' | 'info' | 'warn' | 'error'
 }
 
@@ -66,6 +72,11 @@ export function loadConfig(): MessengerConfig {
     maxBotToken: optional('MAX_BOT_TOKEN'),
     maxWebhookSecret: optional('MAX_WEBHOOK_SECRET'),
     publicWebhookBaseUrl: normalizeWebhookBaseUrl(optional('PUBLIC_WEBHOOK_BASE_URL')),
+    smtpbzApiKey: optional('SMTPBZ_API_KEY'),
+    smtpFrom: optional('SMTP_FROM'),
+    smtpFromName: optional('SMTP_FROM_NAME') ?? 'АПСС «Северное сияние»',
+    appUrl: optional('APP_URL') ?? optional('VITE_APP_URL'),
+    emailWebhookSecret: optional('EMAIL_WEBHOOK_SECRET'),
     logLevel,
   }
 }
