@@ -63,6 +63,7 @@ type OutboundBody = {
   workGroupId?: string
   text?: string
   authorName?: string | null
+  chatKind?: string | null
   files?: Array<{ name?: string; mime?: string; dataBase64?: string }>
 }
 
@@ -112,7 +113,12 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
       }
 
       if (req.method === 'GET' && path === '/health') {
-        send(res, 200, { ok: true })
+        send(res, 200, {
+          ok: true,
+          service: 'messenger',
+          // Bump when outbound Max addressing changes — verify deploy via /health
+          build: 'max-dm-user-id-2026-08-05',
+        })
         return
       }
 
@@ -133,6 +139,7 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
             text: body.text ?? '',
             files: parseOutboundFiles(body),
             authorName: body.authorName ?? 'АПСС',
+            chatKind: body.chatKind?.trim() || null,
           })
 
           log('info', 'Outbound API ok', { userId: admin.userId, ...result })

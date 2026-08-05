@@ -226,34 +226,41 @@ function resolveMessageChat(update: MaxUpdate): ResolvedMaxChat | null {
 
   const recipient = message.recipient
   const rawType = recipient?.chat_type ?? update.chat?.type
-  let kind = mapChatKind(rawType)
+  const kind = mapChatKind(rawType)
+  const dialogChatId = recipient?.chat_id ?? update.chat_id ?? update.chat?.chat_id
+  // Peer for DMs is recipient.user_id — do NOT use sender.user_id (that breaks groups).
+  const peerUserId = recipient?.user_id
 
-  // Max sometimes omits chat_type on dialogs but still sends recipient.user_id.
-  if (kind === 'other' && recipient?.user_id != null) {
-    kind = 'private'
-  }
+  // Max DMs: chat_id is often 0; type may be dialog/private/omitted/"chat".
+  const looksLikeDialog =
+    peerUserId != null &&
+    peerUserId !== 0 &&
+    (kind === 'private' ||
+      kind === 'other' ||
+      dialogChatId == null ||
+      dialogChatId === 0)
 
-  if (kind === 'private') {
+  if (looksLikeDialog) {
     return resolvePrivateChat({
-      userId: recipient?.user_id ?? message.sender?.user_id ?? update.user?.user_id,
-      dialogChatId: recipient?.chat_id ?? update.chat_id ?? update.chat?.chat_id,
+      userId: peerUserId,
+      dialogChatId,
       user: message.sender ?? update.user ?? update.chat?.dialog_with_user,
       titleHint: update.chat?.title,
     })
   }
 
   if (kind === 'other') {
-    // Unknown type without user_id — skip catalog (same as Telegram skips "other").
     return null
   }
 
-  const chatId = recipient?.chat_id ?? update.chat_id ?? update.chat?.chat_id
-  if (chatId == null || chatId === 0) return null
+  if (dialogChatId == null || dialogChatId === 0) return null
+
+  const groupKind: ChatKind =
+    kind === 'channel' || kind === 'supergroup' || kind === 'group' ? kind : 'group'
 
   return {
-    externalChatId: String(chatId),
-    kind,
-    // Never fall back to sender name — that produced "Группа: Имя Фамилия".
+    externalChatId: String(dialogChatId),
+    kind: groupKind,
     title: update.chat?.title?.trim() || null,
     username: null,
   }

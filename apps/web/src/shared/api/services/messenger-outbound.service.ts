@@ -51,6 +51,9 @@ function outboundUrl(path = ''): string {
 }
 
 function mapOutboundError(error: string | undefined, status: number): string {
+  if (error?.startsWith('invalid_max_chat_id')) {
+    return 'Некорректный чат Max (часто id 0). Удалите привязку, напишите боту в ЛС и выберите чат «Личные».'
+  }
   return error === 'max_attachments_unsupported'
     ? 'Для Max пока можно отправлять только текст'
     : error === 'telegram_not_configured'
@@ -68,6 +71,93 @@ function mapOutboundError(error: string | undefined, status: number): string {
                 : status === 405
                   ? 'Messenger API не настроен (405). Задайте VITE_MESSENGER_API_URL на HTTPS-домен messenger.'
                   : (error ?? `Не удалось выполнить запрос (${status})`)
+}
+
+type MaxOutboundTarget = {
+  chatId: string
+  chatKind: string | null
+}
+
+/**
+ * Max DMs must use user_id. Legacy binds stored dialog chat_id "0".
+ * Heal connection + thread id before calling the worker.
+ */
+async function resolveMaxOutboundTarget(
+  workGroupId: string,
+  chatId: string,
+): Promise<MaxOutboundTarget> {
+  let id = chatId.trim()
+  let chatKind: string | null = null
+
+  if (id !== '0') {
+    const { data: catalog } = await supabaseClient
+      .from('messenger_bot_channels')
+      .select('chat_kind')
+      .eq('platform', 'max')
+      .eq('external_chat_id', id)
+      .maybeSingle()
+    chatKind = (catalog?.chat_kind as string | null) ?? null
+  }
+
+  if (id === '0') {
+    const { data: msg, error: msgError } = await supabaseClient
+      .from('messages')
+      .select('author_external_id')
+      .eq('work_group_id', workGroupId)
+      .eq('source', 'max')
+      .eq('external_chat_id', '0')
+      .not('author_external_id', 'is', null)
+      .neq('author_external_id', '0')
+      .order('sent_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (msgError) throw msgError
+
+    const userId = msg?.author_external_id?.trim()
+    if (!userId) {
+      throw new ApiError(
+        'Привязка Max с id 0. Удалите привязку, напишите боту в ЛС и выберите чат «Личные».',
+        { code: 'validation' },
+      )
+    }
+
+    await supabaseClient
+      .from('messenger_connections')
+      .update({ chat_id: userId, last_error: null, bot_status: 'connected' })
+      .eq('work_group_id', workGroupId)
+      .eq('platform', 'max')
+      .eq('chat_id', '0')
+
+    await supabaseClient
+      .from('messages')
+      .update({ external_chat_id: userId })
+      .eq('work_group_id', workGroupId)
+      .eq('source', 'max')
+      .eq('external_chat_id', '0')
+
+    id = userId
+    chatKind = 'private'
+  }
+
+  if (chatKind === 'private') {
+    return { chatId: id, chatKind: 'private' }
+  }
+
+  const { data: privateRow } = await supabaseClient
+    .from('messenger_bot_channels')
+    .select('chat_kind')
+    .eq('platform', 'max')
+    .eq('external_chat_id', id)
+    .eq('chat_kind', 'private')
+    .eq('is_active', true)
+    .maybeSingle()
+
+  if (privateRow) {
+    return { chatId: id, chatKind: 'private' }
+  }
+
+  return { chatId: id, chatKind }
 }
 
 /**
@@ -92,6 +182,14 @@ export const messengerOutboundService = {
       })),
     )
 
+    let chatId = input.chatId
+    let chatKind: string | null = null
+    if (input.platform === 'max') {
+      const target = await resolveMaxOutboundTarget(input.workGroupId, input.chatId)
+      chatId = target.chatId
+      chatKind = target.chatKind
+    }
+
     let response: Response
     try {
       response = await fetch(outboundUrl(), {
@@ -102,10 +200,11 @@ export const messengerOutboundService = {
         },
         body: JSON.stringify({
           platform: input.platform,
-          chatId: input.chatId,
+          chatId,
           workGroupId: input.workGroupId,
           text: input.text,
           authorName: input.authorName ?? 'АПСС',
+          chatKind,
           files,
         }),
       })

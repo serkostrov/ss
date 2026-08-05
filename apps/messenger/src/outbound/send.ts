@@ -16,6 +16,8 @@ export type OutboundSendInput = {
   text: string
   files: OutboundFile[]
   authorName?: string | null
+  /** Optional hint from web / catalog — Max DMs must use user_id. */
+  chatKind?: string | null
 }
 
 function detectContentType(files: OutboundFile[], text: string): MessageContentType {
@@ -118,12 +120,11 @@ async function sendTelegram(
 type MaxAddressMode = 'user_id' | 'chat_id'
 
 function maxAddressModes(chatKind: string | null): MaxAddressMode[] {
-  // Max DMs must use user_id. Sending chat_id for a dialog → chat.denied Invalid chatId: 0.
-  if (chatKind === 'private') return ['user_id']
+  // Always try both: catalog kind is often wrong for Max DMs (chat_id=0 / type=chat).
   if (chatKind === 'channel' || chatKind === 'group' || chatKind === 'supergroup') {
-    return ['chat_id']
+    return ['chat_id', 'user_id']
   }
-  // Catalog miss / unknown kind: try user_id first (typical DM bind), then chat_id.
+  // private / unknown → DM first
   return ['user_id', 'chat_id']
 }
 
@@ -306,7 +307,7 @@ export async function sendOutboundMessage(
   }
 
   let chatId = input.chatId.trim()
-  let chatKind: string | null = null
+  let chatKind: string | null = input.chatKind?.trim() || null
 
   if (input.platform === 'max' && chatId === '0') {
     const healed = await healMaxChatIdZero(db, input.workGroupId)
@@ -325,6 +326,22 @@ export async function sendOutboundMessage(
 
   if (input.platform === 'max' && !chatKind) {
     chatKind = await lookupMaxChatKind(db, chatId)
+  }
+
+  // Max personal chats must be addressed by user_id. Prefer private when catalog says so.
+  if (input.platform === 'max' && chatKind === 'private') {
+    // keep
+  } else if (input.platform === 'max' && chatId !== '0') {
+    // If an active private catalog row exists under this id, force DM addressing.
+    const { data: privateRow } = await db
+      .from('messenger_bot_channels')
+      .select('chat_kind')
+      .eq('platform', 'max')
+      .eq('external_chat_id', chatId)
+      .eq('chat_kind', 'private')
+      .eq('is_active', true)
+      .maybeSingle()
+    if (privateRow) chatKind = 'private'
   }
 
   let result: { externalMessageId: string }
