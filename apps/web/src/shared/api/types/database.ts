@@ -1123,6 +1123,7 @@ export type Database = {
           payload?: Json
           author_name?: string | null
           author_external_id?: string | null
+          external_chat_id?: string
           sent_at?: string
         }
         Relationships: []
