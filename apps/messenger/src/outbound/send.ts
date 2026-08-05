@@ -1,5 +1,6 @@
 import type { MessengerConfig } from '../config/index.js'
 import type { DbClient } from '../db.js'
+import { deleteLinkedAcrossPlatforms } from '../pipeline/delete-linked.js'
 import { ingestChannelMessage } from '../pipeline/ingest.js'
 import { relaySiblingChats } from '../pipeline/relay.js'
 import { log, type MessageContentType } from '../types.js'
@@ -24,17 +25,6 @@ function detectContentType(files: OutboundFile[], text: string): MessageContentT
   if (files.length) return 'document'
   if (text.trim()) return 'text'
   return 'other'
-}
-
-function withOptionalTlsInsecure<T>(fn: () => Promise<T>): Promise<T> {
-  const insecure = process.env.MAX_TLS_INSECURE === '1'
-  const previous = process.env.NODE_TLS_REJECT_UNAUTHORIZED
-  if (insecure) process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
-  return fn().finally(() => {
-    if (!insecure) return
-    if (previous === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
-    else process.env.NODE_TLS_REJECT_UNAUTHORIZED = previous
-  })
 }
 
 async function getBoundChatId(
@@ -156,84 +146,6 @@ export type OutboundDeleteInput = {
   messageId?: string | null
 }
 
-function isAlreadyGoneError(message: string): boolean {
-  const lower = message.toLowerCase()
-  return (
-    lower.includes('message to delete not found') ||
-    lower.includes('message_id_invalid') ||
-    lower.includes('message not found') ||
-    lower.includes('not found') ||
-    lower.includes('404')
-  )
-}
-
-async function deleteTelegram(
-  token: string,
-  chatId: string,
-  externalMessageId: string,
-): Promise<void> {
-  const messageId = Number(externalMessageId)
-  if (!Number.isFinite(messageId)) {
-    const err = new Error('invalid_external_message_id')
-    ;(err as Error & { status: number }).status = 400
-    throw err
-  }
-
-  const response = await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId,
-      message_id: messageId,
-    }),
-  })
-  const json = (await response.json()) as {
-    ok?: boolean
-    description?: string
-  }
-  if (json.ok) return
-  const description = json.description ?? 'Telegram deleteMessage failed'
-  if (isAlreadyGoneError(description)) return
-  throw new Error(description)
-}
-
-async function deleteMax(token: string, externalMessageId: string): Promise<void> {
-  const accessToken = token.replace(/^Bearer\s+/i, '').trim()
-  const response = await withOptionalTlsInsecure(() =>
-    fetch(
-      `https://platform-api2.max.ru/messages?message_id=${encodeURIComponent(externalMessageId)}`,
-      {
-        method: 'DELETE',
-        headers: { Authorization: accessToken },
-      },
-    ),
-  )
-
-  if (response.ok || response.status === 204) return
-  if (response.status === 404) return
-
-  const bodyText = await response.text()
-  if (isAlreadyGoneError(bodyText)) return
-  throw new Error(`Max delete failed: ${response.status} ${bodyText}`)
-}
-
-async function deleteLocalMessage(db: DbClient, input: OutboundDeleteInput): Promise<void> {
-  if (input.messageId?.trim()) {
-    const { error } = await db.from('messages').delete().eq('id', input.messageId.trim())
-    if (error) throw error
-    return
-  }
-
-  const { error } = await db
-    .from('messages')
-    .delete()
-    .eq('work_group_id', input.workGroupId)
-    .eq('source', input.platform)
-    .eq('external_message_id', input.externalMessageId)
-
-  if (error) throw error
-}
-
 export async function deleteOutboundMessage(
   db: DbClient,
   config: MessengerConfig,
@@ -260,25 +172,15 @@ export async function deleteOutboundMessage(
     throw err
   }
 
-  if (input.platform === 'telegram') {
-    if (!config.telegramBotToken) {
-      const err = new Error('telegram_not_configured')
-      ;(err as Error & { status: number }).status = 503
-      throw err
-    }
-    await deleteTelegram(config.telegramBotToken, input.chatId, externalMessageId)
-  } else {
-    if (!config.maxBotToken) {
-      const err = new Error('max_not_configured')
-      ;(err as Error & { status: number }).status = 503
-      throw err
-    }
-    await deleteMax(config.maxBotToken, externalMessageId)
-  }
+  await deleteLinkedAcrossPlatforms(db, config, {
+    workGroupId: input.workGroupId,
+    platform: input.platform,
+    chatId: input.chatId,
+    externalMessageId,
+    messageId: input.messageId,
+  })
 
-  await deleteLocalMessage(db, input)
-
-  log('info', 'Outbound message deleted', {
+  log('info', 'Outbound message deleted (with linked copies)', {
     platform: input.platform,
     chatId: input.chatId,
     externalMessageId,

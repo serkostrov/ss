@@ -117,7 +117,7 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
           ok: true,
           service: 'messenger',
           // Bump when outbound Max addressing changes — verify deploy via /health
-          build: 'cross-relay-tg-max-2026-08-05',
+          build: 'cross-delete-relay-2026-08-05',
         })
         return
       }

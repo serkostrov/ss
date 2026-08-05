@@ -1,6 +1,7 @@
 import type { DbClient } from '../db.js'
 import type { MessengerConfig } from '../config/index.js'
 import { markBotChannelInactive, upsertBotChannel } from '../pipeline/channels.js'
+import { deleteLinkedByExternalMessageId } from '../pipeline/delete-linked.js'
 import { ingestChannelMessage } from '../pipeline/ingest.js'
 import { relaySiblingChats } from '../pipeline/relay.js'
 import {
@@ -53,6 +54,8 @@ export type MaxUpdate = {
   update_type?: string
   timestamp?: number
   chat_id?: number
+  user_id?: number
+  message_id?: string
   user?: MaxUser
   message?: MaxMessage
   chat?: MaxChat
@@ -453,6 +456,26 @@ export async function handleMaxUpdate(
   }
   if (type === 'message_edited') {
     await handleMessageCreated(db, update, true, options)
+    return
+  }
+  if (type === 'message_removed') {
+    const mid = String(update.message_id ?? update.message?.body?.mid ?? '').trim()
+    if (!mid) {
+      log('warn', 'Max message_removed without message_id')
+      return
+    }
+    if (!options.config) {
+      log('warn', 'Max message_removed skipped — no config')
+      return
+    }
+    try {
+      await deleteLinkedByExternalMessageId(db, options.config, 'max', mid)
+    } catch (error) {
+      log('warn', 'Max message_removed cascade failed', {
+        mid,
+        message: error instanceof Error ? error.message : String(error),
+      })
+    }
   }
 }
 
@@ -467,6 +490,7 @@ export async function registerMaxWebhook(
     update_types: [
       'message_created',
       'message_edited',
+      'message_removed',
       'bot_added',
       'bot_removed',
       'bot_started',

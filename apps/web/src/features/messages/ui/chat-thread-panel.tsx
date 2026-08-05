@@ -364,7 +364,7 @@ export function ChatThreadPanel({
         title="Удалить сообщение?"
         description={
           deleting
-            ? `«${truncateMessageText(deleting.text, 80)}» будет удалено из чата на платформе и в мессенджере.`
+            ? `«${truncateMessageText(deleting.text, 80)}» будет удалено из Max/Telegram (если чаты связаны) и из истории.`
             : undefined
         }
         loading={deleteMutation.isPending}

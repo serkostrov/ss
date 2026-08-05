@@ -389,3 +389,79 @@ export async function deliverToBoundChat(
   const result = await sendMaxText(config.maxBotToken, chatId, text, chatKind)
   return { ...result, chatId, chatKind }
 }
+
+function isAlreadyGoneError(message: string): boolean {
+  const lower = message.toLowerCase()
+  return (
+    lower.includes('message to delete not found') ||
+    lower.includes('message_id_invalid') ||
+    lower.includes('message not found') ||
+    lower.includes('not found') ||
+    lower.includes('404')
+  )
+}
+
+export async function deleteTelegramMessage(
+  token: string,
+  chatId: string,
+  externalMessageId: string,
+): Promise<void> {
+  const messageId = Number(externalMessageId)
+  if (!Number.isFinite(messageId)) {
+    const err = new Error('invalid_external_message_id')
+    ;(err as Error & { status: number }).status = 400
+    throw err
+  }
+
+  const response = await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_id: messageId,
+    }),
+  })
+  const json = (await response.json()) as {
+    ok?: boolean
+    description?: string
+  }
+  if (json.ok) return
+  const description = json.description ?? 'Telegram deleteMessage failed'
+  if (isAlreadyGoneError(description)) return
+  throw new Error(description)
+}
+
+export async function deleteMaxMessage(token: string, externalMessageId: string): Promise<void> {
+  const accessToken = token.replace(/^Bearer\s+/i, '').trim()
+  const response = await withOptionalTlsInsecure(() =>
+    fetch(
+      `https://platform-api2.max.ru/messages?message_id=${encodeURIComponent(externalMessageId)}`,
+      {
+        method: 'DELETE',
+        headers: { Authorization: accessToken },
+      },
+    ),
+  )
+
+  if (response.ok || response.status === 204) return
+  if (response.status === 404) return
+
+  const bodyText = await response.text()
+  if (isAlreadyGoneError(bodyText)) return
+  throw new Error(`Max delete failed: ${response.status} ${bodyText}`)
+}
+
+export async function deleteFromPlatform(
+  config: MessengerConfig,
+  platform: 'telegram' | 'max',
+  chatId: string,
+  externalMessageId: string,
+): Promise<void> {
+  if (platform === 'telegram') {
+    if (!config.telegramBotToken) return
+    await deleteTelegramMessage(config.telegramBotToken, chatId, externalMessageId)
+    return
+  }
+  if (!config.maxBotToken) return
+  await deleteMaxMessage(config.maxBotToken, externalMessageId)
+}
