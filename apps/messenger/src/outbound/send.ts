@@ -1,5 +1,6 @@
 import type { MessengerConfig } from '../config/index.js'
 import type { DbClient } from '../db.js'
+import { markBotChannelInactive, upsertBotChannel } from '../pipeline/channels.js'
 import { ingestChannelMessage } from '../pipeline/ingest.js'
 import { log, type MessageContentType } from '../types.js'
 
@@ -164,6 +165,86 @@ async function lookupMaxChatKind(
 
   const kind = (msg?.payload as { max?: { chat_kind?: string } } | null)?.max?.chat_kind
   return kind ?? null
+}
+
+/**
+ * Latest human author on an inbound Max thread.
+ * Bound chat_id was often recipient.user_id (bot) — author_external_id is the real peer.
+ */
+async function resolveMaxDmPeerUserId(
+  db: DbClient,
+  workGroupId: string,
+  boundChatId: string,
+): Promise<string | null> {
+  const { data: rows } = await db
+    .from('messages')
+    .select('author_external_id, payload')
+    .eq('work_group_id', workGroupId)
+    .eq('source', 'max')
+    .eq('external_chat_id', boundChatId)
+    .not('author_external_id', 'is', null)
+    .neq('author_external_id', '0')
+    .order('sent_at', { ascending: false })
+    .limit(30)
+
+  for (const row of rows ?? []) {
+    const payload = row.payload as { outbound?: boolean } | null
+    if (payload?.outbound) continue
+    const id = String(row.author_external_id ?? '').trim()
+    if (id && id !== '0') return id
+  }
+  return null
+}
+
+async function rebindMaxConnectionChatId(
+  db: DbClient,
+  workGroupId: string,
+  fromChatId: string,
+  toChatId: string,
+): Promise<void> {
+  if (!toChatId || toChatId === '0' || fromChatId === toChatId) return
+
+  const { error: connErr } = await db
+    .from('messenger_connections')
+    .update({ chat_id: toChatId, last_error: null, bot_status: 'connected' })
+    .eq('work_group_id', workGroupId)
+    .eq('platform', 'max')
+    .eq('chat_id', fromChatId)
+
+  if (connErr) {
+    log('warn', 'Failed to rebind Max connection', {
+      workGroupId,
+      fromChatId,
+      toChatId,
+      message: connErr.message,
+    })
+  } else {
+    log('info', 'Rebound Max connection to peer user_id', {
+      workGroupId,
+      fromChatId,
+      toChatId,
+    })
+  }
+
+  await db
+    .from('messages')
+    .update({ external_chat_id: toChatId })
+    .eq('work_group_id', workGroupId)
+    .eq('source', 'max')
+    .eq('external_chat_id', fromChatId)
+
+  await upsertBotChannel(db, {
+    platform: 'max',
+    externalChatId: toChatId,
+    title: null,
+    username: null,
+    chatKind: 'private',
+    isActive: true,
+  })
+
+  if (fromChatId && fromChatId !== '0') {
+    await markBotChannelInactive(db, 'max', fromChatId)
+  }
 }
 
 /**
@@ -339,11 +420,8 @@ export async function sendOutboundMessage(
     chatKind = await lookupMaxChatKind(db, chatId)
   }
 
-  // Max personal chats must be addressed by user_id. Prefer private when catalog says so.
-  if (input.platform === 'max' && chatKind === 'private') {
-    // keep
-  } else if (input.platform === 'max' && chatId !== '0') {
-    // If an active private catalog row exists under this id, force DM addressing.
+  // If an active private catalog row exists under this id, force DM addressing.
+  if (input.platform === 'max' && chatKind !== 'private' && chatId !== '0') {
     const { data: privateRow } = await db
       .from('messenger_bot_channels')
       .select('chat_kind')
@@ -353,6 +431,21 @@ export async function sendOutboundMessage(
       .eq('is_active', true)
       .maybeSingle()
     if (privateRow) chatKind = 'private'
+  }
+
+  // Bound id was often Max recipient.user_id (bot). Send to inbound author (human).
+  if (
+    input.platform === 'max' &&
+    (chatKind === 'private' || chatKind === 'other' || !chatKind)
+  ) {
+    const peer = await resolveMaxDmPeerUserId(db, input.workGroupId, chatId)
+    if (peer) {
+      if (peer !== chatId) {
+        await rebindMaxConnectionChatId(db, input.workGroupId, chatId, peer)
+        chatId = peer
+      }
+      chatKind = 'private'
+    }
   }
 
   let result: { externalMessageId: string }

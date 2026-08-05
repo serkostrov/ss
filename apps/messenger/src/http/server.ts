@@ -117,7 +117,7 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
           ok: true,
           service: 'messenger',
           // Bump when outbound Max addressing changes — verify deploy via /health
-          build: 'max-dm-retry-not-found-2026-08-05',
+          build: 'max-dm-sender-user-id-2026-08-05',
         })
         return
       }

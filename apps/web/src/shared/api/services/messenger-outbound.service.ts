@@ -82,7 +82,7 @@ type MaxOutboundTarget = {
 }
 
 /**
- * Max DMs must use user_id. Legacy binds stored dialog chat_id "0".
+ * Max DMs must use user_id. Legacy binds stored dialog chat_id "0" or bot recipient.user_id.
  * Heal connection + thread id before calling the worker.
  */
 async function resolveMaxOutboundTarget(
@@ -103,60 +103,75 @@ async function resolveMaxOutboundTarget(
   }
 
   if (id === '0') {
-    const { data: msg, error: msgError } = await supabaseClient
+    chatKind = 'private'
+  }
+
+  if (chatKind !== 'private') {
+    const { data: privateRow } = await supabaseClient
+      .from('messenger_bot_channels')
+      .select('chat_kind')
+      .eq('platform', 'max')
+      .eq('external_chat_id', id)
+      .eq('chat_kind', 'private')
+      .eq('is_active', true)
+      .maybeSingle()
+    if (privateRow) chatKind = 'private'
+  }
+
+  // Inbound author = Max sender.user_id (human). Bound id was often recipient.user_id (bot).
+  if (chatKind === 'private' || id === '0' || !chatKind || chatKind === 'other') {
+    const { data: rows, error: msgError } = await supabaseClient
       .from('messages')
-      .select('author_external_id')
+      .select('author_external_id, payload')
       .eq('work_group_id', workGroupId)
       .eq('source', 'max')
-      .eq('external_chat_id', '0')
+      .eq('external_chat_id', id === '0' ? '0' : id)
       .not('author_external_id', 'is', null)
       .neq('author_external_id', '0')
       .order('sent_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .limit(30)
 
     if (msgError) throw msgError
 
-    const userId = msg?.author_external_id?.trim()
-    if (!userId) {
+    let peer: string | null = null
+    for (const row of rows ?? []) {
+      const payload = row.payload as { outbound?: boolean } | null
+      if (payload?.outbound) continue
+      const author = row.author_external_id?.trim()
+      if (author && author !== '0') {
+        peer = author
+        break
+      }
+    }
+
+    if (!peer && id === '0') {
       throw new ApiError(
         'Привязка Max с id 0. Удалите привязку, напишите боту в ЛС и выберите чат «Личные».',
         { code: 'validation' },
       )
     }
 
-    await supabaseClient
-      .from('messenger_connections')
-      .update({ chat_id: userId, last_error: null, bot_status: 'connected' })
-      .eq('work_group_id', workGroupId)
-      .eq('platform', 'max')
-      .eq('chat_id', '0')
+    if (peer) {
+      if (peer !== id) {
+        await supabaseClient
+          .from('messenger_connections')
+          .update({ chat_id: peer, last_error: null, bot_status: 'connected' })
+          .eq('work_group_id', workGroupId)
+          .eq('platform', 'max')
+          .eq('chat_id', id)
 
-    await supabaseClient
-      .from('messages')
-      .update({ external_chat_id: userId })
-      .eq('work_group_id', workGroupId)
-      .eq('source', 'max')
-      .eq('external_chat_id', '0')
-
-    id = userId
-    chatKind = 'private'
+        await supabaseClient
+          .from('messages')
+          .update({ external_chat_id: peer })
+          .eq('work_group_id', workGroupId)
+          .eq('source', 'max')
+          .eq('external_chat_id', id)
+      }
+      return { chatId: peer, chatKind: 'private' }
+    }
   }
 
   if (chatKind === 'private') {
-    return { chatId: id, chatKind: 'private' }
-  }
-
-  const { data: privateRow } = await supabaseClient
-    .from('messenger_bot_channels')
-    .select('chat_kind')
-    .eq('platform', 'max')
-    .eq('external_chat_id', id)
-    .eq('chat_kind', 'private')
-    .eq('is_active', true)
-    .maybeSingle()
-
-  if (privateRow) {
     return { chatId: id, chatKind: 'private' }
   }
 

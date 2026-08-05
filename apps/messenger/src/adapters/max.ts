@@ -14,6 +14,7 @@ type MaxUser = {
   username?: string
   first_name?: string
   last_name?: string
+  is_bot?: boolean
 }
 
 type MaxChat = {
@@ -225,26 +226,27 @@ function resolveMessageChat(update: MaxUpdate): ResolvedMaxChat | null {
   if (!message) return null
 
   const recipient = message.recipient
-  const rawType = recipient?.chat_type ?? update.chat?.type
+  const rawType = (recipient?.chat_type ?? update.chat?.type ?? '').toLowerCase()
   const kind = mapChatKind(rawType)
   const dialogChatId = recipient?.chat_id ?? update.chat_id ?? update.chat?.chat_id
-  // Peer for DMs is recipient.user_id — do NOT use sender.user_id (that breaks groups).
-  const peerUserId = recipient?.user_id
 
-  // Max DMs: chat_id is often 0; type may be dialog/private/omitted/"chat".
-  const looksLikeDialog =
-    peerUserId != null &&
-    peerUserId !== 0 &&
-    (kind === 'private' ||
-      kind === 'other' ||
-      dialogChatId == null ||
-      dialogChatId === 0)
+  const sender = message.sender
+  const senderId = sender?.user_id
+  // Max bots reply with sendMessageToUser(sender.user_id). recipient.user_id is often the bot.
+  const senderIsHuman = senderId != null && senderId !== 0 && sender?.is_bot !== true
 
-  if (looksLikeDialog) {
+  const isDialog =
+    rawType === 'dialog' ||
+    kind === 'private' ||
+    dialogChatId === 0 ||
+    (senderIsHuman && (kind === 'other' || dialogChatId == null))
+
+  if (isDialog) {
+    const peerUserId = senderIsHuman ? senderId : recipient?.user_id
     return resolvePrivateChat({
       userId: peerUserId,
       dialogChatId,
-      user: message.sender ?? update.user ?? update.chat?.dialog_with_user,
+      user: senderIsHuman ? sender : (update.user ?? update.chat?.dialog_with_user),
       titleHint: update.chat?.title,
     })
   }
