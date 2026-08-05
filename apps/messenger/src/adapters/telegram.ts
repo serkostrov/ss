@@ -1,6 +1,8 @@
+import type { MessengerConfig } from '../config/index.js'
 import type { DbClient } from '../db.js'
 import { markBotChannelInactive, upsertBotChannel } from '../pipeline/channels.js'
 import { ingestChannelMessage } from '../pipeline/ingest.js'
+import { relaySiblingChats } from '../pipeline/relay.js'
 import {
   contentPlaceholder,
   log,
@@ -19,6 +21,7 @@ type TelegramChat = {
 
 type TelegramUser = {
   id: number
+  is_bot?: boolean
   first_name?: string
   last_name?: string
   username?: string
@@ -115,11 +118,21 @@ function resolveAuthor(message: TelegramMessage): {
 
 async function handleIncomingMessage(
   db: DbClient,
+  config: MessengerConfig,
   message: TelegramMessage,
   isEdit: boolean,
 ): Promise<void> {
   const kind = mapChatKind(message.chat.type)
   if (kind === 'other') return
+
+  // Never relay/echo our own bot messages (prevents loops).
+  if (message.from?.is_bot) {
+    log('info', 'Telegram bot message ignored', {
+      chatId: message.chat.id,
+      messageId: message.message_id,
+    })
+    return
+  }
 
   const chatId = String(message.chat.id)
   await upsertBotChannel(db, {
@@ -153,11 +166,32 @@ async function handleIncomingMessage(
     isEdit,
   })
 
+  if (result.status !== 'skipped' && !isEdit) {
+    for (const item of result.items) {
+      try {
+        await relaySiblingChats(db, config, {
+          workGroupId: item.workGroupId,
+          sourcePlatform: 'telegram',
+          sourceChatId: chatId,
+          messageId: item.messageId,
+          text: resolveText(message, contentType),
+          contentType,
+          authorName: author.name,
+        })
+      } catch (relayError) {
+        log('warn', 'Telegram sibling relay failed', {
+          message: relayError instanceof Error ? relayError.message : String(relayError),
+          workGroupId: item.workGroupId,
+        })
+      }
+    }
+  }
+
   log('info', 'Telegram message processed', {
     chatId,
     kind,
     messageId: message.message_id,
-    result,
+    result: result.status,
     isEdit,
   })
 }
@@ -197,21 +231,25 @@ async function handleMyChatMember(
   log('info', 'Telegram my_chat_member', { chatId, kind, status, active: isActive })
 }
 
-export async function handleTelegramUpdate(db: DbClient, update: TelegramUpdate): Promise<void> {
+export async function handleTelegramUpdate(
+  db: DbClient,
+  update: TelegramUpdate,
+  config: MessengerConfig,
+): Promise<void> {
   if (update.message) {
-    await handleIncomingMessage(db, update.message, false)
+    await handleIncomingMessage(db, config, update.message, false)
     return
   }
   if (update.edited_message) {
-    await handleIncomingMessage(db, update.edited_message, true)
+    await handleIncomingMessage(db, config, update.edited_message, true)
     return
   }
   if (update.channel_post) {
-    await handleIncomingMessage(db, update.channel_post, false)
+    await handleIncomingMessage(db, config, update.channel_post, false)
     return
   }
   if (update.edited_channel_post) {
-    await handleIncomingMessage(db, update.edited_channel_post, true)
+    await handleIncomingMessage(db, config, update.edited_channel_post, true)
     return
   }
   if (update.my_chat_member) {

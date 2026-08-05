@@ -1,6 +1,8 @@
 import type { DbClient } from '../db.js'
+import type { MessengerConfig } from '../config/index.js'
 import { markBotChannelInactive, upsertBotChannel } from '../pipeline/channels.js'
 import { ingestChannelMessage } from '../pipeline/ingest.js'
+import { relaySiblingChats } from '../pipeline/relay.js'
 import {
   contentPlaceholder,
   log,
@@ -60,6 +62,7 @@ export type MaxUpdate = {
 
 export type MaxAdapterOptions = {
   accessToken?: string | null
+  config?: MessengerConfig | null
 }
 
 type ResolvedMaxChat = {
@@ -348,11 +351,21 @@ async function handleMessageCreated(
   db: DbClient,
   update: MaxUpdate,
   isEdit: boolean,
-  accessToken?: string | null,
+  options: MaxAdapterOptions = {},
 ): Promise<void> {
   const message = update.message
   if (!message) return
 
+  // Never relay/echo bot messages (prevents loops with our cross-posts).
+  if (message.sender?.is_bot) {
+    log('info', 'Max bot message ignored', {
+      mid: message.body?.mid ?? null,
+      userId: message.sender.user_id ?? null,
+    })
+    return
+  }
+
+  const accessToken = options.accessToken ?? null
   const resolved = resolveMessageChat(update)
   if (!resolved) {
     log('warn', 'Max message without resolvable chat', {
@@ -374,6 +387,7 @@ async function handleMessageCreated(
   const contentType = detectContentType(message)
   const author = resolveAuthor(message)
   const sentAtMs = message.timestamp ?? update.timestamp ?? Date.now()
+  const text = resolveText(message, contentType)
 
   const result = await ingestChannelMessage(db, {
     platform: 'max',
@@ -381,7 +395,7 @@ async function handleMessageCreated(
     externalMessageId: mid,
     authorName: author.name,
     authorExternalId: author.externalId,
-    text: resolveText(message, contentType),
+    text,
     contentType,
     payload: {
       max: {
@@ -393,7 +407,28 @@ async function handleMessageCreated(
     isEdit,
   })
 
-  log('info', 'Max message processed', { chatId, kind, mid, result, isEdit })
+  if (result.status !== 'skipped' && !isEdit && options.config) {
+    for (const item of result.items) {
+      try {
+        await relaySiblingChats(db, options.config, {
+          workGroupId: item.workGroupId,
+          sourcePlatform: 'max',
+          sourceChatId: chatId,
+          messageId: item.messageId,
+          text,
+          contentType,
+          authorName: author.name,
+        })
+      } catch (relayError) {
+        log('warn', 'Max sibling relay failed', {
+          message: relayError instanceof Error ? relayError.message : String(relayError),
+          workGroupId: item.workGroupId,
+        })
+      }
+    }
+  }
+
+  log('info', 'Max message processed', { chatId, kind, mid, result: result.status, isEdit })
 }
 
 export async function handleMaxUpdate(
@@ -413,11 +448,11 @@ export async function handleMaxUpdate(
     return
   }
   if (type === 'message_created') {
-    await handleMessageCreated(db, update, false, accessToken)
+    await handleMessageCreated(db, update, false, options)
     return
   }
   if (type === 'message_edited') {
-    await handleMessageCreated(db, update, true, accessToken)
+    await handleMessageCreated(db, update, true, options)
   }
 }
 

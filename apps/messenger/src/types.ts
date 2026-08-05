@@ -23,6 +23,8 @@ export type IngestMessageInput = {
   payload?: Record<string, unknown>
   sentAt: string
   isEdit?: boolean
+  /** When true, callers must not mirror to the sibling messenger. */
+  skipRelay?: boolean
 }
 
 export function contentPlaceholder(type: MessageContentType): string {

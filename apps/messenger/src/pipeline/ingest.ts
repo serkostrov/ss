@@ -1,11 +1,20 @@
 import type { DbClient } from '../db.js'
 import { log, type IngestMessageInput } from '../types.js'
 
+export type IngestStoredItem = {
+  workGroupId: string
+  messageId: string
+}
+
+export type IngestResult =
+  | { status: 'skipped' }
+  | { status: 'stored' | 'updated'; items: IngestStoredItem[] }
+
 async function persistForWorkGroup(
   db: DbClient,
   workGroupId: string,
   input: IngestMessageInput,
-): Promise<'stored' | 'updated'> {
+): Promise<{ status: 'stored' | 'updated'; messageId: string }> {
   const row = {
     work_group_id: workGroupId,
     source: input.platform,
@@ -46,7 +55,7 @@ async function persistForWorkGroup(
         .eq('id', existing.id)
 
       if (updateError) throw updateError
-      return 'updated'
+      return { status: 'updated', messageId: existing.id as string }
     }
   }
 
@@ -65,7 +74,23 @@ async function persistForWorkGroup(
     throw upsertError
   }
 
-  return input.isEdit ? 'updated' : 'stored'
+  const { data: stored, error: loadError } = await db
+    .from('messages')
+    .select('id')
+    .eq('work_group_id', row.work_group_id)
+    .eq('source', row.source)
+    .eq('external_message_id', row.external_message_id)
+    .maybeSingle()
+
+  if (loadError) throw loadError
+  if (!stored?.id) {
+    throw new Error('message_upsert_missing_id')
+  }
+
+  return {
+    status: input.isEdit ? 'updated' : 'stored',
+    messageId: stored.id as string,
+  }
 }
 
 /**
@@ -74,7 +99,7 @@ async function persistForWorkGroup(
 export async function ingestChannelMessage(
   db: DbClient,
   input: IngestMessageInput,
-): Promise<'stored' | 'updated' | 'skipped'> {
+): Promise<IngestResult> {
   const { data: connections, error: connectionError } = await db
     .from('messenger_connections')
     .select('id, work_group_id, bot_status')
@@ -91,12 +116,17 @@ export async function ingestChannelMessage(
   }
 
   if (!connections?.length) {
-    return 'skipped'
+    return { status: 'skipped' }
   }
 
-  let last: 'stored' | 'updated' = 'stored'
+  const items: IngestStoredItem[] = []
+  let lastStatus: 'stored' | 'updated' = 'stored'
+
   for (const connection of connections) {
-    last = await persistForWorkGroup(db, connection.work_group_id as string, input)
+    const workGroupId = connection.work_group_id as string
+    const persisted = await persistForWorkGroup(db, workGroupId, input)
+    lastStatus = persisted.status
+    items.push({ workGroupId, messageId: persisted.messageId })
 
     if (connection.bot_status !== 'connected') {
       await db
@@ -110,5 +140,5 @@ export async function ingestChannelMessage(
     }
   }
 
-  return last
+  return { status: lastStatus, items }
 }

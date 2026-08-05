@@ -117,7 +117,7 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
           ok: true,
           service: 'messenger',
           // Bump when outbound Max addressing changes — verify deploy via /health
-          build: 'max-dm-sender-user-id-2026-08-05',
+          build: 'cross-relay-tg-max-2026-08-05',
         })
         return
       }
@@ -246,7 +246,7 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
           updateId: body.update_id,
           kinds: kinds.length ? kinds : ['other'],
         })
-        await handleTelegramUpdate(db, body)
+        await handleTelegramUpdate(db, body, config)
         send(res, 200, { ok: true })
         return
       }
@@ -271,7 +271,7 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
               : 'unknown'
         log('info', 'Max webhook received', { updateType })
 
-        const maxOptions = { accessToken: config.maxBotToken }
+        const maxOptions = { accessToken: config.maxBotToken, config }
         if (Array.isArray(body)) {
           for (const item of body) {
             await handleMaxUpdate(db, item as MaxUpdate, maxOptions)
