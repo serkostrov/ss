@@ -65,14 +65,17 @@ export function MessagesHistoryPanel({
     if (lockedSource) setSource(lockedSource)
   }, [lockedSource])
 
-  const query = useMessages({
-    search: debouncedSearch,
-    workGroupId: workGroupId ?? groupFilter,
-    source: lockedSource ?? source,
-    deliveryStatus,
-    page,
-    pageSize,
-  })
+  const query = useMessages(
+    {
+      search: debouncedSearch,
+      workGroupId: workGroupId ?? groupFilter,
+      source: lockedSource ?? source,
+      deliveryStatus,
+      page,
+      pageSize,
+    },
+    { live: true },
+  )
 
   const items = query.data?.items ?? []
   const total = query.data?.total ?? 0

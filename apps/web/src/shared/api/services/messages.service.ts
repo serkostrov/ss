@@ -189,7 +189,8 @@ export const messagesService = {
 
   /**
    * Live updates for a bound chat thread (INSERT/UPDATE/DELETE).
-   * Requires `messages` in `supabase_realtime` publication.
+   * Requires `messages` in `supabase_realtime` publication and a working Realtime WS.
+   * Callers should also poll while the thread is open (WS often 403 on self-hosted).
    */
   subscribeChat(
     input: {
@@ -200,6 +201,11 @@ export const messagesService = {
     onChange: () => void,
   ): () => void {
     const channelName = `messages:${input.workGroupId}:${input.source}:${input.externalChatId}`
+
+    void supabaseClient.auth.getSession().then(({ data }) => {
+      void supabaseClient.realtime.setAuth(data.session?.access_token ?? null)
+    })
+
     const channel = supabaseClient
       .channel(channelName)
       .on(
@@ -224,7 +230,11 @@ export const messagesService = {
           onChange()
         },
       )
-      .subscribe()
+      .subscribe((status) => {
+        if (import.meta.env.DEV && (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT')) {
+          console.warn('[messages] realtime channel', status, channelName)
+        }
+      })
 
     return () => {
       void supabaseClient.removeChannel(channel)

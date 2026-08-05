@@ -194,3 +194,22 @@ Web nginx проксирует `/webhooks/` → messenger. Домен у web о�
 | Max: `fetch failed` | TLS; `MAX_TLS_INSECURE=1` или корневой CA Минцифры |
 | Чаты не в picker | Messenger не запущен / бот не в чате / webhook не зарегистрирован |
 | `/env.js` с `${VITE_...}` | Нет runtime `VITE_*` в Environment Dokploy |
+| `WebSocket …/realtime/v1/websocket` → **403** | См. раздел 7. Чат всё равно обновляется опросом (~2 с); для мгновенного Realtime почините Kong/прокси |
+
+---
+
+## 7. Realtime WebSocket 403 (self-hosted)
+
+Браузер: `wss://supabase…/realtime/v1/websocket?apikey=…` → handshake **403**.
+
+Это конфиг **Kong / Realtime / reverse proxy**, не фронтенда. REST API при этом может работать нормально.
+
+Проверьте по порядку:
+
+1. **Один и тот же `JWT_SECRET`** у Auth, Kong и Realtime; `ANON_KEY` / `SERVICE_ROLE_KEY` подписаны этим секретом.
+2. У сервиса Realtime: `API_JWT_SECRET` (или аналог) = тот же `JWT_SECRET`.
+3. Прокси (Traefik / Nginx / Cloudflare) пропускает **WebSocket Upgrade** на путь `/realtime/v1/`.
+4. Миграция `messages` в publication `supabase_realtime` применена (`000034`).
+5. В логах Realtime не должно быть `expected_claims_map` / JWT verify errors на handshake.
+
+Пока WS закрыт 403, открытый чат в web обновляется опросом каждые ~2 секунды.

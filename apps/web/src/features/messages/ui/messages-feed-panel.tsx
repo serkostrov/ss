@@ -121,12 +121,15 @@ export function MessagesFeedPanel({
 
   const pageSize = Math.min(100, chunks * PAGE_CHUNK)
 
-  const query = useMessages({
-    workGroupId: workGroupId ?? groupFilter,
-    source: lockedSource ?? source,
-    page: 1,
-    pageSize,
-  })
+  const query = useMessages(
+    {
+      workGroupId: workGroupId ?? groupFilter,
+      source: lockedSource ?? source,
+      page: 1,
+      pageSize,
+    },
+    { live: true },
+  )
 
   const items = query.data?.items ?? []
   const total = query.data?.total ?? 0

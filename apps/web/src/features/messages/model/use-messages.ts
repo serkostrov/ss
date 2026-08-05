@@ -18,9 +18,17 @@ function listKey(filters: MessagesListFilters) {
   })
 }
 
-export function useMessages(filters: MessagesListFilters) {
+type UseMessagesOptions = {
+  /** Poll while the chat thread is open (fallback when Realtime WS is blocked). */
+  live?: boolean
+}
+
+export function useMessages(filters: MessagesListFilters, options?: UseMessagesOptions) {
   return useSupabaseQuery(listKey(filters), () => messagesService.list(filters), {
     ensureFreshSession: true,
+    refetchInterval: options?.live ? 2_000 : false,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
     meta: { suppressErrorToast: true },
   })
 }

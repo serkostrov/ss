@@ -176,10 +176,12 @@ function resolvePrivateChat(params: {
   user?: MaxUser | null
   titleHint?: string | null
 }): ResolvedMaxChat | null {
-  if (params.userId == null) return null
+  if (params.userId == null || params.userId === 0) return null
   const externalChatId = String(params.userId)
   const dialogChatId =
-    params.dialogChatId != null && String(params.dialogChatId) !== externalChatId
+    params.dialogChatId != null &&
+    params.dialogChatId !== 0 &&
+    String(params.dialogChatId) !== externalChatId
       ? String(params.dialogChatId)
       : null
   return {
@@ -203,7 +205,7 @@ function resolveMembershipChat(update: MaxUpdate, eventType: string): ResolvedMa
 
   // bot_added / bot_removed — group or channel (never use adder's name as title).
   const chatId = update.chat_id ?? update.chat?.chat_id
-  if (chatId == null) return null
+  if (chatId == null || chatId === 0) return null
 
   const kind: ChatKind =
     update.is_channel === true || mapChatKind(update.chat?.type) === 'channel'
@@ -246,7 +248,7 @@ function resolveMessageChat(update: MaxUpdate): ResolvedMaxChat | null {
   }
 
   const chatId = recipient?.chat_id ?? update.chat_id ?? update.chat?.chat_id
-  if (chatId == null) return null
+  if (chatId == null || chatId === 0) return null
 
   return {
     externalChatId: String(chatId),

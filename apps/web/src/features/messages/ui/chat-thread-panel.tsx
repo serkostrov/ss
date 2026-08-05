@@ -222,13 +222,16 @@ export function ChatThreadPanel({
   }, [workGroupId, source, externalChatId])
 
   const pageSize = Math.min(100, chunks * PAGE_CHUNK)
-  const query = useMessages({
-    workGroupId,
-    source,
-    externalChatId,
-    page: 1,
-    pageSize,
-  })
+  const query = useMessages(
+    {
+      workGroupId,
+      source,
+      externalChatId,
+      page: 1,
+      pageSize,
+    },
+    { live: Boolean(workGroupId && externalChatId) },
+  )
 
   useChatMessagesRealtime({
     workGroupId,

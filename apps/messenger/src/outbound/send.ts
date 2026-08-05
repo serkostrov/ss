@@ -128,14 +128,29 @@ async function sendMax(
     throw err
   }
 
+  const trimmedId = chatId.trim()
+  if (!trimmedId || trimmedId === '0') {
+    const err = new Error(
+      'invalid_max_chat_id: привяжите чат заново (ЛС — user_id, группа/канал — chat_id)',
+    )
+    ;(err as Error & { status: number }).status = 400
+    throw err
+  }
+
   const accessToken = token.replace(/^Bearer\s+/i, '').trim()
-  const numericId = Number(chatId)
-  const useUserId =
-    chatKind === 'private' || (!Number.isNaN(numericId) && numericId > 0 && chatKind !== 'channel')
+  // Max: dialogs are addressed by user_id; groups/channels by chat_id.
+  // Never infer from "positive number" — group chat_ids can also be positive.
+  const useUserId = chatKind === 'private'
 
   const query = useUserId
-    ? `user_id=${encodeURIComponent(chatId)}`
-    : `chat_id=${encodeURIComponent(chatId)}`
+    ? `user_id=${encodeURIComponent(trimmedId)}`
+    : `chat_id=${encodeURIComponent(trimmedId)}`
+
+  log('info', 'Max outbound address', {
+    chatId: trimmedId,
+    chatKind,
+    mode: useUserId ? 'user_id' : 'chat_id',
+  })
 
   const response = await withOptionalTlsInsecure(() =>
     fetch(`https://platform-api2.max.ru/messages?${query}`, {

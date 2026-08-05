@@ -9,7 +9,7 @@ import type {
 
 import { toApiError } from '@shared/lib/errors'
 
-import { supabaseClient } from '../lib/client'
+import { supabaseClient, syncRealtimeAuth } from '../lib/client'
 import { fromSupabaseError, unwrapMaybe } from '../lib/helpers'
 import { sanitizeForLog } from '../lib/security'
 
@@ -232,6 +232,7 @@ export const authService = {
   async getSession(): Promise<Session | null> {
     const { data, error } = await supabaseClient.auth.getSession()
     throwAuth(error)
+    syncRealtimeAuth(data.session?.access_token)
     return data.session
   },
 
@@ -247,6 +248,7 @@ export const authService = {
   async refreshSession(): Promise<Session | null> {
     const { data, error } = await supabaseClient.auth.refreshSession()
     throwAuth(error)
+    syncRealtimeAuth(data.session?.access_token)
     return data.session
   },
 
@@ -423,6 +425,7 @@ export const authService = {
       if (import.meta.env.DEV) {
         console.info('[auth]', event, sanitizeForLog({ userId: session?.user?.id ?? null }))
       }
+      syncRealtimeAuth(session?.access_token)
       callback(event, session)
     })
     return { subscription: data.subscription }

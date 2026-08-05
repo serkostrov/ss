@@ -49,6 +49,9 @@ export const messengerBotChannelsService = {
       .order('title', { ascending: true, nullsFirst: false })
       .order('external_chat_id', { ascending: true })) as QueryResult<MessengerBotChannel[]>
 
-    return assertResult(result)
+    return assertResult(result).filter((channel) => {
+      const id = channel.external_chat_id?.trim()
+      return Boolean(id) && id !== '0'
+    })
   },
 }

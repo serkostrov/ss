@@ -86,8 +86,8 @@ export const messengerConnectionsService = {
 
   async upsert(input: MessengerConnectionInput): Promise<MessengerConnection> {
     const chatId = input.chat_id.trim()
-    if (!chatId) {
-      throw new ApiError('Укажите идентификатор чата', { code: 'validation' })
+    if (!chatId || chatId === '0') {
+      throw new ApiError('Укажите корректный идентификатор чата', { code: 'validation' })
     }
 
     const existing = await this.getByPlatform(input.work_group_id, input.platform)

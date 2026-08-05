@@ -32,5 +32,15 @@ export const supabaseClient: TypedSupabaseClient = createClient<Database>(
         'x-client-info': 'apss-web',
       },
     },
+    realtime: {
+      params: {
+        apikey: env.supabaseAnonKey,
+      },
+    },
   },
 )
+
+/** Keep Realtime JWT in sync with the auth session (required for RLS + self-hosted). */
+export function syncRealtimeAuth(accessToken: string | null | undefined): void {
+  void supabaseClient.realtime.setAuth(accessToken ?? null)
+}
