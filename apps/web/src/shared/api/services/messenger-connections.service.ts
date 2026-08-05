@@ -161,8 +161,8 @@ export const messengerConnectionsService = {
 
     const botStatus = input.bot_status ?? existing.bot_status
     const chatId = input.chat_id !== undefined ? input.chat_id.trim() : existing.chat_id
-    if (!chatId) {
-      throw new ApiError('Укажите идентификатор чата', { code: 'validation' })
+    if (!chatId || chatId === '0') {
+      throw new ApiError('Укажите корректный идентификатор чата', { code: 'validation' })
     }
 
     let connectedAt = existing.connected_at

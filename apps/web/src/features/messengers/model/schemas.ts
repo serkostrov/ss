@@ -8,7 +8,8 @@ export const messengerConnectionFormSchema = z.object({
     .string({ required_error: 'Выберите чат' })
     .trim()
     .min(1, 'Выберите чат')
-    .max(200, 'Слишком длинный идентификатор'),
+    .max(200, 'Слишком длинный идентификатор')
+    .refine((value) => value !== '0', 'Некорректный чат Max (id 0). Выберите ЛС или группу заново'),
   chatTitle: z.string().trim().max(300, 'Слишком длинное название').optional().or(z.literal('')),
 })
 
