@@ -3,11 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import {
   CheckCheck,
   ChevronRight,
+  ClipboardList,
+  FileText,
+  FolderPlus,
   Mail,
+  Package,
   PackageCheck,
   PackageX,
   Receipt,
   ReceiptText,
+  UserPlus,
 } from 'lucide-react'
 
 import { useAuth } from '@app/providers'
@@ -62,6 +67,36 @@ const TYPE_META: Record<
     icon: PackageX,
     tone: 'bg-destructive/10 text-destructive',
   },
+  registration_pending: {
+    label: 'Регистрация',
+    icon: UserPlus,
+    tone: 'bg-violet-500/10 text-violet-700 dark:text-violet-400',
+  },
+  product_moderation_pending: {
+    label: 'Модерация',
+    icon: Package,
+    tone: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+  },
+  category_suggestion_pending: {
+    label: 'Категория',
+    icon: FolderPlus,
+    tone: 'bg-sky-500/10 text-sky-700 dark:text-sky-400',
+  },
+  material_moderation_pending: {
+    label: 'Материал',
+    icon: FileText,
+    tone: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+  },
+  material_category_pending: {
+    label: 'Материал',
+    icon: ClipboardList,
+    tone: 'bg-sky-500/10 text-sky-700 dark:text-sky-400',
+  },
+  registration_confirmed: {
+    label: 'Регистрация',
+    icon: UserPlus,
+    tone: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+  },
 }
 
 function formatNotificationDate(value: string) {
@@ -90,7 +125,15 @@ function NotificationsSkeleton() {
   )
 }
 
-export function CabinetNotificationsPanel() {
+export function CabinetNotificationsPanel({
+  title = 'Уведомления',
+  description = 'События по вашей компании: счета, модерация продукции и другое.',
+  emptyDescription = 'Когда администратор выставит счёт или рассмотрит продукцию, здесь появится запись.',
+}: {
+  title?: string
+  description?: string
+  emptyDescription?: string
+} = {}) {
   const navigate = useNavigate()
   const { profile, refreshProfile } = useAuth()
   const [filter, setFilter] = useState<Filter>('all')
@@ -124,8 +167,8 @@ export function CabinetNotificationsPanel() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Уведомления"
-        description="События по вашей компании: счета, модерация продукции и другое."
+        title={title}
+        description={description}
         actions={
           unreadCount > 0 ? (
             <Button
@@ -189,7 +232,7 @@ export function CabinetNotificationsPanel() {
           description={
             filter === 'unread'
               ? 'Все уведомления уже прочитаны.'
-              : 'Когда администратор выставит счёт или рассмотрит продукцию, здесь появится запись.'
+              : emptyDescription
           }
         />
       ) : null}

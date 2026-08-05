@@ -50,6 +50,12 @@ export function isNotificationType(value: string): value is NotificationType {
     value === 'invoice_issued' ||
     value === 'invoice_paid' ||
     value === 'product_approved' ||
-    value === 'product_rejected'
+    value === 'product_rejected' ||
+    value === 'registration_pending' ||
+    value === 'product_moderation_pending' ||
+    value === 'category_suggestion_pending' ||
+    value === 'material_moderation_pending' ||
+    value === 'material_category_pending' ||
+    value === 'registration_confirmed'
   )
 }

@@ -27,6 +27,12 @@ export type NotificationType =
   | 'invoice_paid'
   | 'product_approved'
   | 'product_rejected'
+  | 'registration_pending'
+  | 'product_moderation_pending'
+  | 'category_suggestion_pending'
+  | 'material_moderation_pending'
+  | 'material_category_pending'
+  | 'registration_confirmed'
 
 /** Payload for confirm_registration → create representative (+ optional company). */
 export type CreateRepresentativePayload = {

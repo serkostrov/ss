@@ -1,9 +1,12 @@
 ﻿import { CanAccess } from '@features/auth/ui/can-access'
 import { permissions } from '@features/auth/model/permissions'
+import { useClearNavNotificationBadges } from '@features/notifications'
 import { ModerationFeed } from '@features/moderation-queue'
 import { ErrorState, PageHeader } from '@shared/ui'
 
 export function AdminRegistrationsPage() {
+  useClearNavNotificationBadges('registrations')
+
   return (
     <CanAccess
       permission={permissions['admin.registrations']}

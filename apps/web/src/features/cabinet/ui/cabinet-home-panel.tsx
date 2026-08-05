@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Building2, FileText, ShieldAlert, Vote } from 'lucide-react'
 
 import { useAuth } from '@app/providers'
+import { useClearNavNotificationBadges } from '@features/notifications'
 import { routes } from '@shared/config'
 import {
   Alert,
@@ -21,6 +22,7 @@ import {
 import { useCabinetMaterials } from '../model/use-cabinet-materials'
 
 export function CabinetHomePanel() {
+  useClearNavNotificationBadges('home')
   const { profile } = useAuth()
   const materials = useCabinetMaterials()
   const membership = profile?.membership

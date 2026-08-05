@@ -1,6 +1,8 @@
 import { NavLink } from 'react-router-dom'
 
+import { useAuth } from '@app/providers'
 import { usePermissions } from '@features/auth/model/use-permissions'
+import { useNotificationNavBadges } from '@features/notifications'
 import { cn } from '@shared/lib/utils'
 
 import { adminNavGroups, adminNavItems, type AdminNavItem } from '../model/nav'
@@ -15,15 +17,33 @@ function filterNavItems(can: (permission: AdminNavItem['permission']) => boolean
   return adminNavItems.filter((item) => can(item.permission))
 }
 
+function NavBadge({ count }: { count: number }) {
+  if (count <= 0) return null
+  return (
+    <span className="bg-primary text-primary-foreground ml-auto inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-medium tabular-nums">
+      {count > 99 ? '99+' : count}
+    </span>
+  )
+}
+
 export function AdminNav({ onNavigate, className, compact = false }: AdminNavProps) {
   const { can } = usePermissions()
+  const { profile } = useAuth()
+  const { badges } = useNotificationNavBadges(
+    profile?.role === 'admin' && profile.status !== 'blocked',
+  )
   const items = filterNavItems(can)
 
   if (compact) {
     return (
       <nav className={cn('flex flex-col gap-1', className)} aria-label="Меню админки">
         {items.map((item) => (
-          <NavItem key={item.id} item={item} onNavigate={onNavigate} />
+          <NavItem
+            key={item.id}
+            item={item}
+            onNavigate={onNavigate}
+            badgeCount={badges[item.id] ?? 0}
+          />
         ))}
       </nav>
     )
@@ -42,7 +62,12 @@ export function AdminNav({ onNavigate, className, compact = false }: AdminNavPro
             </p>
             <div className="flex flex-col gap-0.5">
               {groupItems.map((item) => (
-                <NavItem key={item.id} item={item} onNavigate={onNavigate} />
+                <NavItem
+                  key={item.id}
+                  item={item}
+                  onNavigate={onNavigate}
+                  badgeCount={badges[item.id] ?? 0}
+                />
               ))}
             </div>
           </div>
@@ -52,7 +77,15 @@ export function AdminNav({ onNavigate, className, compact = false }: AdminNavPro
   )
 }
 
-function NavItem({ item, onNavigate }: { item: AdminNavItem; onNavigate?: () => void }) {
+function NavItem({
+  item,
+  onNavigate,
+  badgeCount,
+}: {
+  item: AdminNavItem
+  onNavigate?: () => void
+  badgeCount: number
+}) {
   const Icon = item.icon
 
   return (
@@ -70,7 +103,8 @@ function NavItem({ item, onNavigate }: { item: AdminNavItem; onNavigate?: () => 
       }
     >
       <Icon className="size-4 shrink-0" aria-hidden />
-      <span className="truncate">{item.label}</span>
+      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+      <NavBadge count={badgeCount} />
     </NavLink>
   )
 }

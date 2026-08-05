@@ -4,6 +4,7 @@ import { routes } from '@shared/config'
 import { Separator } from '@shared/ui'
 
 import { AdminNav } from './admin-nav'
+import { AdminNotificationsNav } from './admin-notifications-nav'
 import { AdminUserMenu } from './admin-user-menu'
 
 type AdminSidebarProps = {
@@ -28,7 +29,8 @@ export function AdminSidebar({ onNavigate, className }: AdminSidebarProps) {
         <AdminNav onNavigate={onNavigate} />
       </div>
       <Separator className="bg-sidebar-border" />
-      <div className="p-3">
+      <div className="space-y-1 p-3">
+        <AdminNotificationsNav onNavigate={onNavigate} />
         <AdminUserMenu />
       </div>
     </div>
