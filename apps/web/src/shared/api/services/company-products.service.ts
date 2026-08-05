@@ -78,30 +78,31 @@ const PRODUCT_LIST_SELECT = `
   )
 `
 
-function mapProductRow<
-  T extends {
-    category: CompanyProduct['category'] | CompanyProduct['category'][]
-    okpd: CompanyProduct['okpd'] | CompanyProduct['okpd'][]
-    note: CompanyProduct['note'] | CompanyProduct['note'][]
-    pendingSuggestion:
+function mapProductRow(
+  row: TableRow<'company_products'> & {
+    category?: CompanyProduct['category'] | CompanyProduct['category'][] | null
+    okpd?: CompanyProduct['okpd'] | CompanyProduct['okpd'][] | null
+    note?: CompanyProduct['note'] | CompanyProduct['note'][] | null
+    pendingSuggestion?:
       | Array<{ id: string; suggested_name: string; status: string }>
       | { id: string; suggested_name: string; status: string }
       | null
-    company?: CompanyProduct['company'] | CompanyProduct['company'][]
+    company?: CompanyProduct['company'] | CompanyProduct['company'][] | null
   },
->(row: T): CompanyProduct {
+): CompanyProduct {
   const suggestions = Array.isArray(row.pendingSuggestion)
     ? row.pendingSuggestion
     : row.pendingSuggestion
       ? [row.pendingSuggestion]
       : []
   const pending = suggestions.find((item) => item.status === 'pending') ?? null
+  const { category, okpd, note, company, pendingSuggestion: _, ...base } = row
   return {
-    ...row,
-    category: normalizeRelation(row.category),
-    okpd: normalizeRelation(row.okpd),
-    note: normalizeRelation(row.note),
-    company: normalizeRelation(row.company),
+    ...base,
+    category: normalizeRelation(category),
+    okpd: normalizeRelation(okpd),
+    note: normalizeRelation(note),
+    company: normalizeRelation(company),
     pendingSuggestion: pending
       ? { id: pending.id, suggested_name: pending.suggested_name }
       : null,
