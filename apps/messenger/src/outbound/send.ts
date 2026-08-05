@@ -128,13 +128,15 @@ function maxAddressModes(chatKind: string | null): MaxAddressMode[] {
   return ['user_id', 'chat_id']
 }
 
-function isMaxInvalidChatIdZero(status: number, body: string): boolean {
+function isRetryableMaxAddressError(status: number, body: string): boolean {
   if (status !== 403 && status !== 400 && status !== 404) return false
   const lower = body.toLowerCase()
   return (
     lower.includes('invalid chatid: 0') ||
-    lower.includes('"chat.denied"') ||
-    lower.includes('chat.denied')
+    lower.includes('chat.denied') ||
+    lower.includes('chat.not.found') ||
+    lower.includes('chat not found') ||
+    lower.includes('not.found')
   )
 }
 
@@ -279,16 +281,25 @@ async function sendMax(
       return { externalMessageId: mid }
     }
 
-    lastFailure = `Max send failed: ${response.status} ${bodyText}`
+    lastFailure = `Max send failed (${mode}=${trimmedId}, kind=${chatKind ?? 'unknown'}): ${response.status} ${bodyText}`
     const canRetry =
-      i < modes.length - 1 && isMaxInvalidChatIdZero(response.status, bodyText)
+      i < modes.length - 1 && isRetryableMaxAddressError(response.status, bodyText)
     if (!canRetry) break
 
     log('warn', 'Max outbound retry with alternate address mode', {
       chatId: trimmedId,
       from: mode,
       to: modes[i + 1],
+      status: response.status,
     })
+  }
+
+  if (lastFailure.toLowerCase().includes('chat.not.found')) {
+    const err = new Error(
+      'max_chat_not_found: чат Max не найден. Для ЛС пользователь должен написать боту; удалите привязку и выберите чат «Личные» заново. Группа/канал — id чата, не user_id.',
+    )
+    ;(err as Error & { status: number }).status = 404
+    throw err
   }
 
   throw new Error(lastFailure || 'Max send failed')

@@ -54,6 +54,9 @@ function mapOutboundError(error: string | undefined, status: number): string {
   if (error?.startsWith('invalid_max_chat_id')) {
     return 'Некорректный чат Max (часто id 0). Удалите привязку, напишите боту в ЛС и выберите чат «Личные».'
   }
+  if (error?.startsWith('max_chat_not_found') || error?.includes('chat.not.found')) {
+    return 'Чат Max не найден. Пользователь должен написать боту в ЛС; затем перепривяжите чат «Личные». Для группы нужен id чата.'
+  }
   return error === 'max_attachments_unsupported'
     ? 'Для Max пока можно отправлять только текст'
     : error === 'telegram_not_configured'
