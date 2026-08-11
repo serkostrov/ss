@@ -25,6 +25,11 @@ function isStatus(value: unknown): value is UserStatus {
   return value === 'pending' || value === 'confirmed' || value === 'blocked'
 }
 
+/** Staff (admin) account blocked — must not stay in an authenticated app shell. */
+export function isBlockedStaff(profile: AuthProfile | null | undefined): boolean {
+  return profile?.role === 'admin' && profile.status === 'blocked'
+}
+
 /** Build effective profile from DB row or auth metadata fallback. */
 export function resolveAuthProfile(user: User, dbProfile: AuthProfile | null): AuthProfile {
   if (dbProfile) {
@@ -66,10 +71,11 @@ export function resolveAuthProfile(user: User, dbProfile: AuthProfile | null): A
 }
 
 export function getPostLoginPath(profile: AuthProfile): string {
+  if (isBlockedStaff(profile)) {
+    return routes.login
+  }
+
   if (profile.role === 'admin') {
-    if (profile.status === 'blocked') {
-      return routes.forbidden
-    }
     return routes.admin.root
   }
 
@@ -88,11 +94,18 @@ export function assertAuthenticated(state: AccessState): AccessDecision {
   if (!state.isAuthenticated) {
     return { allow: false, redirectTo: routes.login, reason: 'unauthenticated' }
   }
+  if (isBlockedStaff(state.profile)) {
+    return { allow: false, redirectTo: routes.login, reason: 'staff_blocked' }
+  }
   return { allow: true }
 }
 
 export function assertGuest(state: AccessState): AccessDecision {
   if (!state.isAuthenticated || !state.profile) {
+    return { allow: true }
+  }
+  // Allow login form while session is cleared for blocked staff.
+  if (isBlockedStaff(state.profile)) {
     return { allow: true }
   }
   return {
@@ -115,9 +128,6 @@ export function assertRole(state: AccessState, role: UserRole): AccessDecision {
   if (role === 'admin') {
     if (state.role !== 'admin') {
       return { allow: false, redirectTo: routes.forbidden, reason: 'wrong_role' }
-    }
-    if (state.status === 'blocked') {
-      return { allow: false, redirectTo: routes.forbidden, reason: 'staff_blocked' }
     }
     if (dual && state.activeSurface === 'cabinet') {
       return { allow: false, redirectTo: routes.cabinet.root, reason: 'acting_as_member' }
@@ -149,9 +159,6 @@ export function assertMemberStatus(state: AccessState, required: UserStatus): Ac
   if (!roleCheck.allow) return roleCheck
 
   if (isDualRoleStaff(state.profile) && state.activeSurface === 'cabinet') {
-    if (state.status === 'blocked') {
-      return { allow: false, redirectTo: routes.forbidden, reason: 'staff_blocked' }
-    }
     if (!state.profile?.membership) {
       return { allow: false, redirectTo: routes.admin.root, reason: 'no_company_membership' }
     }

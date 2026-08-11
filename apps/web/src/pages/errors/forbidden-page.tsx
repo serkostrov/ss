@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { ShieldOff } from 'lucide-react'
 
 import { useAuth } from '@app/providers'
-import { getPostLoginPath } from '@features/auth'
+import { getPostLoginPath, LogoutButton } from '@features/auth'
 import { routes } from '@shared/config'
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui'
 
@@ -23,9 +23,18 @@ export function ForbiddenPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
-          <Button asChild>
-            <Link to={home}>В доступный раздел</Link>
-          </Button>
+          {isAuthenticated ? (
+            <LogoutButton variant="default" label="Выйти и войти под другим аккаунтом" />
+          ) : (
+            <Button asChild>
+              <Link to={routes.login}>Войти</Link>
+            </Button>
+          )}
+          {isAuthenticated && home !== routes.login ? (
+            <Button asChild variant="outline">
+              <Link to={home}>В доступный раздел</Link>
+            </Button>
+          ) : null}
           <Button asChild variant="outline">
             <Link to={routes.home}>На главную</Link>
           </Button>

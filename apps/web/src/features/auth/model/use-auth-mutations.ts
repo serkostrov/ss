@@ -12,7 +12,7 @@ import { appConfig, routes } from '@shared/config'
 import { getErrorMessage } from '@shared/lib/errors'
 import { notify } from '@shared/lib/notify'
 
-import { resolveAuthProfile } from './access'
+import { isBlockedStaff, resolveAuthProfile } from './access'
 import { clearActiveSurface } from './active-surface'
 import type {
   LoginFormValues,
@@ -24,6 +24,7 @@ import type {
 export function useLoginMutation() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { signOut } = useAuth()
 
   return useMutation({
     mutationFn: async (values: LoginFormValues) => {
@@ -33,6 +34,21 @@ export function useLoginMutation() {
     },
     meta: { suppressErrorToast: true },
     onSuccess: (profile) => {
+      if (isBlockedStaff(profile)) {
+        void (async () => {
+          try {
+            await signOut()
+          } catch {
+            // ignore
+          }
+          clearIntendedRoute()
+          clearActiveSurface()
+          notify.error('Учётная запись заблокирована. Войдите под другим аккаунтом.')
+          navigate(routes.login, { replace: true })
+        })()
+        return
+      }
+
       notify.success('Вы вошли в систему')
       const state = location.state as LoginLocationState | null
       navigate(resolvePostAuthRedirect(profile, state), { replace: true })

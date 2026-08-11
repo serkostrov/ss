@@ -13,6 +13,7 @@ export type {
 
 export {
   resolveAuthProfile,
+  isBlockedStaff,
   getPostLoginPath,
   assertAuthenticated,
   assertGuest,
