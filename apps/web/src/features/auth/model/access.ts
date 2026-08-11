@@ -2,11 +2,17 @@ import type { AuthProfile, User } from '@shared/api'
 import { routes } from '@shared/config'
 import type { UserRole, UserStatus } from '@shared/types'
 
+import {
+  isDualRoleStaff,
+  type ActiveSurface,
+} from './active-surface'
+
 export type AccessState = {
   isAuthenticated: boolean
   role: UserRole | null
   status: UserStatus | null
   profile: AuthProfile | null
+  activeSurface: ActiveSurface
 }
 
 export type AccessDecision = { allow: true } | { allow: false; redirectTo: string; reason: string }
@@ -106,25 +112,53 @@ export function assertRole(state: AccessState, role: UserRole): AccessDecision {
     return { allow: false, redirectTo: routes.login, reason: 'missing_role' }
   }
 
-  if (state.role !== role) {
-    return { allow: false, redirectTo: routes.forbidden, reason: 'wrong_role' }
-  }
+  const dual = isDualRoleStaff(state.profile)
 
-  if (role === 'admin' && state.status === 'blocked') {
-    return { allow: false, redirectTo: routes.forbidden, reason: 'staff_blocked' }
-  }
-
-  if (role === 'member' && state.status === 'blocked') {
-    // blocked members may only see blocked page — enforced by route tree
+  if (role === 'admin') {
+    if (state.role !== 'admin') {
+      return { allow: false, redirectTo: routes.forbidden, reason: 'wrong_role' }
+    }
+    if (state.status === 'blocked') {
+      return { allow: false, redirectTo: routes.forbidden, reason: 'staff_blocked' }
+    }
+    if (dual && state.activeSurface === 'cabinet') {
+      return { allow: false, redirectTo: routes.cabinet.root, reason: 'acting_as_member' }
+    }
     return { allow: true }
   }
 
-  return { allow: true }
+  // role === 'member'
+  if (state.role === 'member') {
+    if (state.status === 'blocked') {
+      return { allow: true }
+    }
+    return { allow: true }
+  }
+
+  if (dual && state.activeSurface === 'cabinet') {
+    return { allow: true }
+  }
+
+  if (dual && state.activeSurface === 'admin') {
+    return { allow: false, redirectTo: routes.admin.root, reason: 'acting_as_admin' }
+  }
+
+  return { allow: false, redirectTo: routes.forbidden, reason: 'wrong_role' }
 }
 
 export function assertMemberStatus(state: AccessState, required: UserStatus): AccessDecision {
   const roleCheck = assertRole(state, 'member')
   if (!roleCheck.allow) return roleCheck
+
+  if (isDualRoleStaff(state.profile) && state.activeSurface === 'cabinet') {
+    if (state.status === 'blocked') {
+      return { allow: false, redirectTo: routes.forbidden, reason: 'staff_blocked' }
+    }
+    if (!state.profile?.membership) {
+      return { allow: false, redirectTo: routes.admin.root, reason: 'no_company_membership' }
+    }
+    return { allow: true }
+  }
 
   if (state.status === 'blocked') {
     return { allow: false, redirectTo: routes.cabinet.blocked, reason: 'blocked' }

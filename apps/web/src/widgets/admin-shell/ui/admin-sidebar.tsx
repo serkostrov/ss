@@ -21,7 +21,8 @@ export function AdminSidebar({ onNavigate, className }: AdminSidebarProps) {
           onClick={onNavigate}
           className="block focus-visible:outline-none"
         >
-          <p className="text-sidebar-foreground mt-1 font-semibold">Северное сияние</p>
+          <p className="text-sidebar-foreground mt-1 font-semibold">АПСС(ЭР)</p>
+          <p className="text-sidebar-foreground/55 mt-0.5 text-xs">Админ-панель</p>
         </Link>
       </div>
       <Separator className="bg-sidebar-border" />

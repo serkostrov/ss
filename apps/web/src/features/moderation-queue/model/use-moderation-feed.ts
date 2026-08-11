@@ -9,6 +9,7 @@ import {
   useProductCategorySuggestions,
 } from '@features/product-categories'
 import { useRegistrationApplications } from '@features/registrations'
+import { useWorkGroupMembershipRequests } from '@features/work-groups'
 import { routes } from '@shared/config'
 
 import type {
@@ -35,6 +36,7 @@ export function useModerationFeed(
   const canRegistrations = can(permissions['admin.registrations'])
   const canCompanies = can(permissions['admin.companies'])
   const canMaterials = can(permissions['admin.materials'])
+  const canWorkGroups = can(permissions['admin.workGroups'])
 
   const registrations = useRegistrationApplications({ status: 'all' })
   const products = useCompanyProductsForModeration('all')
@@ -42,6 +44,7 @@ export function useModerationFeed(
   const productCategories = useProductCategories()
   const materials = useMaterialSectionsForModeration('all')
   const materialCategories = useMaterialCategoriesForModeration('all')
+  const membershipRequests = useWorkGroupMembershipRequests('all')
 
   const activeQueries = [
     canRegistrations ? registrations : null,
@@ -49,6 +52,7 @@ export function useModerationFeed(
     canCompanies ? productSuggestions : null,
     canMaterials ? materials : null,
     canMaterials ? materialCategories : null,
+    canWorkGroups ? membershipRequests : null,
   ].filter(Boolean)
 
   const isLoading = activeQueries.some((query) => query?.isLoading && !query.data)
@@ -95,18 +99,21 @@ export function useModerationFeed(
             ? `предложение: ${row.proposed_note_name}`
             : pendingSuggestion
               ? `+ категория «${pendingSuggestion.suggested_name}»`
-              : 'без примечания')
+              : null)
+
+        const okpdLabel = row.proposed_okpd_code
+          ? `${row.proposed_okpd_code} — ${row.proposed_okpd_title ?? ''}`
+          : row.okpd
+            ? `${row.okpd.code} — ${row.okpd.title}`
+            : null
 
         next.push({
           id: `product:${row.id}`,
           kind: 'product',
-          title: row.proposed_okpd_code
-            ? `${row.proposed_okpd_code} — ${row.proposed_okpd_title ?? row.name}`
-            : row.okpd
-              ? `${row.okpd.code} — ${row.okpd.title}`
-              : row.name,
+          title: row.name,
           subtitle: [
             row.company?.name ?? 'Компания',
+            okpdLabel,
             noteLabel,
             row.proposed_okpd_code ? 'новый ОКПД → в справочник' : null,
           ]
@@ -174,14 +181,38 @@ export function useModerationFeed(
       }
     }
 
+    if (canWorkGroups) {
+      for (const row of membershipRequests.data ?? []) {
+        const kindLabel = row.kind === 'join' ? 'Вступление' : 'Выход'
+        next.push({
+          id: `workGroupMembership:${row.id}`,
+          kind: 'workGroupMembership',
+          title: row.workGroup?.name ?? 'Рабочая группа',
+          subtitle: [
+            kindLabel,
+            row.company?.name ?? 'Компания',
+            row.representative?.full_name || row.representative?.email || null,
+          ]
+            .filter(Boolean)
+            .join(' · '),
+          href: row.work_group_id ? routes.admin.workGroup(row.work_group_id) : undefined,
+          status: row.status,
+          sortAt: row.created_at,
+          rawId: row.id,
+        })
+      }
+    }
+
     next.sort((a, b) => +new Date(b.sortAt) - +new Date(a.sortAt))
     return next
   }, [
     canCompanies,
     canMaterials,
     canRegistrations,
+    canWorkGroups,
     materialCategories.data,
     materials.data,
+    membershipRequests.data,
     productSuggestions.data,
     products.data,
     registrations.data,
@@ -200,6 +231,7 @@ export function useModerationFeed(
       productCategory: 0,
       material: 0,
       materialCategory: 0,
+      workGroupMembership: 0,
     }
     for (const item of statusScoped) base[item.kind] += 1
     return base

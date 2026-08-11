@@ -3,23 +3,30 @@ import { ApiError } from '@shared/lib/errors'
 import { supabaseClient } from '../lib/client'
 import type { TableRow, UserStatus } from '../types/database'
 
-export type StaffUser = Pick<
-  TableRow<'users'>,
-  | 'id'
-  | 'email'
-  | 'full_name'
-  | 'status'
-  | 'staff_position'
-  | 'is_ceo'
-  | 'can_manage_work_groups'
-  | 'created_at'
->
+export type StaffUser = {
+  id: string
+  email: string
+  full_name: string | null
+  status: UserStatus
+  staff_position: string | null
+  is_ceo: boolean
+  can_manage_work_groups: boolean
+  created_at: string
+  representative_id: string | null
+  company_id: string | null
+  company_name: string | null
+  company_position: string | null
+  is_primary: boolean
+}
 
 export type PromoteStaffInput = {
   userId: string
   staffPosition?: string | null
   isCeo?: boolean
   canManageWorkGroups?: boolean
+  companyId?: string | null
+  companyPosition?: string | null
+  isPrimary?: boolean
 }
 
 export type UpdateStaffInput = {
@@ -28,6 +35,36 @@ export type UpdateStaffInput = {
   staffPosition?: string | null
   isCeo?: boolean | null
   canManageWorkGroups?: boolean | null
+}
+
+export type DemoteStaffInput = {
+  userId: string
+  companyId: string
+  position?: string | null
+  isPrimary?: boolean
+}
+
+export type BindStaffCompanyInput = {
+  userId: string
+  companyId: string
+  position?: string | null
+  isPrimary?: boolean
+}
+
+type StaffListRow = {
+  id: string
+  email: string
+  full_name: string | null
+  status: UserStatus
+  staff_position: string | null
+  is_ceo: boolean
+  can_manage_work_groups: boolean
+  created_at: string
+  representative_id: string | null
+  company_id: string | null
+  company_name: string | null
+  company_position: string | null
+  is_primary: boolean
 }
 
 type QueryResult<T> = {
@@ -46,7 +83,8 @@ function assertResult<T>(result: QueryResult<T>): T {
   return result.data
 }
 
-function mapStaff(row: TableRow<'users'>): StaffUser {
+function mapStaff(row: StaffListRow | TableRow<'users'>): StaffUser {
+  const extended = row as StaffListRow
   return {
     id: row.id,
     email: row.email,
@@ -56,14 +94,17 @@ function mapStaff(row: TableRow<'users'>): StaffUser {
     is_ceo: row.is_ceo,
     can_manage_work_groups: row.can_manage_work_groups,
     created_at: row.created_at,
+    representative_id: extended.representative_id ?? null,
+    company_id: extended.company_id ?? null,
+    company_name: extended.company_name ?? null,
+    company_position: extended.company_position ?? null,
+    is_primary: extended.is_primary ?? false,
   }
 }
 
 export const staffService = {
   async list(): Promise<StaffUser[]> {
-    const result = (await supabaseClient.rpc('list_staff_users')) as QueryResult<
-      TableRow<'users'>[]
-    >
+    const result = (await supabaseClient.rpc('list_staff_users')) as QueryResult<StaffListRow[]>
     return assertResult(result).map(mapStaff)
   },
 
@@ -74,7 +115,16 @@ export const staffService = {
       p_is_ceo: input.isCeo ?? false,
       p_can_manage_work_groups: input.canManageWorkGroups ?? true,
     })) as QueryResult<TableRow<'users'>>
-    return mapStaff(assertResult(result))
+    const promoted = mapStaff(assertResult(result))
+
+    if (!input.companyId) return promoted
+
+    return this.bindCompany({
+      userId: input.userId,
+      companyId: input.companyId,
+      position: input.companyPosition ?? null,
+      isPrimary: input.isPrimary ?? false,
+    })
   },
 
   async update(input: UpdateStaffInput): Promise<StaffUser> {
@@ -95,6 +145,33 @@ export const staffService = {
     const result = (await supabaseClient.rpc('set_staff_status', {
       p_user_id: userId,
       p_status: status,
+    })) as QueryResult<TableRow<'users'>>
+    return mapStaff(assertResult(result))
+  },
+
+  async demote(input: DemoteStaffInput): Promise<StaffUser> {
+    const result = (await supabaseClient.rpc('demote_from_staff', {
+      p_user_id: input.userId,
+      p_company_id: input.companyId,
+      p_position: input.position ?? null,
+      p_is_primary: input.isPrimary ?? false,
+    })) as QueryResult<TableRow<'users'>>
+    return mapStaff(assertResult(result))
+  },
+
+  async bindCompany(input: BindStaffCompanyInput): Promise<StaffUser> {
+    const result = (await supabaseClient.rpc('bind_staff_to_company', {
+      p_user_id: input.userId,
+      p_company_id: input.companyId,
+      p_position: input.position ?? null,
+      p_is_primary: input.isPrimary ?? false,
+    })) as QueryResult<TableRow<'users'>>
+    return mapStaff(assertResult(result))
+  },
+
+  async unbindCompany(userId: string): Promise<StaffUser> {
+    const result = (await supabaseClient.rpc('unbind_staff_from_company', {
+      p_user_id: userId,
     })) as QueryResult<TableRow<'users'>>
     return mapStaff(assertResult(result))
   },

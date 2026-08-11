@@ -162,6 +162,16 @@ const RPC_AUDIT: Partial<Record<RpcName, RpcAuditSpec>> = {
     entity_type: 'work_groups',
     entityId: (args) => String(args.p_work_group_id ?? ''),
   },
+  request_work_group_membership: {
+    action: 'work_group_membership_requests.create',
+    entity_type: 'work_group_membership_requests',
+    entityId: (args) => String(args.p_work_group_id ?? ''),
+  },
+  review_work_group_membership_request: {
+    action: 'work_group_membership_requests.review',
+    entity_type: 'work_group_membership_requests',
+    entityId: (args) => String(args.p_request_id ?? ''),
+  },
 }
 
 /**

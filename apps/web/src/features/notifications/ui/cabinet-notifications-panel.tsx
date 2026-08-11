@@ -13,6 +13,7 @@ import {
   Receipt,
   ReceiptText,
   UserPlus,
+  UsersRound,
 } from 'lucide-react'
 
 import { useAuth } from '@app/providers'
@@ -91,6 +92,11 @@ const TYPE_META: Record<
     label: 'Материал',
     icon: ClipboardList,
     tone: 'bg-sky-500/10 text-sky-700 dark:text-sky-400',
+  },
+  work_group_membership_pending: {
+    label: 'Раб. группа',
+    icon: UsersRound,
+    tone: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
   },
   registration_confirmed: {
     label: 'Регистрация',

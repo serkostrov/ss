@@ -295,7 +295,7 @@ export function CabinetProductsPanel({
                     <TableCell className="px-3 py-2.5 align-middle">
                       <ProductIdentity
                         code={product.okpd_code}
-                        title={product.okpd_title ?? product.name}
+                        title={product.name}
                         note={product.note_name}
                       />
                     </TableCell>

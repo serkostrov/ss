@@ -2,6 +2,7 @@ import { Menu } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
 import { useAuth } from '@app/providers'
+import { isExitedCompany } from '@features/cabinet/model/company-access'
 import { Button, Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@shared/ui'
 
 import { CabinetSidebar } from './cabinet-sidebar'
@@ -13,12 +14,18 @@ type CabinetShellProps = {
 export function CabinetShell({ children }: CabinetShellProps) {
   const { profile } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const showNav = profile?.status === 'confirmed'
+  const exited = isExitedCompany(profile)
+  const showNav = profile?.status === 'confirmed' && !exited
+  const companyOnly = exited
 
   return (
     <div className="bg-background flex min-h-svh">
       <aside className="border-sidebar-border bg-sidebar text-sidebar-foreground sticky top-0 hidden h-svh w-60 shrink-0 flex-col border-r lg:flex">
-        <CabinetSidebar showNav={showNav} className="flex h-full flex-col" />
+        <CabinetSidebar
+          showNav={showNav}
+          companyOnly={companyOnly}
+          className="flex h-full flex-col"
+        />
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -46,6 +53,7 @@ export function CabinetShell({ children }: CabinetShellProps) {
                   </SheetHeader>
                   <CabinetSidebar
                     showNav={showNav}
+                    companyOnly={companyOnly}
                     className="flex h-full flex-col"
                     onNavigate={() => setMobileOpen(false)}
                   />

@@ -148,6 +148,9 @@ const MEMBER_POLL_SELECT = `
     text,
     sort_order,
     created_at
+  ),
+  poll_level_access (
+    participation_level_id
   )
 `
 
@@ -237,12 +240,14 @@ type MemberPollRow = {
   status: PollStatus
   created_at: string
   poll_options: PollOption[] | null
+  poll_level_access: Array<{ participation_level_id: string }> | null
 }
 
 type MemberVoteRow = {
   poll_id: string
   poll_option_id: string
   representative_id: string
+  company_id: string
   voted_at: string
   poll_options: Pick<PollOption, 'text'> | Pick<PollOption, 'text'>[] | null
 }
@@ -330,29 +335,41 @@ function normalizeMemberPoll(row: MemberPollRow, vote: MemberPollVote | null): C
 
 async function loadMemberVotes(
   pollIds: string[],
-  representativeId: string | null | undefined,
+  opts: {
+    representativeId: string | null | undefined
+    companyId: string | null | undefined
+  },
 ): Promise<Map<string, MemberPollVote>> {
   const map = new Map<string, MemberPollVote>()
   if (!pollIds.length) return map
 
-  const result = (await supabaseClient
+  let query = supabaseClient
     .from('poll_votes')
     .select(
       `
       poll_id,
       poll_option_id,
       representative_id,
+      company_id,
       voted_at,
       poll_options ( text )
     `,
     )
-    .in('poll_id', pollIds)) as unknown as QueryResult<MemberVoteRow[]>
+    .in('poll_id', pollIds)
+
+  // Narrow for dual-role staff (admin RLS otherwise returns every vote).
+  if (opts.companyId) {
+    query = query.eq('company_id', opts.companyId)
+  } else if (opts.representativeId) {
+    query = query.eq('representative_id', opts.representativeId)
+  }
+
+  const result = (await query) as unknown as QueryResult<MemberVoteRow[]>
 
   const rows = assertResult(result)
   for (const row of rows) {
-    // Prefer own vote if several company votes somehow appear.
     const existing = map.get(row.poll_id)
-    const isOwn = Boolean(representativeId && row.representative_id === representativeId)
+    const isOwn = Boolean(opts.representativeId && row.representative_id === opts.representativeId)
     if (existing && !isOwn) continue
 
     const option = firstRelation(row.poll_options)
@@ -364,6 +381,20 @@ async function loadMemberVotes(
     })
   }
   return map
+}
+
+function filterPollsForCompanyLevel(
+  rows: MemberPollRow[],
+  participationLevelId: string | null | undefined,
+): MemberPollRow[] {
+  if (!participationLevelId) return rows
+  const now = Date.now()
+  return rows.filter((row) => {
+    if (row.starts_at && new Date(row.starts_at).getTime() > now) return false
+    if (row.ends_at && new Date(row.ends_at).getTime() < now) return false
+    const levels = row.poll_level_access ?? []
+    return levels.some((link) => link.participation_level_id === participationLevelId)
+  })
 }
 
 /**
@@ -530,6 +561,8 @@ export const pollsService = {
     const user = await authService.getUser()
     const profile = user ? await authService.getProfile(user.id) : null
     const representativeId = profile?.membership?.representativeId ?? null
+    const companyId = profile?.membership?.companyId ?? null
+    const levelId = profile?.membership?.participationLevelId ?? null
 
     const result = (await supabaseClient
       .from('polls')
@@ -538,10 +571,10 @@ export const pollsService = {
       .order('ends_at', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: false })) as unknown as QueryResult<MemberPollRow[]>
 
-    const rows = assertResult(result)
+    const rows = filterPollsForCompanyLevel(assertResult(result), levelId)
     const votes = await loadMemberVotes(
       rows.map((row) => row.id),
-      representativeId,
+      { representativeId, companyId },
     )
 
     return rows.map((row) => normalizeMemberPoll(row, votes.get(row.id) ?? null))
@@ -552,6 +585,8 @@ export const pollsService = {
     const user = await authService.getUser()
     const profile = user ? await authService.getProfile(user.id) : null
     const representativeId = profile?.membership?.representativeId ?? null
+    const companyId = profile?.membership?.companyId ?? null
+    const levelId = profile?.membership?.participationLevelId ?? null
 
     const result = (await supabaseClient
       .from('polls')
@@ -563,8 +598,11 @@ export const pollsService = {
     const row = assertResult(result)
     if (!row) return null
 
-    const votes = await loadMemberVotes([row.id], representativeId)
-    return normalizeMemberPoll(row, votes.get(row.id) ?? null)
+    const [allowed] = filterPollsForCompanyLevel([row], levelId)
+    if (!allowed) return null
+
+    const votes = await loadMemberVotes([allowed.id], { representativeId, companyId })
+    return normalizeMemberPoll(allowed, votes.get(allowed.id) ?? null)
   },
 
   async castVote(pollId: string, optionId: string): Promise<TableRow<'poll_votes'>> {

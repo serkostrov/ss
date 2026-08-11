@@ -11,6 +11,8 @@ export { CabinetMaterialDetailsPanel } from './ui/cabinet-material-details-panel
 export { CabinetDocumentsPanel } from './ui/cabinet-documents-panel'
 export { CabinetPollsPanel } from './ui/cabinet-polls-panel'
 export { CabinetPollBallotPanel } from './ui/cabinet-poll-ballot-panel'
+export { CabinetWorkGroupsPanel } from './ui/cabinet-work-groups-panel'
+export { CabinetWorkGroupDetailsPanel } from './ui/cabinet-work-group-details-panel'
 export { CabinetInvoicesPanel } from './ui/cabinet-invoices-panel'
 export { CabinetInvoiceDetailsPanel } from './ui/cabinet-invoice-details-panel'
 
@@ -31,12 +33,26 @@ export {
 export type { CabinetPoll } from './model/use-cabinet-polls'
 
 export {
+  useCabinetWorkGroups,
+  useCabinetWorkGroupsSearch,
+  useCabinetWorkGroup,
+  useCabinetWorkGroupLinks,
+  useRequestWorkGroupMembershipMutation,
+} from './model/use-cabinet-work-groups'
+
+export {
   useOwnCompany,
   useUpdateOwnCompanyMutation,
   useAssociationDirectory,
   useDirectoryCompany,
   useCabinetPollAccessHint,
 } from './model/use-cabinet-company'
+
+export {
+  isExitedCompany,
+  isSuspendedCompany,
+  exitedCompanyPath,
+} from './model/company-access'
 
 export { useCabinetProductsCatalog } from './model/use-cabinet-products'
 export type {

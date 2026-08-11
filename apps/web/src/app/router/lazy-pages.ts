@@ -170,6 +170,14 @@ export const CabinetPollDetailsPage = lazyNamed(
   () => import('@pages/cabinet/poll-details-page'),
   'CabinetPollDetailsPage',
 )
+export const CabinetWorkGroupsPage = lazyNamed(
+  () => import('@pages/cabinet/work-groups-page'),
+  'CabinetWorkGroupsPage',
+)
+export const CabinetWorkGroupDetailsPage = lazyNamed(
+  () => import('@pages/cabinet/work-group-details-page'),
+  'CabinetWorkGroupDetailsPage',
+)
 export const CabinetNotificationsPage = lazyNamed(
   () => import('@pages/cabinet/notifications-page'),
   'CabinetNotificationsPage',

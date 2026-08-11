@@ -38,6 +38,11 @@ export {
 } from './model/use-work-group-links'
 
 export {
+  useWorkGroupMembershipRequests,
+  useReviewWorkGroupMembershipRequestMutation,
+} from './model/use-work-group-membership-requests'
+
+export {
   workGroupFormSchema,
   workGroupStatusFilterSchema,
   workGroupStatusLabel,

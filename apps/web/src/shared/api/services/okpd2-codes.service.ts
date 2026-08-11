@@ -39,7 +39,6 @@ export const okpd2CodesService = {
     let query = supabaseClient
       .from('okpd2_codes')
       .select('*')
-      .order('sort_order', { ascending: true })
       .order('code', { ascending: true })
     if (activeOnly) query = query.eq('is_active', true)
     return assertResult((await query) as QueryResult<Okpd2Code[]>)
@@ -88,15 +87,32 @@ export const okpd2CodesService = {
 
   update(
     id: string,
-    values: { code?: string; title?: string; is_active?: boolean; parent_id?: string | null },
+    values: {
+      code?: string
+      title?: string
+      is_active?: boolean
+      parent_id?: string | null
+    },
   ) {
-    return dataService.updateById('okpd2_codes', id, {
-      code: values.code?.trim(),
-      title: values.title?.trim(),
-      is_active: values.is_active,
-      parent_id: values.parent_id,
+    const code = values.code?.trim()
+    const payload: {
+      code?: string
+      title?: string
+      is_active?: boolean
+      parent_id?: string | null
+      level?: number
+      updated_at: string
+    } = {
       updated_at: new Date().toISOString(),
-    })
+    }
+    if (code !== undefined) {
+      payload.code = code
+      payload.level = inferLevel(code)
+    }
+    if (values.title !== undefined) payload.title = values.title.trim()
+    if (values.is_active !== undefined) payload.is_active = values.is_active
+    if (values.parent_id !== undefined) payload.parent_id = values.parent_id
+    return dataService.updateById('okpd2_codes', id, payload)
   },
 
   async delete(id: string): Promise<void> {

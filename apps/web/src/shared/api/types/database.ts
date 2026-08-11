@@ -22,6 +22,8 @@ export type ProductCategorySuggestionStatus = 'pending' | 'approved' | 'rejected
 export type ProductModerationStatus = 'pending' | 'approved' | 'rejected'
 export type MaterialModerationStatus = 'pending' | 'approved' | 'rejected'
 export type InvoiceStatus = 'issued' | 'paid'
+export type WorkGroupMembershipRequestKind = 'join' | 'leave'
+export type WorkGroupMembershipRequestStatus = 'pending' | 'approved' | 'rejected'
 export type NotificationType =
   | 'invoice_issued'
   | 'invoice_paid'
@@ -32,6 +34,7 @@ export type NotificationType =
   | 'category_suggestion_pending'
   | 'material_moderation_pending'
   | 'material_category_pending'
+  | 'work_group_membership_pending'
   | 'registration_confirmed'
 
 /** Payload for confirm_registration → create representative (+ optional company). */
@@ -714,6 +717,46 @@ export type Database = {
           work_group_id?: string
           representative_id?: string
           added_by?: string | null
+        }
+        Relationships: []
+      }
+      work_group_membership_requests: {
+        Row: {
+          id: string
+          work_group_id: string
+          representative_id: string
+          company_id: string
+          requested_by: string
+          kind: WorkGroupMembershipRequestKind
+          status: WorkGroupMembershipRequestStatus
+          review_note: string | null
+          reviewed_by: string | null
+          reviewed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          work_group_id: string
+          representative_id: string
+          company_id: string
+          requested_by: string
+          kind: WorkGroupMembershipRequestKind
+          status?: WorkGroupMembershipRequestStatus
+          review_note?: string | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          work_group_id?: string
+          representative_id?: string
+          company_id?: string
+          requested_by?: string
+          kind?: WorkGroupMembershipRequestKind
+          status?: WorkGroupMembershipRequestStatus
+          review_note?: string | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
         }
         Relationships: []
       }
@@ -1452,7 +1495,21 @@ export type Database = {
       }
       list_staff_users: {
         Args: Record<string, never>
-        Returns: Database['public']['Tables']['users']['Row'][]
+        Returns: {
+          id: string
+          email: string
+          full_name: string | null
+          status: UserStatus
+          staff_position: string | null
+          is_ceo: boolean
+          can_manage_work_groups: boolean
+          created_at: string
+          representative_id: string | null
+          company_id: string | null
+          company_name: string | null
+          company_position: string | null
+          is_primary: boolean
+        }[]
       }
       promote_to_staff: {
         Args: {
@@ -1480,9 +1537,62 @@ export type Database = {
         }
         Returns: Database['public']['Tables']['users']['Row']
       }
+      demote_from_staff: {
+        Args: {
+          p_user_id: string
+          p_company_id: string
+          p_position?: string | null
+          p_is_primary?: boolean
+        }
+        Returns: Database['public']['Tables']['users']['Row']
+      }
+      bind_staff_to_company: {
+        Args: {
+          p_user_id: string
+          p_company_id: string
+          p_position?: string | null
+          p_is_primary?: boolean
+        }
+        Returns: Database['public']['Tables']['users']['Row']
+      }
+      unbind_staff_from_company: {
+        Args: { p_user_id: string }
+        Returns: Database['public']['Tables']['users']['Row']
+      }
       get_cabinet_poll_access_hint: {
         Args: Record<string, never>
         Returns: Json
+      }
+      list_cabinet_work_groups: {
+        Args: Record<string, never>
+        Returns: {
+          id: string
+          name: string
+          description: string | null
+          status: WorkGroupStatus
+          category_id: string | null
+          category_name: string | null
+          is_member: boolean
+          joined_at: string | null
+          pending_request_id: string | null
+          pending_request_kind: WorkGroupMembershipRequestKind | null
+          pending_request_at: string | null
+        }[]
+      }
+      request_work_group_membership: {
+        Args: {
+          p_work_group_id: string
+          p_kind: WorkGroupMembershipRequestKind
+        }
+        Returns: Database['public']['Tables']['work_group_membership_requests']['Row']
+      }
+      review_work_group_membership_request: {
+        Args: {
+          p_request_id: string
+          p_approve: boolean
+          p_note?: string | null
+        }
+        Returns: Database['public']['Tables']['work_group_membership_requests']['Row']
       }
       set_invoice_status: {
         Args: {

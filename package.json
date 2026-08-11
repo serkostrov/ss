@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "АПСС «Северное сияние» — информационная система ассоциации",
+  "description": "АПСС(ЭР) — информационная система ассоциации",
   "workspaces": [
     "apps/*",
     "packages/*"

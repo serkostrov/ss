@@ -1,11 +1,14 @@
 import { useMemo } from 'react'
 
 import { useAuth } from '@app/providers'
+
 import type { AccessState } from './access'
+import { useActiveSurface } from './active-surface'
 import { getPermissionsForRole, hasPermission, type Permission } from './permissions'
 
 export function usePermissions() {
   const { isAuthenticated, profile } = useAuth()
+  const { activeSurface } = useActiveSurface(profile)
 
   const access = useMemo<AccessState>(
     () => ({
@@ -13,8 +16,9 @@ export function usePermissions() {
       role: profile?.role ?? null,
       status: profile?.status ?? null,
       profile,
+      activeSurface,
     }),
-    [isAuthenticated, profile],
+    [isAuthenticated, profile, activeSurface],
   )
 
   return useMemo(() => {

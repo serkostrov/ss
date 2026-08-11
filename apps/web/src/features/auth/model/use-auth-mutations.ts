@@ -13,6 +13,7 @@ import { getErrorMessage } from '@shared/lib/errors'
 import { notify } from '@shared/lib/notify'
 
 import { resolveAuthProfile } from './access'
+import { clearActiveSurface } from './active-surface'
 import type {
   LoginFormValues,
   RegisterFormValues,
@@ -121,6 +122,7 @@ export function useLogoutMutation() {
     mutationFn: async () => {
       await signOut()
       clearIntendedRoute()
+      clearActiveSurface()
     },
     meta: { suppressErrorToast: true },
     onSuccess: () => {

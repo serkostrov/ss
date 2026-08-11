@@ -94,6 +94,10 @@ export const queryKeys = {
     categoriesList: (filters: { search?: string; active?: string }) =>
       ['apss', 'work-groups', 'categories', 'list', filters] as const,
     categoryUsage: (id: string) => ['apss', 'work-groups', 'categories', 'usage', id] as const,
+    cabinetList: ['apss', 'work-groups', 'cabinet', 'list'] as const,
+    cabinetDetail: (id: string) => ['apss', 'work-groups', 'cabinet', id] as const,
+    membershipRequests: (status: string) =>
+      ['apss', 'work-groups', 'membership-requests', status] as const,
   },
   messages: {
     all: ['apss', 'messages'] as const,

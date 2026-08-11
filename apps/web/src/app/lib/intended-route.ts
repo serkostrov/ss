@@ -1,4 +1,5 @@
 import { getPostLoginPath } from '@features/auth/model/access'
+import { isDualRoleStaff } from '@features/auth/model/active-surface'
 import type { AuthProfile } from '@shared/api'
 import { routes } from '@shared/config'
 
@@ -77,6 +78,7 @@ function canAccessIntendedPath(profile: AuthProfile, path: string): boolean {
   }
 
   if (pathname.startsWith(routes.cabinet.root)) {
+    if (isDualRoleStaff(profile)) return true
     if (profile.role !== 'member') return false
     if (pathname === routes.cabinet.pending) return true
     if (pathname === routes.cabinet.blocked) return true

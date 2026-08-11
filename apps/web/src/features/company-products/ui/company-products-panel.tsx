@@ -142,8 +142,13 @@ export function CompanyProductsPanel({
                           ) : null}
                         </div>
                         <p className="line-clamp-2 text-sm font-medium leading-snug">
-                          {product.okpd?.title ?? product.proposed_okpd_title ?? product.name}
+                          {product.name}
                         </p>
+                        {product.okpd?.title || product.proposed_okpd_title ? (
+                          <p className="text-muted-foreground line-clamp-2 text-xs leading-snug">
+                            {product.okpd?.title ?? product.proposed_okpd_title}
+                          </p>
+                        ) : null}
                         {product.review_note && product.moderation_status === 'rejected' ? (
                           <p className="text-destructive text-[11px]">{product.review_note}</p>
                         ) : null}

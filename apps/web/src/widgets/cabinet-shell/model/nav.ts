@@ -2,6 +2,7 @@ import type { LucideIcon } from 'lucide-react'
 import {
   FileText,
   Home,
+  Network,
   Package,
   Receipt,
   UsersRound,
@@ -56,6 +57,13 @@ export const cabinetNavItems: CabinetNavItem[] = [
     to: routes.cabinet.polls,
     label: 'Голосования',
     icon: Vote,
+    group: 'activity',
+  },
+  {
+    id: 'workGroups',
+    to: routes.cabinet.workGroups,
+    label: 'Рабочие группы',
+    icon: Network,
     group: 'activity',
   },
   {

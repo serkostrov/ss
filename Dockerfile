@@ -1,4 +1,4 @@
-# АПСС «Северное сияние» — production web (SPA) for Dokploy
+# АПСС(ЭР) — production web (SPA) for Dokploy
 # Runtime env (Dokploy Environment): VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_APP_URL,
 # VITE_TELEGRAM_BOT_URL, VITE_MAX_BOT_URL, VITE_MESSENGER_API_URL
 

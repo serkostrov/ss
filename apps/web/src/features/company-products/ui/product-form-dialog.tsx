@@ -27,9 +27,15 @@ import {
 } from '../model/use-company-products'
 
 const CUSTOM_VALUE = '__custom__'
+const NONE_NOTE_VALUE = '__none__'
 
 const productFormSchema = z
   .object({
+    name: z
+      .string()
+      .trim()
+      .min(2, 'Укажите наименование')
+      .max(200, 'Наименование слишком длинное'),
     proposeOkpd: z.boolean(),
     okpdCodeId: z.string().optional(),
     proposedOkpdCode: z.string().optional(),
@@ -71,18 +77,13 @@ const productFormSchema = z
           message: 'Укажите примечание',
         })
       }
-    } else if (!value.noteId) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['noteId'],
-        message: 'Выберите примечание',
-      })
     }
   })
 
 type ProductFormValues = z.infer<typeof productFormSchema>
 
 const emptyValues: ProductFormValues = {
+  name: '',
   proposeOkpd: false,
   okpdCodeId: '',
   proposedOkpdCode: '',
@@ -98,6 +99,7 @@ function valuesFromProduct(product: CompanyProduct | null | undefined): ProductF
   const proposeOkpd = Boolean(product.proposed_okpd_code)
   const proposeNote = Boolean(product.proposed_note_name)
   return {
+    name: product.name ?? '',
     proposeOkpd,
     okpdCodeId: proposeOkpd ? '' : (product.okpd_code_id ?? ''),
     proposedOkpdCode: product.proposed_okpd_code ?? '',
@@ -111,6 +113,7 @@ function valuesFromProduct(product: CompanyProduct | null | undefined): ProductF
 
 function toPayload(values: ProductFormValues): CompanyProductUpdateInput {
   return {
+    name: values.name.trim(),
     okpdCodeId: values.proposeOkpd ? null : (values.okpdCodeId || null),
     noteId: values.proposeNote ? null : (values.noteId || null),
     proposedOkpdCode: values.proposeOkpd ? values.proposedOkpdCode?.trim() : null,
@@ -257,7 +260,7 @@ function OkpdCodePicker({
           onOpenAutoFocus={(event) => event.preventDefault()}
           onCloseAutoFocus={(event) => event.preventDefault()}
         >
-          <ul className="max-h-56 overflow-y-auto overscroll-contain py-1" role="listbox">
+          <ul className="max-h-72 overflow-y-auto overscroll-contain py-1" role="listbox">
             {options.length === 0 && search.trim() ? (
               <li className="text-muted-foreground px-3 py-3 text-center text-sm">
                 Ничего не найдено
@@ -279,7 +282,7 @@ function OkpdCodePicker({
                       <span className="mt-0.5 w-[6.5rem] shrink-0 font-mono text-xs font-medium">
                         {item.code}
                       </span>
-                      <span className="text-muted-foreground line-clamp-2 min-w-0 flex-1 text-xs">
+                      <span className="text-muted-foreground min-w-0 flex-1 text-xs whitespace-normal break-words">
                         {item.title}
                       </span>
                       {active ? <Check className="text-primary mt-0.5 size-3.5 shrink-0" /> : null}
@@ -379,6 +382,22 @@ export function ProductFormDialog({
       }
     >
       <div className="space-y-3">
+        <FormField label="Наименование" required error={errors.name}>
+          <Input
+            value={values.name}
+            onChange={(event) => {
+              setValues((prev) => ({ ...prev, name: event.target.value }))
+              setErrors((prev) => {
+                const next = { ...prev }
+                delete next.name
+                return next
+              })
+            }}
+            placeholder="Название продукции или услуги"
+            autoFocus
+          />
+        </FormField>
+
         <OkpdCodePicker
           codes={okpdCodes.data ?? []}
           value={values.okpdCodeId ?? ''}
@@ -458,15 +477,28 @@ export function ProductFormDialog({
           </div>
         ) : null}
 
-        <FormField label="Примечание" required error={errors.noteId}>
+        <FormField label="Примечание" error={errors.noteId}>
           <Select
-            value={values.proposeNote ? CUSTOM_VALUE : values.noteId || undefined}
+            value={
+              values.proposeNote
+                ? CUSTOM_VALUE
+                : values.noteId
+                  ? values.noteId
+                  : NONE_NOTE_VALUE
+            }
             onValueChange={(value) => {
               if (value === CUSTOM_VALUE) {
                 setValues((prev) => ({
                   ...prev,
                   proposeNote: true,
                   noteId: '',
+                }))
+              } else if (value === NONE_NOTE_VALUE) {
+                setValues((prev) => ({
+                  ...prev,
+                  proposeNote: false,
+                  noteId: '',
+                  proposedNoteName: '',
                 }))
               } else {
                 setValues((prev) => ({
@@ -485,9 +517,10 @@ export function ProductFormDialog({
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Выберите примечание" />
+              <SelectValue placeholder="Необязательно" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value={NONE_NOTE_VALUE}>Без примечания</SelectItem>
               {(notes.data ?? []).map((note) => (
                 <SelectItem key={note.id} value={note.id}>
                   {note.name}
@@ -540,11 +573,5 @@ export function ProductFormDialog({
 }
 
 export function productLabel(product: CompanyProduct): string {
-  if (product.proposed_okpd_code && product.proposed_okpd_title) {
-    return `${product.proposed_okpd_code} — ${product.proposed_okpd_title}`
-  }
-  if (product.okpd?.code && product.okpd.title) {
-    return `${product.okpd.code} — ${product.okpd.title}`
-  }
   return product.name
 }

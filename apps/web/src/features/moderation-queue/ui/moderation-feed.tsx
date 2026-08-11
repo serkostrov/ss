@@ -7,6 +7,7 @@ import { useReviewMaterialCategoryMutation } from '@features/material-categories
 import { useReviewMaterialSectionMutation } from '@features/materials'
 import { useReviewProductCategorySuggestionMutation } from '@features/product-categories'
 import { RegistrationDetailSheet } from '@features/registrations'
+import { useReviewWorkGroupMembershipRequestMutation } from '@features/work-groups'
 import { cn } from '@shared/lib/utils'
 import {
   Button,
@@ -36,6 +37,7 @@ const KIND_LABELS: Record<ModerationFeedKind, string> = {
   productCategory: 'Категория продукции',
   material: 'Материал',
   materialCategory: 'Категория материалов',
+  workGroupMembership: 'Рабочая группа',
 }
 
 const KIND_FILTERS: Array<{ value: ModerationFeedKindFilter; label: string }> = [
@@ -45,6 +47,7 @@ const KIND_FILTERS: Array<{ value: ModerationFeedKindFilter; label: string }> = 
   { value: 'productCategory', label: 'Кат. продукции' },
   { value: 'material', label: 'Материалы' },
   { value: 'materialCategory', label: 'Кат. материалов' },
+  { value: 'workGroupMembership', label: 'Раб. группы' },
 ]
 
 function formatRelative(value: string): string {
@@ -83,12 +86,14 @@ export function ModerationFeed() {
   const reviewProductCategory = useReviewProductCategorySuggestionMutation()
   const reviewMaterial = useReviewMaterialSectionMutation()
   const reviewMaterialCategory = useReviewMaterialCategoryMutation()
+  const reviewMembership = useReviewWorkGroupMembershipRequestMutation()
 
   const busy =
     reviewProduct.isPending ||
     reviewProductCategory.isPending ||
     reviewMaterial.isPending ||
-    reviewMaterialCategory.isPending
+    reviewMaterialCategory.isPending ||
+    reviewMembership.isPending
 
   const visibleKindFilters = useMemo(
     () =>
@@ -130,6 +135,9 @@ export function ModerationFeed() {
       case 'materialCategory':
         reviewMaterialCategory.mutate({ id: item.rawId, approve: true })
         break
+      case 'workGroupMembership':
+        reviewMembership.mutate({ id: item.rawId, approve: true })
+        break
       case 'registration':
         setSelectedRegistrationId(item.rawId)
         break
@@ -156,6 +164,9 @@ export function ModerationFeed() {
         break
       case 'materialCategory':
         reviewMaterialCategory.mutate({ id: item.rawId, approve: false })
+        break
+      case 'workGroupMembership':
+        reviewMembership.mutate({ id: item.rawId, approve: false })
         break
       case 'registration':
         setSelectedRegistrationId(item.rawId)
@@ -236,7 +247,7 @@ export function ModerationFeed() {
           title={statusFilter === 'pending' ? 'Очередь пуста' : 'Ничего не найдено'}
           description={
             statusFilter === 'pending'
-              ? 'Новые регистрации, продукция, категории и материалы появятся здесь.'
+              ? 'Новые регистрации, продукция, категории, материалы и заявки в группы появятся здесь.'
               : 'Измените фильтры или поисковый запрос.'
           }
         />

@@ -93,6 +93,7 @@ export function CabinetCompanyPanel({ isEditing, onEditingChange }: CabinetCompa
   }
 
   const company = companyQuery.data
+  const exited = profile?.membership?.accessStatus === 'archived'
 
   return (
     <div className="space-y-4">
@@ -101,13 +102,29 @@ export function CabinetCompanyPanel({ isEditing, onEditingChange }: CabinetCompa
           <CardHeader>
             <CardTitle>{company.name}</CardTitle>
             <p className="text-muted-foreground text-sm">
-              Публичная карточка организации в ассоциации.
+              {exited
+                ? 'Компания вышла из ассоциации. Доступна только эта карточка.'
+                : 'Публичная карточка организации в ассоциации.'}
             </p>
           </CardHeader>
           <CardContent>
             <dl className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
               <CompanyField label="ИНН" value={company.inn} />
-              <CompanyField label="Статус" value={<StatusBadge status={company.access_status} />} />
+              <CompanyField
+                label="Статус"
+                value={
+                  <StatusBadge
+                    status={company.access_status}
+                    label={
+                      company.access_status === 'archived'
+                        ? 'Вышедшая'
+                        : company.access_status === 'suspended'
+                          ? 'Приостановлена'
+                          : undefined
+                    }
+                  />
+                }
+              />
               <CompanyField
                 label="Уровень участия"
                 value={profile?.membership?.participationLevelName}
@@ -205,7 +222,7 @@ export function CabinetCompanyPanel({ isEditing, onEditingChange }: CabinetCompa
         </Card>
       )}
 
-      <CompanyProductsPanel companyId={companyId} editable />
+      {!exited ? <CompanyProductsPanel companyId={companyId} editable /> : null}
     </div>
   )
 }

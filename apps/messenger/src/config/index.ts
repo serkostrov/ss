@@ -74,7 +74,7 @@ export function loadConfig(): MessengerConfig {
     publicWebhookBaseUrl: normalizeWebhookBaseUrl(optional('PUBLIC_WEBHOOK_BASE_URL')),
     smtpbzApiKey: optional('SMTPBZ_API_KEY'),
     smtpFrom: optional('SMTP_FROM'),
-    smtpFromName: optional('SMTP_FROM_NAME') ?? 'АПСС «Северное сияние»',
+    smtpFromName: optional('SMTP_FROM_NAME') ?? 'АПСС(ЭР)',
     appUrl: optional('APP_URL') ?? optional('VITE_APP_URL'),
     emailWebhookSecret: optional('EMAIL_WEBHOOK_SECRET'),
     logLevel,

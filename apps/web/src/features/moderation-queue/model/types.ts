@@ -4,6 +4,7 @@ export type ModerationFeedKind =
   | 'productCategory'
   | 'material'
   | 'materialCategory'
+  | 'workGroupMembership'
 
 export type ModerationFeedStatusFilter = 'pending' | 'resolved' | 'all'
 

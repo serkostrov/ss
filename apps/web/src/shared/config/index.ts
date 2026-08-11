@@ -1,6 +1,6 @@
 import { env } from './env'
 
-export const APP_NAME = 'АПСС — Северное сияние'
+export const APP_NAME = 'АПСС(ЭР)'
 export const APP_SHORT_NAME = 'АПСС'
 
 export const routes = {
@@ -53,6 +53,8 @@ export const routes = {
     material: (slug: string) => `/cabinet/materials/${slug}`,
     polls: '/cabinet/polls',
     poll: (id: string) => `/cabinet/polls/${id}`,
+    workGroups: '/cabinet/work-groups',
+    workGroup: (id: string) => `/cabinet/work-groups/${id}`,
   },
 } as const
 

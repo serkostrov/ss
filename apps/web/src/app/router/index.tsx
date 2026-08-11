@@ -1,7 +1,13 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom'
 
 import { RouteErrorBoundary } from '@app/error-boundary'
-import { RequireAuth, RequireGuest, RequireMemberStatus, RequireRole } from '@app/guards'
+import {
+  RequireAuth,
+  RequireGuest,
+  RequireMemberStatus,
+  RequireNonExitedCompany,
+  RequireRole,
+} from '@app/guards'
 import { AdminLayout, AuthLayout, CabinetLayout, PublicLayout, RootLayout } from '@app/layouts'
 import * as pages from '@app/router/lazy-pages'
 import { routes } from '@shared/config'
@@ -93,20 +99,30 @@ export const router = createBrowserRouter([
                         path: 'company',
                         element: <Navigate to={`${routes.cabinet.account}?tab=company`} replace />,
                       },
-                      { path: 'notifications', element: <pages.CabinetNotificationsPage /> },
-                      { path: 'directory', element: <pages.CabinetDirectoryPage /> },
                       {
-                        path: 'directory/:id',
-                        element: <pages.CabinetDirectoryCompanyPage />,
+                        element: <RequireNonExitedCompany />,
+                        children: [
+                          { path: 'notifications', element: <pages.CabinetNotificationsPage /> },
+                          { path: 'directory', element: <pages.CabinetDirectoryPage /> },
+                          {
+                            path: 'directory/:id',
+                            element: <pages.CabinetDirectoryCompanyPage />,
+                          },
+                          { path: 'products', element: <pages.CabinetProductsPage /> },
+                          { path: 'products/:id', element: <pages.CabinetProductDetailsPage /> },
+                          { path: 'invoices', element: <pages.CabinetInvoicesPage /> },
+                          { path: 'invoices/:id', element: <pages.CabinetInvoiceDetailsPage /> },
+                          { path: 'materials', element: <pages.CabinetMaterialsPage /> },
+                          { path: 'materials/:slug', element: <pages.CabinetMaterialDetailsPage /> },
+                          { path: 'polls', element: <pages.CabinetPollsPage /> },
+                          { path: 'polls/:id', element: <pages.CabinetPollDetailsPage /> },
+                          { path: 'work-groups', element: <pages.CabinetWorkGroupsPage /> },
+                          {
+                            path: 'work-groups/:id',
+                            element: <pages.CabinetWorkGroupDetailsPage />,
+                          },
+                        ],
                       },
-                      { path: 'products', element: <pages.CabinetProductsPage /> },
-                      { path: 'products/:id', element: <pages.CabinetProductDetailsPage /> },
-                      { path: 'invoices', element: <pages.CabinetInvoicesPage /> },
-                      { path: 'invoices/:id', element: <pages.CabinetInvoiceDetailsPage /> },
-                      { path: 'materials', element: <pages.CabinetMaterialsPage /> },
-                      { path: 'materials/:slug', element: <pages.CabinetMaterialDetailsPage /> },
-                      { path: 'polls', element: <pages.CabinetPollsPage /> },
-                      { path: 'polls/:id', element: <pages.CabinetPollDetailsPage /> },
                     ],
                   },
                 ],

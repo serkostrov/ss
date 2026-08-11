@@ -203,21 +203,7 @@ export const companyProductsService = {
     const custom = input.name?.trim()
     if (custom && custom.length >= 2) return custom.slice(0, 200)
 
-    const proposed = input.proposedOkpdTitle?.trim()
-    if (proposed && proposed.length >= 2) return proposed.slice(0, 200)
-
-    if (!input.okpdCodeId) {
-      throw new ApiError('Выберите код ОКПД 2 или предложите свой', { code: 'validation' })
-    }
-
-    const result = (await supabaseClient
-      .from('okpd2_codes')
-      .select('title')
-      .eq('id', input.okpdCodeId)
-      .maybeSingle()) as QueryResult<{ title: string } | null>
-    const title = assertResult(result)?.title?.trim()
-    if (!title) throw new ApiError('Выберите код ОКПД 2', { code: 'validation' })
-    return title.slice(0, 200)
+    throw new ApiError('Укажите наименование', { code: 'validation' })
   },
 
   normalizeClassification(input: {
@@ -245,8 +231,6 @@ export const companyProductsService = {
       if (!proposedNoteName || proposedNoteName.length < 2) {
         throw new ApiError('Укажите примечание', { code: 'validation' })
       }
-    } else if (!input.noteId) {
-      throw new ApiError('Выберите примечание или предложите своё', { code: 'validation' })
     }
 
     return {

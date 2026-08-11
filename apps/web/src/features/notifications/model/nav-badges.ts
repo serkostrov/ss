@@ -11,6 +11,7 @@ export const NOTIFICATION_NAV_BY_TYPE: Record<NotificationType, string> = {
   category_suggestion_pending: 'registrations',
   material_moderation_pending: 'registrations',
   material_category_pending: 'registrations',
+  work_group_membership_pending: 'registrations',
   registration_confirmed: 'home',
 }
 
@@ -25,6 +26,7 @@ export const NOTIFICATION_TYPES_BY_NAV: Record<string, NotificationType[]> = {
     'category_suggestion_pending',
     'material_moderation_pending',
     'material_category_pending',
+    'work_group_membership_pending',
   ],
 }
 

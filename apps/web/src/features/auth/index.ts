@@ -22,6 +22,16 @@ export {
 export type { AccessState, AccessDecision } from './model/access'
 
 export {
+  useActiveSurface,
+  setActiveSurface,
+  clearActiveSurface,
+  isDualRoleStaff,
+  defaultSurfaceForProfile,
+  resolveActiveSurface,
+} from './model/active-surface'
+export type { ActiveSurface } from './model/active-surface'
+
+export {
   permissions,
   getPermissionsForRole,
   hasPermission,

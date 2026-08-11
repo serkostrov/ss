@@ -2,6 +2,7 @@ import { Navigate } from 'react-router-dom'
 
 import { useAuth } from '@app/providers'
 import { CabinetHomePanel } from '@features/cabinet'
+import { exitedCompanyPath, isExitedCompany } from '@features/cabinet/model/company-access'
 import { routes } from '@shared/config'
 import { FullPageLoader } from '@shared/ui'
 
@@ -22,6 +23,10 @@ export function CabinetHomePage() {
 
   if (profile.status === 'pending') {
     return <Navigate to={routes.cabinet.pending} replace />
+  }
+
+  if (isExitedCompany(profile)) {
+    return <Navigate to={exitedCompanyPath} replace />
   }
 
   return <CabinetHomePanel />

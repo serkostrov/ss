@@ -221,8 +221,13 @@ export function CabinetDirectoryCompanyPanel() {
                         ) : null}
                       </div>
                       <p className="mt-1 line-clamp-2 text-sm font-medium">
-                        {product.okpd_title ?? product.name}
+                        {product.name}
                       </p>
+                      {product.okpd_title ? (
+                        <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs">
+                          {product.okpd_title}
+                        </p>
+                      ) : null}
                     </div>
                     <span className="text-muted-foreground shrink-0 text-xs">Подробнее</span>
                   </Link>

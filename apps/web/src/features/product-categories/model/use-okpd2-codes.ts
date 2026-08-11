@@ -47,12 +47,14 @@ export function useUpdateOkpd2CodeMutation() {
       code?: string
       title?: string
       isActive?: boolean
+      parentId?: string | null
     }) =>
       withSession(() =>
         okpd2CodesService.update(input.id, {
           code: input.code,
           title: input.title,
           is_active: input.isActive,
+          parent_id: input.parentId,
         }),
       ),
     onSuccess: () => notify.success('Код ОКПД 2 сохранён'),

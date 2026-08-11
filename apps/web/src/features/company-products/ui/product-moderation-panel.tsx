@@ -64,15 +64,18 @@ export function ProductModerationPanel() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium">
-                      {product.proposed_okpd_code
-                        ? `${product.proposed_okpd_code} — ${product.proposed_okpd_title ?? product.name}`
-                        : product.okpd
-                          ? `${product.okpd.code} — ${product.okpd.title}`
-                          : product.name}
-                    </p>
+                    <p className="font-medium">{product.name}</p>
                     <StatusBadge status={product.moderation_status} />
                   </div>
+                  {(product.okpd || product.proposed_okpd_code) && (
+                    <p className="mt-1 font-mono text-xs text-muted-foreground">
+                      {product.proposed_okpd_code
+                        ? `${product.proposed_okpd_code} — ${product.proposed_okpd_title ?? ''}`
+                        : product.okpd
+                          ? `${product.okpd.code} — ${product.okpd.title}`
+                          : null}
+                    </p>
+                  )}
                   <p className="mt-1 text-sm text-muted-foreground">
                     {product.company?.name ?? 'Компания'}
                   </p>

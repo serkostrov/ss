@@ -103,7 +103,7 @@ export function CabinetProductDetailsPanel({
     )
   }
 
-  const title = product.okpd_title ?? product.name
+  const title = product.name
   const productUrl = externalHref(product.url)
   const companyWebsite = externalHref(product.companyWebsite)
   const companyHref = companyTo(product.companyId)
@@ -181,7 +181,11 @@ export function CabinetProductDetailsPanel({
                     : 'Не указано'
                 }
               />
-              <Field label="Расшифровка" value={product.okpd_title ?? product.name} />
+              <Field label="Наименование" value={product.name} />
+              <Field
+                label="Расшифровка ОКПД 2"
+                value={product.okpd_title || null}
+              />
               <Field
                 label="Ссылка на продукт"
                 value={

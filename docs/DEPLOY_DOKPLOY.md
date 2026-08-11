@@ -80,7 +80,7 @@ LOG_LEVEL=info
 # Email (smtp.bz) — optional
 SMTPBZ_API_KEY=
 SMTP_FROM=noreply@your-domain.example
-SMTP_FROM_NAME=АПСС «Северное сияние»
+SMTP_FROM_NAME=АПСС(ЭР)
 APP_URL=https://app.example.com
 EMAIL_WEBHOOK_SECRET=
 ```
@@ -129,7 +129,7 @@ MAX_TLS_INSECURE=1
 ```env
 SMTPBZ_API_KEY=ключ_из_кабинета_smtp.bz
 SMTP_FROM=noreply@your-domain.example
-SMTP_FROM_NAME=АПСС «Северное сияние»
+SMTP_FROM_NAME=АПСС(ЭР)
 APP_URL=https://app.example.com
 EMAIL_WEBHOOK_SECRET=случайная_длинная_строка
 ```

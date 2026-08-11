@@ -36,6 +36,29 @@ function indentForLevel(level: number): number {
   return Math.max(0, level - 3) * 12
 }
 
+/** Self + descendants — нельзя выбрать как родителя (цикл). */
+function blockedParentIds(codes: Okpd2Code[], rootId: string): Set<string> {
+  const children = new Map<string, string[]>()
+  for (const item of codes) {
+    if (!item.parent_id) continue
+    const list = children.get(item.parent_id) ?? []
+    list.push(item.id)
+    children.set(item.parent_id, list)
+  }
+
+  const blocked = new Set<string>([rootId])
+  const stack = [rootId]
+  while (stack.length > 0) {
+    const id = stack.pop()!
+    for (const childId of children.get(id) ?? []) {
+      if (blocked.has(childId)) continue
+      blocked.add(childId)
+      stack.push(childId)
+    }
+  }
+  return blocked
+}
+
 export const Okpd2CodesPanel = forwardRef<Okpd2CodesPanelHandle>(function Okpd2CodesPanel(
   _props,
   ref,
@@ -84,6 +107,12 @@ export const Okpd2CodesPanel = forwardRef<Okpd2CodesPanelHandle>(function Okpd2C
     })
   }, [codes, search])
 
+  const parentOptions = useMemo(() => {
+    if (!editing) return codes
+    const blocked = blockedParentIds(codes, editing.id)
+    return codes.filter((item) => !blocked.has(item.id))
+  }, [codes, editing])
+
   const submit = async () => {
     const cleanCode = code.trim()
     const cleanTitle = title.trim()
@@ -95,17 +124,19 @@ export const Okpd2CodesPanel = forwardRef<Okpd2CodesPanelHandle>(function Okpd2C
       setError('Укажите расшифровку')
       return
     }
+    const nextParentId = parentId === 'none' ? null : parentId
     if (editing) {
       await updateMutation.mutateAsync({
         id: editing.id,
         code: cleanCode,
         title: cleanTitle,
+        parentId: nextParentId,
       })
     } else {
       await createMutation.mutateAsync({
         code: cleanCode,
         title: cleanTitle,
-        parentId: parentId === 'none' ? null : parentId,
+        parentId: nextParentId,
       })
     }
     setFormOpen(false)
@@ -226,23 +257,30 @@ export const Okpd2CodesPanel = forwardRef<Okpd2CodesPanelHandle>(function Okpd2C
               rows={3}
             />
           </FormField>
-          {!editing ? (
-            <FormField label="Родительский код" description="Необязательно — определится по коду.">
-              <Select value={parentId} onValueChange={setParentId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Автоматически" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Автоматически</SelectItem>
-                  {codes.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.code} — {item.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormField>
-          ) : null}
+          <FormField
+            label="Родительский код"
+            description={
+              editing
+                ? 'Укажите родителя вручную или оставьте без родителя.'
+                : 'Необязательно — определится по коду.'
+            }
+          >
+            <Select value={parentId} onValueChange={setParentId}>
+              <SelectTrigger>
+                <SelectValue placeholder={editing ? 'Без родителя' : 'Автоматически'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">
+                  {editing ? 'Без родителя' : 'Автоматически'}
+                </SelectItem>
+                {parentOptions.map((item) => (
+                  <SelectItem key={item.id} value={item.id}>
+                    {item.code} — {item.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
         </div>
       </Modal>
 

@@ -56,6 +56,7 @@ export function isNotificationType(value: string): value is NotificationType {
     value === 'category_suggestion_pending' ||
     value === 'material_moderation_pending' ||
     value === 'material_category_pending' ||
+    value === 'work_group_membership_pending' ||
     value === 'registration_confirmed'
   )
 }

@@ -15,6 +15,10 @@ export type {
   DirectoryProduct,
   CabinetPollAccessHint,
 } from './directory.service'
+export { cabinetWorkGroupsService } from './cabinet-work-groups.service'
+export type { CabinetWorkGroup } from './cabinet-work-groups.service'
+export { workGroupMembershipRequestsService } from './work-group-membership-requests.service'
+export type { WorkGroupMembershipRequest } from './work-group-membership-requests.service'
 export { staffService } from './staff.service'
 export type { StaffUser, PromoteStaffInput, UpdateStaffInput } from './staff.service'
 export { storageService, STORAGE_BUCKETS } from './storage.service'
