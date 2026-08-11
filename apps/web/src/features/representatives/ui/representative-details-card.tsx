@@ -141,10 +141,6 @@ export function RepresentativeDetailsCard() {
                   representative.telegram_username ? `@${representative.telegram_username}` : null
                 }
               />
-              <Field
-                label="Max"
-                value={representative.max_username ? `@${representative.max_username}` : null}
-              />
               <Field label="Должность" value={representative.position} className="sm:col-span-2" />
             </dl>
           </CardContent>

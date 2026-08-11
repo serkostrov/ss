@@ -45,7 +45,6 @@ function buildDefaults(application: RegistrationApplication): ConfirmRegistratio
     phone: application.phone ?? '',
     email: application.email ?? '',
     telegramUsername: application.telegram_username ?? '',
-    maxUsername: application.max_username ?? '',
     isPrimary: true,
   }
 }
@@ -267,22 +266,13 @@ export function ConfirmRegistrationDialog({
                 />
               </FormField>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <FormField label="Username в Telegram" error={fieldErrors.telegramUsername}>
-                <Input
-                  value={values.telegramUsername ?? ''}
-                  onChange={(event) => patch('telegramUsername', event.target.value)}
-                  placeholder="telegram_user"
-                />
-              </FormField>
-              <FormField label="Username в Max" error={fieldErrors.maxUsername}>
-                <Input
-                  value={values.maxUsername ?? ''}
-                  onChange={(event) => patch('maxUsername', event.target.value)}
-                  placeholder="max_user"
-                />
-              </FormField>
-            </div>
+            <FormField label="Username в Telegram" error={fieldErrors.telegramUsername}>
+              <Input
+                value={values.telegramUsername ?? ''}
+                onChange={(event) => patch('telegramUsername', event.target.value)}
+                placeholder="telegram_user"
+              />
+            </FormField>
             <label className="flex items-center gap-2 text-sm">
               <Checkbox
                 checked={values.isPrimary}

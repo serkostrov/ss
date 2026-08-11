@@ -14,7 +14,6 @@ export const memberProfileFormSchema = z.object({
   position: z.string().trim().max(120, 'Должность слишком длинная'),
   phone: z.string().trim().max(32, 'Телефон слишком длинный'),
   telegramUsername: messengerUsername,
-  maxUsername: messengerUsername,
   showContactsToMembers: z.boolean(),
 })
 

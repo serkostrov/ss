@@ -108,6 +108,10 @@ export const AdminNotificationsPage = lazyNamed(
   () => import('@pages/admin/notifications-page'),
   'AdminNotificationsPage',
 )
+export const AdminAccountPage = lazyNamed(
+  () => import('@pages/admin/account-page'),
+  'AdminAccountPage',
+)
 
 /** Cabinet — code-split zone */
 export const CabinetHomePage = lazyNamed(

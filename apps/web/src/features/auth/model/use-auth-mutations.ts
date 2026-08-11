@@ -58,7 +58,6 @@ export function useRegisterMutation() {
         showContactsToMembers: values.showContactsToMembers,
         emailNotificationsEnabled: values.emailNotificationsEnabled,
         telegramUsername: values.telegramUsername || undefined,
-        maxUsername: values.maxUsername || undefined,
         accepted: true,
       })
     },

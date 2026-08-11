@@ -40,7 +40,6 @@ export function RegisterForm() {
       fullName: '',
       phone: '',
       telegramUsername: '',
-      maxUsername: '',
       companyInnHint: '',
       companyNameHint: '',
       accepted: false,
@@ -151,37 +150,20 @@ export function RegisterForm() {
           )}
         />
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="telegramUsername"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Username в Telegram</FormLabel>
-                <FormControl>
-                  <Input placeholder="telegram_user" autoComplete="off" {...field} />
-                </FormControl>
-                <FormDescription>Необязательно</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="maxUsername"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Username в Max</FormLabel>
-                <FormControl>
-                  <Input placeholder="max_user" autoComplete="off" {...field} />
-                </FormControl>
-                <FormDescription>Необязательно</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="telegramUsername"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Username в Telegram</FormLabel>
+              <FormControl>
+                <Input placeholder="telegram_user" autoComplete="off" {...field} />
+              </FormControl>
+              <FormDescription>Необязательно</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}

@@ -132,14 +132,9 @@ export function RepresentativesPanel() {
           <div className="text-muted-foreground min-w-0 text-sm">
             <p className="truncate">{row.original.email || '—'}</p>
             <p className="truncate">{row.original.phone || ''}</p>
-            {row.original.telegram_username || row.original.max_username ? (
+            {row.original.telegram_username ? (
               <p className="text-muted-foreground truncate">
-                {[
-                  row.original.telegram_username ? `TG @${row.original.telegram_username}` : null,
-                  row.original.max_username ? `Max @${row.original.max_username}` : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
+                TG @{row.original.telegram_username}
               </p>
             ) : null}
           </div>

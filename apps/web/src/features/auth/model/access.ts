@@ -48,8 +48,6 @@ export function resolveAuthProfile(user: User, dbProfile: AuthProfile | null): A
       typeof user.user_metadata?.telegram_username === 'string'
         ? user.user_metadata.telegram_username
         : null,
-    maxUsername:
-      typeof user.user_metadata?.max_username === 'string' ? user.user_metadata.max_username : null,
     showContactsToMembers: user.user_metadata?.show_contacts_to_members === true,
     emailNotificationsEnabled: user.user_metadata?.email_notifications_enabled !== false,
     companyNameHint:

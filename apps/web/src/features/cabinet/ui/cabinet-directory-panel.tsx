@@ -51,7 +51,6 @@ function RepresentativeRow({ rep }: { rep: DirectoryRepresentative }) {
     rep.phone,
     rep.email,
     rep.telegram_username ? `TG @${rep.telegram_username}` : null,
-    rep.max_username ? `Max @${rep.max_username}` : null,
   ].filter(Boolean)
 
   return (

@@ -1,5 +1,5 @@
 import { Building2, LogOut } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '@app/providers'
 import { setActiveSurface, useLogoutMutation, isDualRoleStaff } from '@features/auth'
@@ -9,9 +9,10 @@ import { Button, IconButton, Spinner, UserAvatar } from '@shared/ui'
 
 type AdminUserMenuProps = {
   className?: string
+  onNavigate?: () => void
 }
 
-export function AdminUserMenu({ className }: AdminUserMenuProps) {
+export function AdminUserMenu({ className, onNavigate }: AdminUserMenuProps) {
   const { profile } = useAuth()
   const logout = useLogoutMutation()
   const navigate = useNavigate()
@@ -23,13 +24,27 @@ export function AdminUserMenu({ className }: AdminUserMenuProps) {
   return (
     <div className={cn('space-y-2', className)}>
       <div className="flex w-full items-center gap-2">
-        <UserAvatar name={displayName} size="sm" />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm">{displayName}</p>
-          {dual && companyName ? (
-            <p className="text-sidebar-foreground/60 truncate text-xs">{companyName}</p>
-          ) : null}
-        </div>
+        <NavLink
+          to={routes.admin.account}
+          onClick={onNavigate}
+          title="Профиль"
+          className={({ isActive }) =>
+            cn(
+              'flex min-w-0 flex-1 items-center gap-2 rounded-md px-1 py-1 transition-colors',
+              isActive
+                ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                : 'hover:bg-sidebar-accent/60',
+            )
+          }
+        >
+          <UserAvatar name={displayName} size="sm" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm">{displayName}</p>
+            {dual && companyName ? (
+              <p className="text-sidebar-foreground/60 truncate text-xs">{companyName}</p>
+            ) : null}
+          </div>
+        </NavLink>
         <IconButton
           label="Выйти"
           variant="ghost"
@@ -48,6 +63,7 @@ export function AdminUserMenu({ className }: AdminUserMenuProps) {
           className="w-full justify-start gap-2"
           onClick={() => {
             setActiveSurface('cabinet')
+            onNavigate?.()
             navigate(routes.cabinet.root)
           }}
         >

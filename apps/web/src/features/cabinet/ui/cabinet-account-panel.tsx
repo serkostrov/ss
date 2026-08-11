@@ -9,13 +9,22 @@ import { Button, PageHeader, Tabs, TabsContent, TabsList, TabsTrigger } from '@s
 import { CabinetCompanyPanel } from './cabinet-company-panel'
 import { CabinetProfilePanel } from './cabinet-profile-panel'
 
-export function CabinetAccountPanel() {
+type CabinetAccountPanelProps = {
+  title?: string
+  description?: string
+}
+
+export function CabinetAccountPanel({
+  title: titleOverride,
+  description: descriptionOverride,
+}: CabinetAccountPanelProps) {
   const { profile } = useAuth()
   const companyOnly = isExitedCompany(profile)
+  const hasCompany = Boolean(profile?.membership?.companyId)
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = companyOnly
     ? 'company'
-    : searchParams.get('tab') === 'company'
+    : searchParams.get('tab') === 'company' && hasCompany
       ? 'company'
       : 'profile'
   const [profileEditing, setProfileEditing] = useState(false)
@@ -28,19 +37,29 @@ export function CabinetAccountPanel() {
     }
   }, [companyOnly, searchParams, setSearchParams])
 
+  useEffect(() => {
+    if (companyOnly || hasCompany) return
+    if (searchParams.get('tab') === 'company') {
+      setSearchParams({}, { replace: true })
+    }
+  }, [companyOnly, hasCompany, searchParams, setSearchParams])
+
   const isEditing = activeTab === 'company' ? companyEditing : profileEditing
   const setEditing = activeTab === 'company' ? setCompanyEditing : setProfileEditing
   const editLabel = activeTab === 'company' ? 'Редактировать компанию' : 'Редактировать профиль'
 
+  const title = companyOnly
+    ? 'Компания'
+    : (titleOverride ?? 'Кабинет')
+  const description = companyOnly
+    ? 'Компания вышла из ассоциации. Доступна только карточка компании.'
+    : (descriptionOverride ?? 'Личные данные и информация о вашей компании.')
+
   return (
     <div className="space-y-5">
       <PageHeader
-        title={companyOnly ? 'Компания' : 'Кабинет'}
-        description={
-          companyOnly
-            ? 'Компания вышла из ассоциации. Доступна только карточка компании.'
-            : 'Личные данные и информация о вашей компании.'
-        }
+        title={title}
+        description={description}
         actions={
           !isEditing ? (
             <Button type="button" variant="outline" size="sm" onClick={() => setEditing(true)}>
@@ -53,7 +72,7 @@ export function CabinetAccountPanel() {
 
       {companyOnly ? (
         <CabinetCompanyPanel isEditing={companyEditing} onEditingChange={setCompanyEditing} />
-      ) : (
+      ) : hasCompany ? (
         <Tabs
           value={activeTab}
           onValueChange={(value) => {
@@ -80,6 +99,8 @@ export function CabinetAccountPanel() {
             <CabinetCompanyPanel isEditing={companyEditing} onEditingChange={setCompanyEditing} />
           </TabsContent>
         </Tabs>
+      ) : (
+        <CabinetProfilePanel isEditing={profileEditing} onEditingChange={setProfileEditing} />
       )}
     </div>
   )

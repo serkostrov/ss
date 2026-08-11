@@ -44,7 +44,6 @@ export const representativeFormSchema = z
         message: 'Некорректный email',
       }),
     telegramUsername: optionalMessengerUsername,
-    maxUsername: optionalMessengerUsername,
     isPrimary: z.boolean(),
     isActive: z.boolean(),
   })

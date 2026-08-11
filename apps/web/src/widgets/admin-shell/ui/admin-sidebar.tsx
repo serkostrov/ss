@@ -32,7 +32,7 @@ export function AdminSidebar({ onNavigate, className }: AdminSidebarProps) {
       <Separator className="bg-sidebar-border" />
       <div className="space-y-1 p-3">
         <AdminNotificationsNav onNavigate={onNavigate} />
-        <AdminUserMenu />
+        <AdminUserMenu onNavigate={onNavigate} />
       </div>
     </div>
   )

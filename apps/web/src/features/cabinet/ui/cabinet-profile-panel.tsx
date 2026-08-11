@@ -112,13 +112,6 @@ export function CabinetProfilePanel({ isEditing, onEditingChange }: CabinetProfi
                 placeholder="username"
               />
             </FormField>
-            <FormField label="Max" error={errors.maxUsername}>
-              <Input
-                value={values.maxUsername}
-                onChange={(event) => patch('maxUsername', event.target.value)}
-                placeholder="username"
-              />
-            </FormField>
           </div>
 
           <label className="flex cursor-pointer items-start gap-2.5 text-sm">
@@ -130,7 +123,7 @@ export function CabinetProfilePanel({ isEditing, onEditingChange }: CabinetProfi
             <span>
               <span className="block font-medium">Показывать контакты участникам</span>
               <span className="text-muted-foreground mt-0.5 block text-xs">
-                Телефон и мессенджеры видны в справочнике.
+                Телефон и Telegram видны в справочнике.
               </span>
             </span>
           </label>
@@ -171,10 +164,6 @@ export function CabinetProfilePanel({ isEditing, onEditingChange }: CabinetProfi
           <ProfileField
             label="Telegram"
             value={profile?.telegramUsername ? `@${profile.telegramUsername}` : null}
-          />
-          <ProfileField
-            label="Max"
-            value={profile?.maxUsername ? `@${profile.maxUsername}` : null}
           />
           <ProfileField
             label="Статус учётной записи"

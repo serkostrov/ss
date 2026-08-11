@@ -35,6 +35,7 @@ export const routes = {
     audit: '/admin/audit',
     settings: '/admin/settings',
     notifications: '/admin/notifications',
+    account: '/admin/account',
   },
   cabinet: {
     root: '/cabinet',

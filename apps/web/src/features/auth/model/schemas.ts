@@ -47,7 +47,6 @@ export const registerSchema = z
       .max(120, 'ФИО слишком длинное'),
     phone: z.string().trim().max(32, 'Телефон слишком длинный').optional().or(z.literal('')),
     telegramUsername: optionalMessengerUsername,
-    maxUsername: optionalMessengerUsername,
     companyInnHint: z
       .string()
       .trim()

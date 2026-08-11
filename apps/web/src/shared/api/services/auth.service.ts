@@ -31,8 +31,6 @@ export type SignUpInput = {
   emailNotificationsEnabled?: boolean
   /** Telegram username without @. */
   telegramUsername?: string
-  /** Max username without @. */
-  maxUsername?: string
   /** Required gate — registration is rejected without acceptance. */
   accepted: true
 }
@@ -59,7 +57,6 @@ export type AuthProfile = {
   position: string | null
   phone: string | null
   telegramUsername: string | null
-  maxUsername: string | null
   showContactsToMembers: boolean
   emailNotificationsEnabled: boolean
   companyNameHint: string | null
@@ -75,7 +72,6 @@ export type UpdateOwnMemberProfileInput = {
   position?: string | null
   phone?: string | null
   telegramUsername?: string | null
-  maxUsername?: string | null
   showContactsToMembers: boolean
 }
 
@@ -170,7 +166,6 @@ function mapProfile(row: ProfileQueryRow): AuthProfile {
     position: representative?.position ?? null,
     phone: representative?.phone ?? row.phone,
     telegramUsername: representative?.telegram_username ?? row.telegram_username,
-    maxUsername: representative?.max_username ?? row.max_username,
     showContactsToMembers:
       representative?.show_contacts_to_members ?? row.show_contacts_to_members ?? false,
     emailNotificationsEnabled: row.email_notifications_enabled !== false,
@@ -296,7 +291,6 @@ export const authService = {
           show_contacts_to_members: input.showContactsToMembers === true,
           email_notifications_enabled: input.emailNotificationsEnabled !== false,
           telegram_username: input.telegramUsername?.trim().replace(/^@+/, '') || null,
-          max_username: input.maxUsername?.trim().replace(/^@+/, '') || null,
           pd_consent: true,
           pd_consent_at: new Date().toISOString(),
         },
@@ -403,7 +397,7 @@ export const authService = {
       p_position: input.position ?? null,
       p_phone: input.phone ?? null,
       p_telegram_username: input.telegramUsername ?? null,
-      p_max_username: input.maxUsername ?? null,
+      p_max_username: null,
       p_show_contacts_to_members: input.showContactsToMembers,
     })
 

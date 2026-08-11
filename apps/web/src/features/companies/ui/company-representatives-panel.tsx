@@ -109,7 +109,6 @@ export function CompanyRepresentativesPanel({
                           rep.email,
                           rep.phone,
                           rep.telegram_username ? `TG @${rep.telegram_username}` : null,
-                          rep.max_username ? `Max @${rep.max_username}` : null,
                         ]
                           .filter(Boolean)
                           .join(' · ') || 'Контакты не указаны'}

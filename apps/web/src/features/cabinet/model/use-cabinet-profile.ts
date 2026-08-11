@@ -11,7 +11,6 @@ export function toMemberProfileFormValues(
     position: profile?.position ?? '',
     phone: profile?.phone ?? '',
     telegramUsername: profile?.telegramUsername ?? '',
-    maxUsername: profile?.maxUsername ?? '',
     showContactsToMembers: profile?.showContactsToMembers ?? false,
   }
 }
@@ -24,7 +23,6 @@ export function useUpdateOwnMemberProfileMutation() {
         position: values.position || null,
         phone: values.phone || null,
         telegramUsername: values.telegramUsername.replace(/^@+/, '') || null,
-        maxUsername: values.maxUsername.replace(/^@+/, '') || null,
         showContactsToMembers: values.showContactsToMembers,
       }),
     {
