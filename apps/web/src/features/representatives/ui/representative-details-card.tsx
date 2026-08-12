@@ -271,7 +271,7 @@ export function RepresentativeDetailsCard() {
         open={linkedDeleteOpen}
         onOpenChange={setLinkedDeleteOpen}
         title="Удаление невозможно"
-        description="Представитель привязан к учётной записи. Сначала отвяжите её — кнопка «Отвязать учётную запись» на этой странице."
+        description="Представитель привязан к компании. Сначала отвяжите её — кнопка «Отвязать учётную запись» на этой странице."
         confirmLabel="Понятно"
         cancelLabel="Закрыть"
         onConfirm={() => setLinkedDeleteOpen(false)}
