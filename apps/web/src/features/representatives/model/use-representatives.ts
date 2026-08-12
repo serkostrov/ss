@@ -107,6 +107,18 @@ export function useDeleteRepresentativeMutation() {
   })
 }
 
+export function useUnlinkRepresentativeUserMutation() {
+  return useSupabaseMutation(
+    (id: string) => representativesService.unlinkUser(id),
+    {
+      ensureFreshSession: true,
+      invalidateKeys: [...invalidateAll, queryKeys.staff.all],
+      onSuccess: () => notify.success('Учётная запись отвязана от представителя'),
+      onError: (error) => notify.fromError(error, 'Не удалось отвязать учётную запись'),
+    },
+  )
+}
+
 export function useMemberAssignCandidates(companyId: string | undefined, search = '') {
   return useSupabaseQuery(
     [

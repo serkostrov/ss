@@ -9,6 +9,9 @@ export type RepresentativeCompanyRef = Pick<TableRow<'companies'>, 'id' | 'name'
 export type Representative = TableRow<'representatives'> & {
   company: RepresentativeCompanyRef | null
   linked_user_id: string | null
+  linked_user_email: string | null
+  linked_user_full_name: string | null
+  linked_user_role: TableRow<'users'>['role'] | null
 }
 
 export type RepresentativeInput = {
@@ -73,7 +76,10 @@ const REPRESENTATIVE_SELECT = `
     access_status
   ),
   user:users!users_representative_id_fkey (
-    id
+    id,
+    email,
+    full_name,
+    role
   )
 `
 
@@ -84,7 +90,10 @@ type QueryResult<T> = {
 
 type RawRepresentativeRow = Omit<TableRow<'representatives'>, 'messenger_username'> & {
   company: RepresentativeCompanyRef | RepresentativeCompanyRef[] | null
-  user: { id: string } | { id: string }[] | null
+  user:
+    | { id: string; email: string | null; full_name: string | null; role: TableRow<'users'>['role'] }
+    | { id: string; email: string | null; full_name: string | null; role: TableRow<'users'>['role'] }[]
+    | null
 }
 
 function assertResult<T>(result: QueryResult<T>): T {
@@ -120,6 +129,9 @@ function normalize(row: RawRepresentativeRow): Representative {
     updated_at: row.updated_at,
     company: company ?? null,
     linked_user_id: user?.id ?? null,
+    linked_user_email: user?.email ?? null,
+    linked_user_full_name: user?.full_name ?? null,
+    linked_user_role: user?.role ?? null,
   }
 }
 
@@ -309,6 +321,26 @@ export const representativesService = {
       is_primary: isActive ? current.is_primary : false,
       is_active: isActive,
     })
+  },
+
+  async unlinkUser(representativeId: string): Promise<Representative> {
+    const current = await this.getById(representativeId)
+    if (!current) {
+      throw new ApiError('Представитель не найден', { code: 'not_found' })
+    }
+    if (!current.linked_user_id) {
+      throw new ApiError('Представитель не привязан к учётной записи', { code: 'conflict' })
+    }
+
+    await rpcService.call('unlink_representative_from_user', {
+      p_representative_id: representativeId,
+    })
+
+    const full = await this.getById(representativeId)
+    if (!full) {
+      throw new ApiError('Представитель не найден', { code: 'not_found' })
+    }
+    return full
   },
 
   async delete(id: string): Promise<void> {

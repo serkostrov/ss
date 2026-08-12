@@ -68,6 +68,7 @@ const ACTION_LABELS: Record<string, string> = {
   'registration.reject': 'Отклонение регистрации',
   'user.set_status': 'Смена статуса пользователя',
   'representatives.assign_member': 'Привязка участника к компании',
+  'representatives.unlink_user': 'Отвязка учётной записи от представителя',
   'representatives.set_primary': 'Назначение основного представителя',
   'representatives.upsert': 'Сохранение представителя',
   'participation_levels.delete': 'Удаление уровня участия',

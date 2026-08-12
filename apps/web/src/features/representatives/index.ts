@@ -14,6 +14,7 @@ export {
   useDeleteRepresentativeMutation,
   useMemberAssignCandidates,
   useAssignMemberToCompanyMutation,
+  useUnlinkRepresentativeUserMutation,
   toRepresentativeInput,
 } from './model/use-representatives'
 

@@ -1559,6 +1559,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Database['public']['Tables']['users']['Row']
       }
+      unlink_representative_from_user: {
+        Args: { p_representative_id: string }
+        Returns: Database['public']['Tables']['representatives']['Row']
+      }
       get_cabinet_poll_access_hint: {
         Args: Record<string, never>
         Returns: Json
