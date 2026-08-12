@@ -12,9 +12,9 @@ export {
   useSetPrimaryRepresentativeMutation,
   useToggleRepresentativeActiveMutation,
   useDeleteRepresentativeMutation,
+  useRemoveRepresentativeFromCompanyMutation,
   useMemberAssignCandidates,
   useAssignMemberToCompanyMutation,
-  useUnlinkRepresentativeUserMutation,
   toRepresentativeInput,
 } from './model/use-representatives'
 

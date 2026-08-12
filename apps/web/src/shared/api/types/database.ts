@@ -1559,9 +1559,14 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Database['public']['Tables']['users']['Row']
       }
-      unlink_representative_from_user: {
+      remove_representative_from_company: {
         Args: { p_representative_id: string }
-        Returns: Database['public']['Tables']['representatives']['Row']
+        Returns: {
+          company_id: string
+          company_name: string
+          full_name: string
+          linked_user_id: string | null
+        }[]
       }
       get_cabinet_poll_access_hint: {
         Args: Record<string, never>

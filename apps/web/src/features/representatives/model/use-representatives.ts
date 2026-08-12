@@ -102,19 +102,19 @@ export function useDeleteRepresentativeMutation() {
   return useSupabaseMutation((id: string) => representativesService.delete(id), {
     ensureFreshSession: true,
     invalidateKeys: invalidateAll,
-    onSuccess: () => notify.success('Представитель удалён'),
-    onError: (error) => notify.fromError(error, 'Не удалось удалить представителя'),
+    onSuccess: () => notify.success('Представитель убран из компании'),
+    onError: (error) => notify.fromError(error, 'Не удалось убрать представителя из компании'),
   })
 }
 
-export function useUnlinkRepresentativeUserMutation() {
+export function useRemoveRepresentativeFromCompanyMutation() {
   return useSupabaseMutation(
-    (id: string) => representativesService.unlinkUser(id),
+    (id: string) => representativesService.removeFromCompany(id),
     {
       ensureFreshSession: true,
-      invalidateKeys: [...invalidateAll, queryKeys.staff.all],
-      onSuccess: () => notify.success('Учётная запись отвязана от представителя'),
-      onError: (error) => notify.fromError(error, 'Не удалось отвязать учётную запись'),
+      invalidateKeys: [...invalidateAll, queryKeys.staff.all, queryKeys.registrations.all],
+      onSuccess: () => notify.success('Представитель отвязан от компании'),
+      onError: (error) => notify.fromError(error, 'Не удалось отвязать представителя от компании'),
     },
   )
 }

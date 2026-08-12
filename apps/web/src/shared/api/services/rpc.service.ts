@@ -124,8 +124,8 @@ const RPC_AUDIT: Partial<Record<RpcName, RpcAuditSpec>> = {
     entity_type: 'companies',
     entityId: (args) => String(args.p_company_id ?? ''),
   },
-  unlink_representative_from_user: {
-    action: 'representatives.unlink_user',
+  remove_representative_from_company: {
+    action: 'representatives.remove_from_company',
     entity_type: 'representatives',
     entityId: (args) => String(args.p_representative_id ?? ''),
   },

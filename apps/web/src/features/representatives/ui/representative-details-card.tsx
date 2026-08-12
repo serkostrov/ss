@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { EyeOff, Link2, Link2Off, Pencil, Star, Trash2, UserCheck } from 'lucide-react'
+import { Building2, EyeOff, Link2, Link2Off, Pencil, Star, UserCheck } from 'lucide-react'
 
 import { routes } from '@shared/config'
 import {
@@ -11,7 +11,6 @@ import {
   CardHeader,
   CardTitle,
   ConfirmDialog,
-  DeleteDialog,
   ErrorState,
   IconButton,
   LoadingState,
@@ -22,11 +21,10 @@ import {
 
 import { formatDateTime } from '../model/schemas'
 import {
-  useDeleteRepresentativeMutation,
+  useRemoveRepresentativeFromCompanyMutation,
   useRepresentative,
   useSetPrimaryRepresentativeMutation,
   useToggleRepresentativeActiveMutation,
-  useUnlinkRepresentativeUserMutation,
 } from '../model/use-representatives'
 import { RepresentativeFormDialog } from './representative-form-dialog'
 
@@ -36,14 +34,11 @@ export function RepresentativeDetailsCard() {
   const query = useRepresentative(id ?? null)
   const primaryMutation = useSetPrimaryRepresentativeMutation()
   const toggleMutation = useToggleRepresentativeActiveMutation()
-  const deleteMutation = useDeleteRepresentativeMutation()
-  const unlinkMutation = useUnlinkRepresentativeUserMutation()
+  const removeMutation = useRemoveRepresentativeFromCompanyMutation()
 
   const [editOpen, setEditOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [removeOpen, setRemoveOpen] = useState(false)
   const [primaryOpen, setPrimaryOpen] = useState(false)
-  const [unlinkOpen, setUnlinkOpen] = useState(false)
-  const [linkedDeleteOpen, setLinkedDeleteOpen] = useState(false)
 
   if (query.isLoading) {
     return <LoadingState label="Загрузка карточки представителя…" />
@@ -68,12 +63,18 @@ export function RepresentativeDetailsCard() {
     )
   }
 
-  const canDelete = !representative.linked_user_id
   const showPrimaryAction = !representative.is_primary && representative.is_active
   const linkedUserLabel =
     representative.linked_user_email ||
     representative.linked_user_full_name ||
     representative.linked_user_id
+  const companyName = representative.company?.name ?? 'компании'
+
+  const handleRemove = async () => {
+    const result = await removeMutation.mutateAsync(representative.id)
+    setRemoveOpen(false)
+    navigate(routes.admin.company(result.company_id), { replace: true })
+  }
 
   return (
     <div className="space-y-6">
@@ -117,27 +118,13 @@ export function RepresentativeDetailsCard() {
         >
           {representative.is_active ? <EyeOff /> : <UserCheck />}
         </IconButton>
-        {representative.linked_user_id ? (
-          <IconButton
-            label="Отвязать учётную запись"
-            disabled={unlinkMutation.isPending}
-            onClick={() => setUnlinkOpen(true)}
-          >
-            <Link2Off />
-          </IconButton>
-        ) : null}
         <IconButton
-          label="Удалить"
+          label="Отвязать от компании"
           className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-          onClick={() => {
-            if (canDelete) {
-              setDeleteOpen(true)
-            } else {
-              setLinkedDeleteOpen(true)
-            }
-          }}
+          disabled={removeMutation.isPending}
+          onClick={() => setRemoveOpen(true)}
         >
-          <Trash2 />
+          <Link2Off />
         </IconButton>
       </PageDetailHeader>
 
@@ -164,8 +151,8 @@ export function RepresentativeDetailsCard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Компания и статусы</CardTitle>
-            <CardDescription>Роль в организации и учётная запись</CardDescription>
+            <CardTitle className="text-base">Компания и учётная запись</CardTitle>
+            <CardDescription>Представитель и участник — одна связка</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -185,32 +172,27 @@ export function RepresentativeDetailsCard() {
             </div>
             <Field
               label="Учётная запись"
-              value={
-                representative.linked_user_id
-                  ? linkedUserLabel
-                  : 'Не привязана'
-              }
+              value={representative.linked_user_id ? linkedUserLabel : 'Контакт без входа в систему'}
             />
             {representative.linked_user_id ? (
-              <div className="space-y-2">
-                <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
-                  <Link2 className="size-3.5 shrink-0" />
-                  {representative.linked_user_role === 'admin'
-                    ? 'Сотрудник АПСС с доступом к кабинету компании'
-                    : 'Участник с доступом к кабинету компании'}
-                </p>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={unlinkMutation.isPending}
-                  onClick={() => setUnlinkOpen(true)}
-                >
-                  <Link2Off className="size-4" />
-                  Отвязать учётную запись
-                </Button>
-              </div>
+              <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                <Link2 className="size-3.5 shrink-0" />
+                {representative.linked_user_role === 'admin'
+                  ? 'Сотрудник АПСС с доступом к кабинету компании'
+                  : 'Участник с доступом к кабинету компании'}
+              </p>
             ) : null}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="text-destructive hover:text-destructive"
+              disabled={removeMutation.isPending}
+              onClick={() => setRemoveOpen(true)}
+            >
+              <Building2 className="size-4" />
+              Отвязать от компании
+            </Button>
             <Separator />
             <Field label="Создан" value={formatDateTime(representative.created_at)} />
             <Field label="Обновлён" value={formatDateTime(representative.updated_at)} />
@@ -238,43 +220,17 @@ export function RepresentativeDetailsCard() {
       />
 
       <ConfirmDialog
-        open={unlinkOpen}
-        onOpenChange={setUnlinkOpen}
-        title="Отвязать учётную запись?"
+        open={removeOpen}
+        onOpenChange={setRemoveOpen}
+        title="Отвязать от компании?"
         description={
-          linkedUserLabel
-            ? `Связь с «${linkedUserLabel}» будет снята. Контакт представителя сохранится — его можно удалить или привязать к другой учётной записи. Пользователь потеряет доступ к кабинету этой компании.`
-            : 'Связь с учётной записью будет снята. Контакт представителя сохранится.'
+          representative.linked_user_id
+            ? `«${representative.full_name}» будет убран из «${companyName}». Учётная запись ${linkedUserLabel ? `«${linkedUserLabel}» ` : ''}сохранится, но доступ к кабинету этой компании прекратится. Человека можно будет привязать к другой компании позже.`
+            : `Контакт «${representative.full_name}» будет убран из «${companyName}».`
         }
         confirmLabel="Отвязать"
-        loading={unlinkMutation.isPending}
-        onConfirm={async () => {
-          await unlinkMutation.mutateAsync(representative.id)
-          setUnlinkOpen(false)
-        }}
-      />
-
-      <DeleteDialog
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        entityName={representative.full_name}
-        title="Удалить представителя?"
-        description="Контакт будет удалён безвозвратно."
-        loading={deleteMutation.isPending}
-        onConfirm={async () => {
-          await deleteMutation.mutateAsync(representative.id)
-          navigate(routes.admin.representatives, { replace: true })
-        }}
-      />
-
-      <ConfirmDialog
-        open={linkedDeleteOpen}
-        onOpenChange={setLinkedDeleteOpen}
-        title="Удаление невозможно"
-        description="Представитель привязан к компании. Сначала отвяжите её — кнопка «Отвязать учётную запись» на этой странице."
-        confirmLabel="Понятно"
-        cancelLabel="Закрыть"
-        onConfirm={() => setLinkedDeleteOpen(false)}
+        loading={removeMutation.isPending}
+        onConfirm={() => void handleRemove()}
       />
     </div>
   )

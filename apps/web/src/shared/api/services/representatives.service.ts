@@ -46,6 +46,13 @@ export type MemberAssignCandidate = {
   current_company_name: string | null
 }
 
+export type RemoveRepresentativeFromCompanyResult = {
+  company_id: string
+  company_name: string
+  full_name: string
+  linked_user_id: string | null
+}
+
 export type AssignMemberToCompanyInput = {
   userId: string
   companyId: string
@@ -323,42 +330,23 @@ export const representativesService = {
     })
   },
 
-  async unlinkUser(representativeId: string): Promise<Representative> {
+  async removeFromCompany(representativeId: string): Promise<RemoveRepresentativeFromCompanyResult> {
     const current = await this.getById(representativeId)
     if (!current) {
       throw new ApiError('Представитель не найден', { code: 'not_found' })
     }
-    if (!current.linked_user_id) {
-      throw new ApiError('Представитель не привязан к учётной записи', { code: 'conflict' })
-    }
 
-    await rpcService.call('unlink_representative_from_user', {
+    const rows = await rpcService.call('remove_representative_from_company', {
       p_representative_id: representativeId,
     })
-
-    const full = await this.getById(representativeId)
-    if (!full) {
-      throw new ApiError('Представитель не найден', { code: 'not_found' })
+    const row = rows?.[0]
+    if (!row) {
+      throw new ApiError('Не удалось отвязать представителя от компании', { code: 'unknown' })
     }
-    return full
+    return row
   },
 
   async delete(id: string): Promise<void> {
-    const current = await this.getById(id)
-    if (!current) {
-      throw new ApiError('Представитель не найден', { code: 'not_found' })
-    }
-    if (current.linked_user_id) {
-      throw new ApiError(
-        'Нельзя удалить представителя, привязанного к учётной записи. Сначала отвяжите пользователя.',
-        { code: 'conflict' },
-      )
-    }
-
-    const result = (await supabaseClient
-      .from('representatives')
-      .delete()
-      .eq('id', id)) as QueryResult<unknown>
-    assertResult(result)
+    await this.removeFromCompany(id)
   },
 }

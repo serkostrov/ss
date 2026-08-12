@@ -6,8 +6,8 @@ import type { Representative } from '@shared/api'
 import {
   AssignExistingMemberDialog,
   RepresentativeFormDialog,
+  useRemoveRepresentativeFromCompanyMutation,
   useRepresentativesByCompany,
-  useUnlinkRepresentativeUserMutation,
 } from '@features/representatives'
 import { routes } from '@shared/config'
 import {
@@ -30,20 +30,15 @@ type CompanyRepresentativesPanelProps = {
   companyName: string
 }
 
-function linkedUserLabel(rep: Representative): string | null {
-  if (!rep.linked_user_id) return null
-  return rep.linked_user_email || rep.linked_user_full_name || rep.linked_user_id
-}
-
 export function CompanyRepresentativesPanel({
   companyId,
   companyName,
 }: CompanyRepresentativesPanelProps) {
   const [formOpen, setFormOpen] = useState(false)
   const [assignOpen, setAssignOpen] = useState(false)
-  const [unlinkTarget, setUnlinkTarget] = useState<Representative | null>(null)
+  const [removeTarget, setRemoveTarget] = useState<Representative | null>(null)
   const query = useRepresentativesByCompany(companyId)
-  const unlinkMutation = useUnlinkRepresentativeUserMutation()
+  const removeMutation = useRemoveRepresentativeFromCompanyMutation()
   const representatives = query.data ?? []
 
   return (
@@ -130,18 +125,16 @@ export function CompanyRepresentativesPanel({
                       label={rep.is_active ? 'Активен' : 'Неактивен'}
                     />
                   </Link>
-                  {rep.linked_user_id ? (
-                    <div className="border-l px-2 py-2">
-                      <IconButton
-                        label="Отвязать учётную запись"
-                        className="size-9"
-                        disabled={unlinkMutation.isPending}
-                        onClick={() => setUnlinkTarget(rep)}
-                      >
-                        <Link2Off />
-                      </IconButton>
-                    </div>
-                  ) : null}
+                  <div className="border-l px-2 py-2">
+                    <IconButton
+                      label="Отвязать от компании"
+                      className="size-9 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      disabled={removeMutation.isPending}
+                      onClick={() => setRemoveTarget(rep)}
+                    >
+                      <Link2Off />
+                    </IconButton>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -163,22 +156,22 @@ export function CompanyRepresentativesPanel({
       />
 
       <ConfirmDialog
-        open={Boolean(unlinkTarget)}
+        open={Boolean(removeTarget)}
         onOpenChange={(open) => {
-          if (!open) setUnlinkTarget(null)
+          if (!open) setRemoveTarget(null)
         }}
-        title="Отвязать учётную запись?"
+        title="Отвязать от компании?"
         description={
-          unlinkTarget && linkedUserLabel(unlinkTarget)
-            ? `Связь с «${linkedUserLabel(unlinkTarget)}» будет снята. Контакт «${unlinkTarget.full_name}» сохранится в компании.`
-            : 'Связь с учётной записью будет снята. Контакт представителя сохранится.'
+          removeTarget?.linked_user_id
+            ? `«${removeTarget.full_name}» будет убран из «${companyName}». Учётная запись сохранится без доступа к кабинету этой компании.`
+            : `Контакт «${removeTarget?.full_name ?? ''}» будет убран из «${companyName}».`
         }
         confirmLabel="Отвязать"
-        loading={unlinkMutation.isPending}
+        loading={removeMutation.isPending}
         onConfirm={async () => {
-          if (!unlinkTarget) return
-          await unlinkMutation.mutateAsync(unlinkTarget.id)
-          setUnlinkTarget(null)
+          if (!removeTarget) return
+          await removeMutation.mutateAsync(removeTarget.id)
+          setRemoveTarget(null)
         }}
       />
     </>
