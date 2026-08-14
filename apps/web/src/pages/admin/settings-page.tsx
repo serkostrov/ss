@@ -15,6 +15,7 @@ import {
   ProductNotesPanel,
   type ProductNotesPanelHandle,
 } from '@features/product-categories'
+import { RegisteredUsersPanel } from '@features/registered-users'
 import {
   ErrorState,
   PageHeader,
@@ -25,7 +26,13 @@ import {
   TabsTrigger,
 } from '@shared/ui'
 
-type SettingsTab = 'levels' | 'directions' | 'materialCategories' | 'okpd2' | 'productNotes'
+type SettingsTab =
+  | 'levels'
+  | 'directions'
+  | 'materialCategories'
+  | 'okpd2'
+  | 'productNotes'
+  | 'users'
 
 export function AdminSettingsPage() {
   const [tab, setTab] = useState<SettingsTab>('levels')
@@ -34,6 +41,8 @@ export function AdminSettingsPage() {
   const materialCategoriesRef = useRef<MaterialCategoriesPanelHandle>(null)
   const okpd2Ref = useRef<Okpd2CodesPanelHandle>(null)
   const productNotesRef = useRef<ProductNotesPanelHandle>(null)
+
+  const showAddAction = tab !== 'users'
 
   const addPermission =
     tab === 'levels'
@@ -50,7 +59,10 @@ export function AdminSettingsPage() {
       fallback={<ErrorState title="Нет доступа" description="Недостаточно прав для настроек." />}
     >
       <div className="space-y-6">
-        <PageHeader title="Настройки" description="Параметры системы и справочники." />
+        <PageHeader
+          title="Настройки"
+          description="Параметры системы, справочники и учётные записи."
+        />
 
         <Tabs value={tab} onValueChange={(value) => setTab(value as SettingsTab)}>
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -60,26 +72,29 @@ export function AdminSettingsPage() {
               <TabsTrigger value="materialCategories">Категории материалов</TabsTrigger>
               <TabsTrigger value="okpd2">ОКПД 2</TabsTrigger>
               <TabsTrigger value="productNotes">Примечание продукции</TabsTrigger>
+              <TabsTrigger value="users">Пользователи</TabsTrigger>
             </TabsList>
-            <CanAccess permission={addPermission}>
-              <PageHeaderAction
-                type="button"
-                onClick={() => {
-                  if (tab === 'levels') levelsRef.current?.openCreate()
-                  else if (tab === 'directions') directionsRef.current?.openCreate()
-                  else if (tab === 'materialCategories') {
-                    materialCategoriesRef.current?.openCreate()
-                  } else if (tab === 'okpd2') {
-                    okpd2Ref.current?.openCreate()
-                  } else {
-                    productNotesRef.current?.openCreate()
-                  }
-                }}
-              >
-                <Plus className="size-4" />
-                Добавить
-              </PageHeaderAction>
-            </CanAccess>
+            {showAddAction ? (
+              <CanAccess permission={addPermission}>
+                <PageHeaderAction
+                  type="button"
+                  onClick={() => {
+                    if (tab === 'levels') levelsRef.current?.openCreate()
+                    else if (tab === 'directions') directionsRef.current?.openCreate()
+                    else if (tab === 'materialCategories') {
+                      materialCategoriesRef.current?.openCreate()
+                    } else if (tab === 'okpd2') {
+                      okpd2Ref.current?.openCreate()
+                    } else {
+                      productNotesRef.current?.openCreate()
+                    }
+                  }}
+                >
+                  <Plus className="size-4" />
+                  Добавить
+                </PageHeaderAction>
+              </CanAccess>
+            ) : null}
           </div>
 
           <TabsContent value="levels">
@@ -150,6 +165,10 @@ export function AdminSettingsPage() {
             >
               <ProductNotesPanel ref={productNotesRef} />
             </CanAccess>
+          </TabsContent>
+
+          <TabsContent value="users">
+            <RegisteredUsersPanel />
           </TabsContent>
         </Tabs>
       </div>

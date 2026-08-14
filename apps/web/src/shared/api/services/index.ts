@@ -39,6 +39,11 @@ export type {
   RepresentativeOption,
   CompanyOption,
 } from './registrations.service'
+export { registeredUsersService } from './registered-users.service'
+export type {
+  RegisteredUser,
+  RegisteredUsersListFilters,
+} from './registered-users.service'
 export { levelsService } from './levels.service'
 export type {
   ParticipationLevel,
