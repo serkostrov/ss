@@ -1,10 +1,14 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Pencil, Trash2 } from 'lucide-react'
 import { type ColumnDef } from '@tanstack/react-table'
 
+import { useAuth } from '@app/providers'
 import { routes } from '@shared/config'
 import type { RegisteredUser } from '@shared/api'
 import {
+  Button,
+  ConfirmDialog,
   DataTable,
   ErrorState,
   Filters,
@@ -21,14 +25,22 @@ import {
   type RegisteredUserRoleFilter,
   type RegisteredUserStatusFilter,
 } from '../model/schemas'
-import { useRegisteredUsers } from '../model/use-registered-users'
+import {
+  useDeleteRegisteredUserMutation,
+  useRegisteredUsers,
+} from '../model/use-registered-users'
+import { RegisteredUserFormDialog } from './registered-user-form-dialog'
 
 export function RegisteredUsersPanel() {
+  const { profile } = useAuth()
   const [search, setSearch] = useState('')
   const [role, setRole] = useState<RegisteredUserRoleFilter>('all')
   const [status, setStatus] = useState<RegisteredUserStatusFilter>('all')
+  const [editing, setEditing] = useState<RegisteredUser | null>(null)
+  const [deleting, setDeleting] = useState<RegisteredUser | null>(null)
 
   const query = useRegisteredUsers({ search, role, status })
+  const deleteMutation = useDeleteRegisteredUserMutation()
 
   const filterFields: FilterFieldConfig[] = [
     {
@@ -133,9 +145,50 @@ export function RegisteredUsersPanel() {
         ),
         meta: { className: 'hidden lg:table-cell w-[10rem] max-w-[10rem]' },
       },
+      {
+        id: 'actions',
+        header: '',
+        cell: ({ row }) => {
+          const isSelf = profile?.id === row.original.id
+          return (
+            <div className="flex justify-end gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Редактировать"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setEditing(row.original)
+                }}
+              >
+                <Pencil className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="text-destructive"
+                aria-label="Удалить"
+                disabled={isSelf}
+                title={isSelf ? 'Нельзя удалить свою учётную запись' : undefined}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setDeleting(row.original)
+                }}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </div>
+          )
+        },
+        meta: { className: 'w-[5.5rem] max-w-[5.5rem]' },
+      },
     ],
-    [],
+    [profile?.id],
   )
+
+  const deleteLabel = deleting?.full_name || deleting?.email || 'пользователя'
 
   return (
     <div className="space-y-4">
@@ -158,8 +211,34 @@ export function RegisteredUsersPanel() {
           emptyTitle="Пользователей пока нет"
           emptyDescription="Здесь появятся все зарегистрированные учётные записи."
           getRowId={(row) => row.id}
+          onRowClick={(row) => setEditing(row)}
         />
       )}
+
+      <RegisteredUserFormDialog
+        open={Boolean(editing)}
+        onOpenChange={(open) => {
+          if (!open) setEditing(null)
+        }}
+        user={editing}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        onOpenChange={(open) => {
+          if (!open) setDeleting(null)
+        }}
+        title="Удалить пользователя?"
+        description={`Учётная запись «${deleteLabel}» будет полностью удалена из системы вместе с данными входа. Это действие необратимо.`}
+        confirmLabel="Удалить"
+        destructive
+        loading={deleteMutation.isPending}
+        onConfirm={async () => {
+          if (!deleting) return
+          await deleteMutation.mutateAsync(deleting.id)
+          setDeleting(null)
+        }}
+      />
     </div>
   )
 }

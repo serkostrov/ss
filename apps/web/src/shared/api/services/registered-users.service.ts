@@ -1,6 +1,7 @@
 import { ApiError } from '@shared/lib/errors'
 
 import { supabaseClient } from '../lib/client'
+import { rpcService } from './rpc.service'
 import type { TableRow, UserRole, UserStatus } from '../types/database'
 
 export type RegisteredUserRepresentative = Pick<
@@ -19,11 +20,28 @@ export type RegisteredUser = Pick<
   | 'full_name'
   | 'phone'
   | 'staff_position'
+  | 'is_ceo'
+  | 'can_manage_work_groups'
   | 'company_name_hint'
   | 'company_inn_hint'
   | 'created_at'
 > & {
   representative: RegisteredUserRepresentative | null
+}
+
+export type AdminUpdateUserInput = {
+  userId: string
+  email?: string | null
+  fullName?: string | null
+  phone?: string | null
+  status?: UserStatus | null
+  role?: UserRole | null
+  password?: string | null
+  staffPosition?: string | null
+  isCeo?: boolean | null
+  canManageWorkGroups?: boolean | null
+  companyNameHint?: string | null
+  companyInnHint?: string | null
 }
 
 export type RegisteredUsersListFilters = {
@@ -86,6 +104,8 @@ function mapUser(raw: unknown): RegisteredUser | null {
     full_name: typeof row.full_name === 'string' ? row.full_name : null,
     phone: typeof row.phone === 'string' ? row.phone : null,
     staff_position: typeof row.staff_position === 'string' ? row.staff_position : null,
+    is_ceo: row.is_ceo === true,
+    can_manage_work_groups: row.can_manage_work_groups !== false,
     company_name_hint: typeof row.company_name_hint === 'string' ? row.company_name_hint : null,
     company_inn_hint: typeof row.company_inn_hint === 'string' ? row.company_inn_hint : null,
     created_at: typeof row.created_at === 'string' ? row.created_at : '',
@@ -101,6 +121,8 @@ const USER_SELECT = `
   full_name,
   phone,
   staff_position,
+  is_ceo,
+  can_manage_work_groups,
   company_name_hint,
   company_inn_hint,
   created_at,
@@ -189,4 +211,41 @@ export const registeredUsersService = {
   },
 
   companyLabel,
+
+  async update(input: AdminUpdateUserInput): Promise<RegisteredUser> {
+    const row = await rpcService.call('admin_update_user', {
+      p_user_id: input.userId,
+      p_email: input.email ?? null,
+      p_full_name: input.fullName ?? null,
+      p_phone: input.phone ?? null,
+      p_status: input.status ?? null,
+      p_role: input.role ?? null,
+      p_password: input.password ?? null,
+      p_staff_position: input.staffPosition ?? null,
+      p_is_ceo: input.isCeo ?? null,
+      p_can_manage_work_groups: input.canManageWorkGroups ?? null,
+      p_company_name_hint: input.companyNameHint ?? null,
+      p_company_inn_hint: input.companyInnHint ?? null,
+    })
+
+    return {
+      id: row.id,
+      email: row.email,
+      role: row.role,
+      status: row.status,
+      full_name: row.full_name,
+      phone: row.phone,
+      staff_position: row.staff_position,
+      is_ceo: row.is_ceo,
+      can_manage_work_groups: row.can_manage_work_groups,
+      company_name_hint: row.company_name_hint,
+      company_inn_hint: row.company_inn_hint,
+      created_at: row.created_at,
+      representative: null,
+    }
+  },
+
+  async delete(userId: string): Promise<void> {
+    await rpcService.call('admin_delete_user', { p_user_id: userId })
+  },
 }

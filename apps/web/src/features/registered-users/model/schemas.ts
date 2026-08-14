@@ -64,3 +64,29 @@ export function registeredUserCompanyLabel(user: {
 export function isRegisteredUserStatus(value: string): value is UserStatus {
   return value === 'pending' || value === 'confirmed' || value === 'blocked'
 }
+
+export const registeredUserFormSchema = z
+  .object({
+    email: z.string().trim().email('Укажите корректный email'),
+    fullName: z.string().trim().max(200, 'Слишком длинное значение'),
+    phone: z.string().trim().max(50, 'Слишком длинное значение'),
+    role: z.enum(['admin', 'member']),
+    status: z.enum(['pending', 'confirmed', 'blocked']),
+    password: z.string(),
+    staffPosition: z.string().trim().max(200, 'Слишком длинное значение'),
+    isCeo: z.boolean(),
+    canManageWorkGroups: z.boolean(),
+    companyNameHint: z.string().trim().max(300, 'Слишком длинное значение'),
+    companyInnHint: z.string().trim().max(20, 'Слишком длинное значение'),
+  })
+  .superRefine((values, ctx) => {
+    if (values.password.trim().length > 0 && values.password.length < 8) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['password'],
+        message: 'Пароль должен быть не короче 8 символов',
+      })
+    }
+  })
+
+export type RegisteredUserFormValues = z.infer<typeof registeredUserFormSchema>

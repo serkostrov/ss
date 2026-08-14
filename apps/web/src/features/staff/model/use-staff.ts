@@ -76,8 +76,12 @@ export function useDemoteStaffMutation() {
   return useSupabaseMutation((input: DemoteStaffInput) => staffService.demote(input), {
     ensureFreshSession: true,
     invalidateKeys: invalidateStaff,
-    onSuccess: () =>
-      notify.success('Статус сотрудника снят — учётная запись остаётся представителем компании'),
+    onSuccess: (_data, variables) =>
+      notify.success(
+        variables.companyId
+          ? 'Статус сотрудника снят — учётная запись остаётся представителем компании'
+          : 'Статус сотрудника АПСС снят',
+      ),
     onError: (error) => notify.fromError(error, 'Не удалось снять статус сотрудника'),
   })
 }

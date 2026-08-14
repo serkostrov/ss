@@ -397,10 +397,9 @@ function DemoteStaffDialog({
   const resolvedCompanyId = boundCompanyId ?? companyId
 
   const submit = async () => {
-    if (!resolvedCompanyId) return
     await demoteMutation.mutateAsync({
       userId: staff.id,
-      companyId: resolvedCompanyId,
+      companyId: hasBoundCompany ? resolvedCompanyId : resolvedCompanyId ?? null,
       position: hasBoundCompany
         ? (staff.company_position ?? null)
         : position.trim() || null,
@@ -417,7 +416,7 @@ function DemoteStaffDialog({
       description={
         hasBoundCompany
           ? `${staff.full_name || staff.email}: права администратора будут сняты, учётная запись останется активной как представитель компании «${boundCompanyName}» (без блокировки).`
-          : `${staff.full_name || staff.email}: права администратора будут сняты, учётная запись останется активной как представитель выбранной компании (без блокировки).`
+          : `${staff.full_name || staff.email}: права администратора будут сняты. Можно привязать к компании или оставить учётную запись без компании.`
       }
       footer={
         <>
@@ -426,7 +425,7 @@ function DemoteStaffDialog({
           </Button>
           <Button
             type="button"
-            disabled={!resolvedCompanyId || demoteMutation.isPending}
+            disabled={demoteMutation.isPending}
             onClick={() => void submit()}
           >
             {demoteMutation.isPending ? <Spinner size="sm" className="text-current" /> : null}
@@ -447,20 +446,25 @@ function DemoteStaffDialog({
           </FormField>
         ) : (
           <>
-            <FormField label="Компания" required>
-              <Select value={companyId} onValueChange={setCompanyId}>
+            <FormField
+              label="Компания"
+              description="Необязательно — можно снять статус без привязки к компании"
+            >
+              <Select
+                value={companyId ?? '__none__'}
+                onValueChange={(value) => setCompanyId(value === '__none__' ? undefined : value)}
+              >
                 <SelectTrigger>
                   <SelectValue
                     placeholder={
                       companies.isLoading
                         ? 'Загрузка…'
-                        : (companies.data?.length ?? 0) === 0
-                          ? 'Нет компаний'
-                          : 'Выберите компанию'
+                        : 'Без компании'
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__none__">Без компании</SelectItem>
                   {(companies.data ?? []).map((company) => (
                     <SelectItem key={company.id} value={company.id}>
                       {company.name}
@@ -469,20 +473,24 @@ function DemoteStaffDialog({
                 </SelectContent>
               </Select>
             </FormField>
-            <FormField label="Должность в компании">
-              <Input
-                value={position}
-                onChange={(event) => setPosition(event.target.value)}
-                placeholder="Необязательно"
-              />
-            </FormField>
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={isPrimary}
-                onCheckedChange={(checked) => setIsPrimary(checked === true)}
-              />
-              Сделать основным представителем
-            </label>
+            {companyId ? (
+              <>
+                <FormField label="Должность в компании">
+                  <Input
+                    value={position}
+                    onChange={(event) => setPosition(event.target.value)}
+                    placeholder="Необязательно"
+                  />
+                </FormField>
+                <label className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={isPrimary}
+                    onCheckedChange={(checked) => setIsPrimary(checked === true)}
+                  />
+                  Сделать основным представителем
+                </label>
+              </>
+            ) : null}
           </>
         )}
       </div>

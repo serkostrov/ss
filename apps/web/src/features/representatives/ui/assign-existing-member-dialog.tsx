@@ -18,6 +18,7 @@ import {
   useAssignMemberToCompanyMutation,
   useMemberAssignCandidates,
 } from '../model/use-representatives'
+import type { MemberAssignCandidate } from '@shared/api'
 
 type AssignExistingMemberDialogProps = {
   open: boolean
@@ -49,13 +50,24 @@ export function AssignExistingMemberDialog({
   const selected = (candidates.data ?? []).find((item) => item.user_id === userId)
 
   const submit = async () => {
-    if (!userId) return
+    if (!userId || !selected) return
     await assignMutation.mutateAsync({
       userId,
+      userRole: selected.user_role,
       isPrimary,
       position: position.trim() || null,
     })
     onOpenChange(false)
+  }
+
+  const candidateSuffix = (user: MemberAssignCandidate) => {
+    if (user.current_company_name) {
+      return ` · сейчас: ${user.current_company_name}`
+    }
+    if (user.user_role === 'admin') {
+      return ' · сотрудник АПСС'
+    }
+    return ' · без компании'
   }
 
   return (
@@ -63,7 +75,7 @@ export function AssignExistingMemberDialog({
       open={open}
       onOpenChange={onOpenChange}
       title="Добавить существующего участника"
-      description={`Привязать учётную запись к компании «${companyName}». Если у человека уже есть представитель в другой компании — он будет перенесён.`}
+      description={`Привязать учётную запись к компании «${companyName}». Подходят и представители, и сотрудники АПСС. Если человек уже привязан к другой компании — он будет перенесён.`}
       footer={
         <>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -97,10 +109,7 @@ export function AssignExistingMemberDialog({
             <SelectContent>
               {(candidates.data ?? []).map((user) => (
                 <SelectItem key={user.user_id} value={user.user_id}>
-                  {(user.full_name || 'Без имени') + ' · ' + user.email}
-                  {user.current_company_name
-                    ? ` · сейчас: ${user.current_company_name}`
-                    : ' · без компании'}
+                  {(user.full_name || 'Без имени') + ' · ' + user.email + candidateSuffix(user)}
                 </SelectItem>
               ))}
             </SelectContent>

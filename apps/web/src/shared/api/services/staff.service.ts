@@ -39,7 +39,7 @@ export type UpdateStaffInput = {
 
 export type DemoteStaffInput = {
   userId: string
-  companyId: string
+  companyId?: string | null
   position?: string | null
   isPrimary?: boolean
 }
@@ -152,7 +152,7 @@ export const staffService = {
   async demote(input: DemoteStaffInput): Promise<StaffUser> {
     const result = (await supabaseClient.rpc('demote_from_staff', {
       p_user_id: input.userId,
-      p_company_id: input.companyId,
+      p_company_id: input.companyId ?? null,
       p_position: input.position ?? null,
       p_is_primary: input.isPrimary ?? false,
     })) as QueryResult<TableRow<'users'>>

@@ -27,15 +27,15 @@ import {
 } from '@shared/ui'
 
 type SettingsTab =
+  | 'users'
   | 'levels'
   | 'directions'
   | 'materialCategories'
   | 'okpd2'
   | 'productNotes'
-  | 'users'
 
 export function AdminSettingsPage() {
-  const [tab, setTab] = useState<SettingsTab>('levels')
+  const [tab, setTab] = useState<SettingsTab>('users')
   const levelsRef = useRef<LevelsPanelHandle>(null)
   const directionsRef = useRef<DirectionsPanelHandle>(null)
   const materialCategoriesRef = useRef<MaterialCategoriesPanelHandle>(null)
@@ -67,12 +67,12 @@ export function AdminSettingsPage() {
         <Tabs value={tab} onValueChange={(value) => setTab(value as SettingsTab)}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <TabsList className="w-auto">
+              <TabsTrigger value="users">Пользователи</TabsTrigger>
               <TabsTrigger value="levels">Уровни</TabsTrigger>
               <TabsTrigger value="directions">Направления</TabsTrigger>
               <TabsTrigger value="materialCategories">Категории материалов</TabsTrigger>
               <TabsTrigger value="okpd2">ОКПД 2</TabsTrigger>
               <TabsTrigger value="productNotes">Примечание продукции</TabsTrigger>
-              <TabsTrigger value="users">Пользователи</TabsTrigger>
             </TabsList>
             {showAddAction ? (
               <CanAccess permission={addPermission}>
@@ -96,6 +96,10 @@ export function AdminSettingsPage() {
               </CanAccess>
             ) : null}
           </div>
+
+          <TabsContent value="users">
+            <RegisteredUsersPanel />
+          </TabsContent>
 
           <TabsContent value="levels">
             <CanAccess
@@ -167,9 +171,6 @@ export function AdminSettingsPage() {
             </CanAccess>
           </TabsContent>
 
-          <TabsContent value="users">
-            <RegisteredUsersPanel />
-          </TabsContent>
         </Tabs>
       </div>
     </CanAccess>

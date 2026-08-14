@@ -108,6 +108,7 @@ export type {
   CompanyOption,
   RegisteredUser,
   RegisteredUsersListFilters,
+  AdminUpdateUserInput,
   CabinetResource,
   LevelResourceAccessRow,
   CabinetResourceAccess,

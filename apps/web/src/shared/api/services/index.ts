@@ -43,6 +43,7 @@ export { registeredUsersService } from './registered-users.service'
 export type {
   RegisteredUser,
   RegisteredUsersListFilters,
+  AdminUpdateUserInput,
 } from './registered-users.service'
 export { levelsService } from './levels.service'
 export type {

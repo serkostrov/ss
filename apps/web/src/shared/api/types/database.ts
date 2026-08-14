@@ -1305,6 +1305,27 @@ export type Database = {
         }
         Returns: Database['public']['Tables']['users']['Row']
       }
+      admin_update_user: {
+        Args: {
+          p_user_id: string
+          p_email?: string | null
+          p_full_name?: string | null
+          p_phone?: string | null
+          p_status?: UserStatus | null
+          p_role?: UserRole | null
+          p_password?: string | null
+          p_staff_position?: string | null
+          p_is_ceo?: boolean | null
+          p_can_manage_work_groups?: boolean | null
+          p_company_name_hint?: string | null
+          p_company_inn_hint?: string | null
+        }
+        Returns: Database['public']['Tables']['users']['Row']
+      }
+      admin_delete_user: {
+        Args: { p_user_id: string }
+        Returns: null
+      }
       get_participation_level_usage: {
         Args: { p_level_id: string }
         Returns: Json
@@ -1443,6 +1464,7 @@ export type Database = {
           email: string
           full_name: string | null
           status: UserStatus
+          user_role: UserRole
           representative_id: string | null
           current_company_id: string | null
           current_company_name: string | null
@@ -1540,7 +1562,7 @@ export type Database = {
       demote_from_staff: {
         Args: {
           p_user_id: string
-          p_company_id: string
+          p_company_id?: string | null
           p_position?: string | null
           p_is_primary?: boolean
         }

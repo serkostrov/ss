@@ -3,6 +3,7 @@ import { ApiError } from '@shared/lib/errors'
 import { supabaseClient } from '../lib/client'
 import type { TableRow } from '../types/database'
 import { rpcService } from './rpc.service'
+import { staffService } from './staff.service'
 
 export type RepresentativeCompanyRef = Pick<TableRow<'companies'>, 'id' | 'name' | 'access_status'>
 
@@ -41,6 +42,7 @@ export type MemberAssignCandidate = {
   email: string
   full_name: string | null
   status: TableRow<'users'>['status']
+  user_role: TableRow<'users'>['role']
   representative_id: string | null
   current_company_id: string | null
   current_company_name: string | null
@@ -58,6 +60,7 @@ export type AssignMemberToCompanyInput = {
   companyId: string
   isPrimary?: boolean
   position?: string | null
+  role?: TableRow<'users'>['role']
 }
 
 /** Narrow select — avoid over-fetching company columns. */
@@ -245,6 +248,7 @@ export const representativesService = {
       email: row.email,
       full_name: row.full_name,
       status: row.status,
+      user_role: row.user_role,
       representative_id: row.representative_id,
       current_company_id: row.current_company_id,
       current_company_name: row.current_company_name,
@@ -252,6 +256,23 @@ export const representativesService = {
   },
 
   async assignMember(input: AssignMemberToCompanyInput): Promise<Representative> {
+    if (input.role === 'admin') {
+      const staff = await staffService.bindCompany({
+        userId: input.userId,
+        companyId: input.companyId,
+        position: input.position ?? null,
+        isPrimary: input.isPrimary ?? false,
+      })
+      if (!staff.representative_id) {
+        throw new ApiError('Сотрудник привязан, но представитель не найден', { code: 'unknown' })
+      }
+      const full = await this.getById(staff.representative_id)
+      if (!full) {
+        throw new ApiError('Сотрудник привязан, но представитель не найден', { code: 'unknown' })
+      }
+      return full
+    }
+
     const row = await rpcService.call('assign_member_to_company', {
       p_user_id: input.userId,
       p_company_id: input.companyId,

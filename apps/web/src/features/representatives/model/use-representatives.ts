@@ -7,6 +7,7 @@ import {
   type Representative,
   type RepresentativeInput,
   type RepresentativesListFilters,
+  type TableRow,
 } from '@shared/api'
 import { notify } from '@shared/lib/notify'
 
@@ -141,16 +142,22 @@ export function useMemberAssignCandidates(companyId: string | undefined, search 
 
 export function useAssignMemberToCompanyMutation(companyId: string) {
   return useSupabaseMutation(
-    (input: { userId: string; isPrimary?: boolean; position?: string | null }) =>
+    (input: {
+      userId: string
+      userRole: TableRow<'users'>['role']
+      isPrimary?: boolean
+      position?: string | null
+    }) =>
       representativesService.assignMember({
         userId: input.userId,
         companyId,
+        role: input.userRole,
         isPrimary: input.isPrimary,
         position: input.position,
       }),
     {
       ensureFreshSession: true,
-      invalidateKeys: invalidateAll,
+      invalidateKeys: [...invalidateAll, queryKeys.staff.all],
       onSuccess: () => notify.success('Участник добавлен в компанию'),
       onError: (error) => notify.fromError(error, 'Не удалось добавить участника'),
     },
