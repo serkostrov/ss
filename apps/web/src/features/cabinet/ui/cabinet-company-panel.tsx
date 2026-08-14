@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 
 import { CompanyProductsPanel } from '@features/company-products'
+import { companyAccessStatusMemberLabel } from '@features/companies'
 import { useAuth } from '@app/providers'
 import { normalizeInnDigits } from '@shared/api'
 import {
@@ -115,13 +116,7 @@ export function CabinetCompanyPanel({ isEditing, onEditingChange }: CabinetCompa
                 value={
                   <StatusBadge
                     status={company.access_status}
-                    label={
-                      company.access_status === 'archived'
-                        ? 'Вышедшая'
-                        : company.access_status === 'suspended'
-                          ? 'Приостановлена'
-                          : undefined
-                    }
+                    label={companyAccessStatusMemberLabel(company.access_status)}
                   />
                 }
               />

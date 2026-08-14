@@ -16,6 +16,7 @@ export type CabinetWorkGroup = {
   category_id: string | null
   category_name: string | null
   is_member: boolean
+  is_responsible: boolean
   joined_at: string | null
   pending_request_id: string | null
   pending_request_kind: WorkGroupMembershipRequestKind | null

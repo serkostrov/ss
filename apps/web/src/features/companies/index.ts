@@ -24,6 +24,7 @@ export {
   companySortBySchema,
   companyCommentSchema,
   accessStatusLabel,
+  companyAccessStatusMemberLabel,
   balanceFilterLabel,
   sortByLabel,
   formatCompanyDate,

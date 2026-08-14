@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Link2, UsersRound } from 'lucide-react'
+import { ArrowLeft, UsersRound } from 'lucide-react'
 
-import { workGroupStatusLabel } from '@features/work-groups'
+import { WorkGroupLinksPanel, workGroupStatusLabel } from '@features/work-groups'
 import type { WorkGroupLink } from '@shared/api'
 import { routes } from '@shared/config'
 import { formatFileSize, isPreviewableMime } from '@shared/lib/files'
@@ -38,8 +38,10 @@ export function CabinetWorkGroupDetailsPanel({ workGroupId }: CabinetWorkGroupDe
   const groupQuery = useCabinetWorkGroup(workGroupId)
   const group = groupQuery.data
   const isMember = group?.is_member === true
+  const isResponsible = group?.is_responsible === true
+  const canViewMaterials = isMember || isResponsible
   const pendingKind = group?.pending_request_kind ?? null
-  const linksQuery = useCabinetWorkGroupLinks(workGroupId, isMember)
+  const linksQuery = useCabinetWorkGroupLinks(workGroupId, canViewMaterials)
   const downloadFile = useCabinetDownloadWorkGroupFileMutation()
   const previewFile = useCabinetPreviewWorkGroupFileMutation()
   const requestMembership = useRequestWorkGroupMembershipMutation()
@@ -94,15 +96,16 @@ export function CabinetWorkGroupDetailsPanel({ workGroupId }: CabinetWorkGroupDe
           description={group.description || 'Рабочая группа ассоциации'}
           actions={
             <div className="flex flex-wrap gap-1">
+              {isResponsible ? <Badge variant="default">Ответственный</Badge> : null}
               {pendingKind ? (
                 <Badge variant="secondary">
                   {pendingKind === 'join' ? 'Заявка на вступление' : 'Заявка на выход'}
                 </Badge>
               ) : group.is_member ? (
                 <Badge variant="default">Участник</Badge>
-              ) : (
+              ) : !isResponsible ? (
                 <Badge variant="secondary">Не участник</Badge>
-              )}
+              ) : null}
               <StatusBadge
                 status={group.status === 'active' ? 'active' : 'pending'}
                 label={
@@ -120,6 +123,16 @@ export function CabinetWorkGroupDetailsPanel({ workGroupId }: CabinetWorkGroupDe
           <p className="text-muted-foreground mt-1 text-sm">Направление: {group.category_name}</p>
         ) : null}
       </div>
+
+      {isResponsible && !isMember ? (
+        <Alert>
+          <AlertTitle>Вы ответственный за эту группу</AlertTitle>
+          <AlertDescription>
+            Вы можете добавлять ссылки и файлы для участников. Просмотр материалов других групп
+            доступен только при участии в них.
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       {pendingKind ? (
         <Alert>
@@ -146,7 +159,7 @@ export function CabinetWorkGroupDetailsPanel({ workGroupId }: CabinetWorkGroupDe
             Подать заявку на выход
           </Button>
         </div>
-      ) : (
+      ) : !isResponsible ? (
         <div className="space-y-3">
           <Alert>
             <AlertTitle>Нет доступа к материалам группы</AlertTitle>
@@ -166,9 +179,11 @@ export function CabinetWorkGroupDetailsPanel({ workGroupId }: CabinetWorkGroupDe
             Подать заявку на вступление
           </Button>
         </div>
-      )}
+      ) : null}
 
-      {group.is_member ? (
+      {isResponsible ? (
+        <WorkGroupLinksPanel workGroupId={workGroupId} />
+      ) : canViewMaterials ? (
         <div className="space-y-3">
           <h2 className="text-sm font-medium">Файлы и ссылки</h2>
 
@@ -184,9 +199,8 @@ export function CabinetWorkGroupDetailsPanel({ workGroupId }: CabinetWorkGroupDe
 
           {!linksQuery.isLoading && !linksQuery.isError && links.length === 0 ? (
             <EmptyState
-              icon={Link2}
               title="Пока нет материалов"
-              description="Когда администратор добавит файлы или ссылки, они появятся здесь."
+              description="Когда ответственный или администратор добавит файлы или ссылки, они появятся здесь."
             />
           ) : null}
 

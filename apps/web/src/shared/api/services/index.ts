@@ -46,6 +46,14 @@ export type {
   ParticipationLevelUsage,
   LevelsListFilters,
 } from './levels.service'
+export {
+  levelResourceAccessService,
+} from './level-resource-access.service'
+export type {
+  CabinetResource,
+  LevelResourceAccessRow,
+  CabinetResourceAccess,
+} from './level-resource-access.service'
 export { companiesService } from './companies.service'
 export type {
   Company,

@@ -2,19 +2,24 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SearchX, UsersRound } from 'lucide-react'
 
-import { workGroupStatusLabel } from '@features/work-groups'
+import {
+  useWorkGroupCategories,
+  workGroupStatusLabel,
+  type WorkGroupStatusFilter,
+} from '@features/work-groups'
 import { routes } from '@shared/config'
 import {
   Badge,
   EmptyState,
   ErrorState,
+  Filters,
   PageHeader,
-  SearchInput,
   Skeleton,
   StatusBadge,
+  type FilterFieldConfig,
 } from '@shared/ui'
 
-import { useCabinetWorkGroupsSearch } from '../model/use-cabinet-work-groups'
+import { useCabinetWorkGroupsFiltered } from '../model/use-cabinet-work-groups'
 
 function ListSkeleton() {
   return (
@@ -32,7 +37,49 @@ function ListSkeleton() {
 
 export function CabinetWorkGroupsPanel() {
   const [search, setSearch] = useState('')
-  const query = useCabinetWorkGroupsSearch(search)
+  const [status, setStatus] = useState<WorkGroupStatusFilter>('all')
+  const [categoryId, setCategoryId] = useState('all')
+
+  const categories = useWorkGroupCategories()
+  const query = useCabinetWorkGroupsFiltered({ search, status, categoryId })
+
+  const filterFields: FilterFieldConfig[] = [
+    {
+      id: 'search',
+      label: 'Поиск',
+      type: 'search',
+      placeholder: 'Название или описание…',
+      value: search,
+      onChange: setSearch,
+    },
+    {
+      id: 'category',
+      label: 'Направление',
+      type: 'select',
+      value: categoryId,
+      onChange: setCategoryId,
+      options: [
+        { value: 'all', label: 'Все направления' },
+        ...(categories.data ?? []).map((category) => ({
+          value: category.id,
+          label: category.name,
+        })),
+      ],
+    },
+    {
+      id: 'status',
+      label: 'Статус',
+      type: 'select',
+      value: status,
+      onChange: (value) => setStatus(value as WorkGroupStatusFilter),
+      options: [
+        { value: 'all', label: workGroupStatusLabel('all') },
+        { value: 'active', label: workGroupStatusLabel('active') },
+        { value: 'paused', label: workGroupStatusLabel('paused') },
+        { value: 'archived', label: workGroupStatusLabel('archived') },
+      ],
+    },
+  ]
 
   const emptyAfterFilter = useMemo(
     () => !query.isLoading && !query.isError && query.totalCount > 0 && query.items.length === 0,
@@ -46,10 +93,13 @@ export function CabinetWorkGroupsPanel() {
         description="Перечень групп ассоциации и ваш статус участия. Вступление и выход — по заявке через модерацию."
       />
 
-      <SearchInput
-        value={search}
-        onValueChange={setSearch}
-        placeholder="Поиск по названию или направлению…"
+      <Filters
+        fields={filterFields}
+        onReset={() => {
+          setSearch('')
+          setStatus('all')
+          setCategoryId('all')
+        }}
       />
 
       {query.isLoading ? <ListSkeleton /> : null}
@@ -74,7 +124,7 @@ export function CabinetWorkGroupsPanel() {
         <EmptyState
           icon={SearchX}
           title="Ничего не найдено"
-          description="Измените поисковый запрос."
+          description="Измените фильтры или поисковый запрос."
         />
       ) : null}
 
@@ -89,6 +139,9 @@ export function CabinetWorkGroupsPanel() {
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <p className="font-medium">{group.name}</p>
                 <div className="flex flex-wrap gap-1">
+                  {group.is_responsible ? (
+                    <Badge variant="default">Ответственный</Badge>
+                  ) : null}
                   {group.pending_request_kind ? (
                     <Badge variant="secondary">
                       {group.pending_request_kind === 'join'
@@ -97,9 +150,9 @@ export function CabinetWorkGroupsPanel() {
                     </Badge>
                   ) : group.is_member ? (
                     <Badge variant="default">Участник</Badge>
-                  ) : (
+                  ) : !group.is_responsible ? (
                     <Badge variant="secondary">Не участник</Badge>
-                  )}
+                  ) : null}
                   <StatusBadge
                     status={group.status === 'active' ? 'active' : 'pending'}
                     label={
@@ -107,7 +160,9 @@ export function CabinetWorkGroupsPanel() {
                         ? 'Активна'
                         : group.status === 'paused'
                           ? 'На паузе'
-                          : workGroupStatusLabel(group.status)
+                          : group.status === 'archived'
+                            ? 'Завершена'
+                            : undefined
                     }
                   />
                 </div>

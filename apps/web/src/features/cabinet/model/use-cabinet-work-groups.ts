@@ -10,8 +10,15 @@ import {
   type WorkGroupLink,
   type WorkGroupMembershipRequestKind,
 } from '@shared/api'
+import type { WorkGroupStatusFilter } from '@features/work-groups'
 import { toApiError } from '@shared/lib/errors'
 import { notify } from '@shared/lib/notify'
+
+export type CabinetWorkGroupsFilters = {
+  search?: string
+  status?: WorkGroupStatusFilter
+  categoryId?: string
+}
 
 export function useCabinetWorkGroups() {
   return useSupabaseQuery(
@@ -21,27 +28,46 @@ export function useCabinetWorkGroups() {
   )
 }
 
-export function useCabinetWorkGroupsSearch(search: string) {
+export function useCabinetWorkGroupsFiltered(filters: CabinetWorkGroupsFilters = {}) {
   const query = useCabinetWorkGroups()
-  const term = search.trim().toLowerCase()
+  const search = filters.search?.trim().toLowerCase() ?? ''
+  const status = filters.status ?? 'all'
+  const categoryId = filters.categoryId ?? 'all'
 
   const items = useMemo(() => {
-    const rows = query.data ?? []
-    if (!term) return rows
-    return rows.filter((row) => {
-      const haystack = [row.name, row.description, row.category_name]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-      return haystack.includes(term)
-    })
-  }, [query.data, term])
+    let rows = query.data ?? []
+
+    if (status !== 'all') {
+      rows = rows.filter((row) => row.status === status)
+    }
+
+    if (categoryId !== 'all') {
+      rows = rows.filter((row) => row.category_id === categoryId)
+    }
+
+    if (search) {
+      rows = rows.filter((row) => {
+        const haystack = [row.name, row.description, row.category_name]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+        return haystack.includes(search)
+      })
+    }
+
+    return rows
+  }, [query.data, search, status, categoryId])
 
   return {
     ...query,
     items,
     totalCount: query.data?.length ?? 0,
   }
+}
+
+/** @deprecated Use useCabinetWorkGroupsFiltered */
+export function useCabinetWorkGroupsSearch(search: string) {
+  return useCabinetWorkGroupsFiltered({ search })
 }
 
 export function useCabinetWorkGroup(id: string | undefined) {

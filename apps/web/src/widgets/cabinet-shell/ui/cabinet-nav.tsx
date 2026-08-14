@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 
 import { useAuth } from '@app/providers'
+import { isCabinetNavItemVisible, useCabinetResourceAccess } from '@features/cabinet'
 import { useNotificationNavBadges } from '@features/notifications'
 import { cn } from '@shared/lib/utils'
 
@@ -55,11 +56,15 @@ function NavItem({
 export function CabinetNav({ onNavigate, className }: CabinetNavProps) {
   const { profile } = useAuth()
   const { badges } = useNotificationNavBadges(profile?.status === 'confirmed')
+  const accessQuery = useCabinetResourceAccess()
 
   return (
     <nav className={cn('flex flex-col gap-4', className)} aria-label="Меню личного кабинета">
       {cabinetNavGroups.map((group) => {
-        const groupItems = cabinetNavItems.filter((item) => item.group === group.id)
+        const groupItems = cabinetNavItems.filter(
+          (item) =>
+            item.group === group.id && isCabinetNavItemVisible(item.id, accessQuery.map),
+        )
         if (!groupItems.length) return null
 
         return (

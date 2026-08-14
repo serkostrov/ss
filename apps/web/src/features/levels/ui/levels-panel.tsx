@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Eye, EyeOff, Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react'
 import { type ColumnDef } from '@tanstack/react-table'
 
 import type { ParticipationLevel } from '@shared/api'
@@ -25,6 +25,7 @@ import {
   useToggleLevelActiveMutation,
 } from '../model/use-levels'
 import { LevelFormDialog } from './level-form-dialog'
+import { LevelResourceAccessDialog } from './level-resource-access-dialog'
 
 type LevelsPanelProps = {
   embedded?: boolean
@@ -43,6 +44,7 @@ export const LevelsPanel = forwardRef<LevelsPanelHandle, LevelsPanelProps>(funct
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<ParticipationLevel | null>(null)
   const [deleting, setDeleting] = useState<ParticipationLevel | null>(null)
+  const [accessLevel, setAccessLevel] = useState<ParticipationLevel | null>(null)
 
   const openCreate = () => {
     setEditing(null)
@@ -156,6 +158,16 @@ export const LevelsPanel = forwardRef<LevelsPanelHandle, LevelsPanelProps>(funct
                 variant="ghost"
                 size="icon"
                 className="size-7"
+                onClick={() => setAccessLevel(level)}
+                aria-label="Доступ к ресурсам"
+              >
+                <ShieldCheck className="size-3.5" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-7"
                 onClick={() => toggleMutation.mutate({ id: level.id, isActive: !level.is_active })}
                 disabled={toggleMutation.isPending}
                 aria-label={level.is_active ? 'Скрыть' : 'Показать'}
@@ -188,7 +200,7 @@ export const LevelsPanel = forwardRef<LevelsPanelHandle, LevelsPanelProps>(funct
             </div>
           )
         },
-        meta: { className: 'w-[6.5rem] max-w-[6.5rem]' },
+        meta: { className: 'w-[8.5rem] max-w-[8.5rem]' },
       },
     ],
     [moveMutation, toggleMutation],
@@ -211,7 +223,7 @@ export const LevelsPanel = forwardRef<LevelsPanelHandle, LevelsPanelProps>(funct
       {embedded ? null : (
         <PageHeader
           title="Уровни участия"
-          description="Редактор уровней, порядок отображения, скрытие и защита от удаления используемых."
+          description="Редактор уровней, порядок отображения, доступ к ресурсам кабинета и защита от удаления используемых."
           actions={
             <PageHeaderAction type="button" onClick={openCreate}>
               <Plus className="size-4" />
@@ -249,6 +261,14 @@ export const LevelsPanel = forwardRef<LevelsPanelHandle, LevelsPanelProps>(funct
           if (!open) setEditing(null)
         }}
         level={editing}
+      />
+
+      <LevelResourceAccessDialog
+        open={Boolean(accessLevel)}
+        onOpenChange={(open) => {
+          if (!open) setAccessLevel(null)
+        }}
+        level={accessLevel}
       />
 
       <DeleteDialog

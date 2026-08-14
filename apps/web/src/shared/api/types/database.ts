@@ -1582,11 +1582,38 @@ export type Database = {
           category_id: string | null
           category_name: string | null
           is_member: boolean
+          is_responsible: boolean
           joined_at: string | null
           pending_request_id: string | null
           pending_request_kind: WorkGroupMembershipRequestKind | null
           pending_request_at: string | null
         }[]
+      }
+      is_work_group_responsible: {
+        Args: { p_work_group_id: string }
+        Returns: boolean
+      }
+      get_cabinet_resource_access: {
+        Args: Record<string, never>
+        Returns: {
+          resource:
+            | 'directory'
+            | 'products'
+            | 'materials'
+            | 'polls'
+            | 'work_groups'
+            | 'invoices'
+          visible: boolean
+          has_content: boolean
+        }[]
+      }
+      get_participation_level_resource_access: {
+        Args: { p_level_id: string }
+        Returns: Json
+      }
+      set_participation_level_resource_access: {
+        Args: { p_level_id: string; p_rows: Json }
+        Returns: Json
       }
       request_work_group_membership: {
         Args: {

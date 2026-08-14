@@ -10,6 +10,7 @@ import {
 } from '@app/guards'
 import { AdminLayout, AuthLayout, CabinetLayout, PublicLayout, RootLayout } from '@app/layouts'
 import * as pages from '@app/router/lazy-pages'
+import { RequireCabinetResource } from '@features/cabinet'
 import { routes } from '@shared/config'
 
 export const router = createBrowserRouter([
@@ -104,23 +105,101 @@ export const router = createBrowserRouter([
                         element: <RequireNonExitedCompany />,
                         children: [
                           { path: 'notifications', element: <pages.CabinetNotificationsPage /> },
-                          { path: 'directory', element: <pages.CabinetDirectoryPage /> },
+                          {
+                            path: 'directory',
+                            element: (
+                              <RequireCabinetResource resource="directory">
+                                <pages.CabinetDirectoryPage />
+                              </RequireCabinetResource>
+                            ),
+                          },
                           {
                             path: 'directory/:id',
-                            element: <pages.CabinetDirectoryCompanyPage />,
+                            element: (
+                              <RequireCabinetResource resource="directory">
+                                <pages.CabinetDirectoryCompanyPage />
+                              </RequireCabinetResource>
+                            ),
                           },
-                          { path: 'products', element: <pages.CabinetProductsPage /> },
-                          { path: 'products/:id', element: <pages.CabinetProductDetailsPage /> },
-                          { path: 'invoices', element: <pages.CabinetInvoicesPage /> },
-                          { path: 'invoices/:id', element: <pages.CabinetInvoiceDetailsPage /> },
-                          { path: 'materials', element: <pages.CabinetMaterialsPage /> },
-                          { path: 'materials/:slug', element: <pages.CabinetMaterialDetailsPage /> },
-                          { path: 'polls', element: <pages.CabinetPollsPage /> },
-                          { path: 'polls/:id', element: <pages.CabinetPollDetailsPage /> },
-                          { path: 'work-groups', element: <pages.CabinetWorkGroupsPage /> },
+                          {
+                            path: 'products',
+                            element: (
+                              <RequireCabinetResource resource="products">
+                                <pages.CabinetProductsPage />
+                              </RequireCabinetResource>
+                            ),
+                          },
+                          {
+                            path: 'products/:id',
+                            element: (
+                              <RequireCabinetResource resource="products">
+                                <pages.CabinetProductDetailsPage />
+                              </RequireCabinetResource>
+                            ),
+                          },
+                          {
+                            path: 'invoices',
+                            element: (
+                              <RequireCabinetResource resource="invoices">
+                                <pages.CabinetInvoicesPage />
+                              </RequireCabinetResource>
+                            ),
+                          },
+                          {
+                            path: 'invoices/:id',
+                            element: (
+                              <RequireCabinetResource resource="invoices">
+                                <pages.CabinetInvoiceDetailsPage />
+                              </RequireCabinetResource>
+                            ),
+                          },
+                          {
+                            path: 'materials',
+                            element: (
+                              <RequireCabinetResource resource="materials">
+                                <pages.CabinetMaterialsPage />
+                              </RequireCabinetResource>
+                            ),
+                          },
+                          {
+                            path: 'materials/:slug',
+                            element: (
+                              <RequireCabinetResource resource="materials">
+                                <pages.CabinetMaterialDetailsPage />
+                              </RequireCabinetResource>
+                            ),
+                          },
+                          {
+                            path: 'polls',
+                            element: (
+                              <RequireCabinetResource resource="polls">
+                                <pages.CabinetPollsPage />
+                              </RequireCabinetResource>
+                            ),
+                          },
+                          {
+                            path: 'polls/:id',
+                            element: (
+                              <RequireCabinetResource resource="polls">
+                                <pages.CabinetPollDetailsPage />
+                              </RequireCabinetResource>
+                            ),
+                          },
+                          {
+                            path: 'work-groups',
+                            element: (
+                              <RequireCabinetResource resource="work_groups">
+                                <pages.CabinetWorkGroupsPage />
+                              </RequireCabinetResource>
+                            ),
+                          },
                           {
                             path: 'work-groups/:id',
-                            element: <pages.CabinetWorkGroupDetailsPage />,
+                            element: (
+                              <RequireCabinetResource resource="work_groups">
+                                <pages.CabinetWorkGroupDetailsPage />
+                              </RequireCabinetResource>
+                            ),
                           },
                         ],
                       },

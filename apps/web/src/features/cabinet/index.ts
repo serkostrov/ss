@@ -34,11 +34,13 @@ export type { CabinetPoll } from './model/use-cabinet-polls'
 
 export {
   useCabinetWorkGroups,
+  useCabinetWorkGroupsFiltered,
   useCabinetWorkGroupsSearch,
   useCabinetWorkGroup,
   useCabinetWorkGroupLinks,
   useRequestWorkGroupMembershipMutation,
 } from './model/use-cabinet-work-groups'
+export type { CabinetWorkGroupsFilters } from './model/use-cabinet-work-groups'
 
 export {
   useOwnCompany,
@@ -53,6 +55,18 @@ export {
   isSuspendedCompany,
   exitedCompanyPath,
 } from './model/company-access'
+
+export {
+  useCabinetResourceAccess,
+  isCabinetNavItemVisible,
+  cabinetResourceForNavId,
+} from './model/resource-access'
+export type { CabinetResourceAccessMap } from './model/resource-access'
+
+export {
+  RequireCabinetResource,
+  CabinetResourceContentBlocked,
+} from './ui/cabinet-resource-gate'
 
 export { useCabinetProductsCatalog } from './model/use-cabinet-products'
 export type {

@@ -11,6 +11,7 @@ export const queryKeys = {
       ['apss', 'levels', 'list', filters] as const,
     detail: (id: string) => ['apss', 'levels', id] as const,
     usage: (id: string) => ['apss', 'levels', 'usage', id] as const,
+    resourceAccess: (id: string) => ['apss', 'levels', 'resource-access', id] as const,
   },
   companies: {
     all: ['apss', 'companies'] as const,
@@ -159,5 +160,8 @@ export const queryKeys = {
   },
   cabinetMeta: {
     pollAccessHint: ['apss', 'cabinet', 'poll-access-hint'] as const,
+  },
+  cabinet: {
+    resourceAccess: ['apss', 'cabinet', 'resource-access'] as const,
   },
 } as const

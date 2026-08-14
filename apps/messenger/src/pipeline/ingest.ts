@@ -8,13 +8,13 @@ export type IngestStoredItem = {
 
 export type IngestResult =
   | { status: 'skipped' }
-  | { status: 'stored' | 'updated'; items: IngestStoredItem[] }
+  | { status: 'stored' | 'updated' | 'duplicate'; items: IngestStoredItem[] }
 
 async function persistForWorkGroup(
   db: DbClient,
   workGroupId: string,
   input: IngestMessageInput,
-): Promise<{ status: 'stored' | 'updated'; messageId: string }> {
+): Promise<{ status: 'stored' | 'updated' | 'duplicate'; messageId: string }> {
   const row = {
     work_group_id: workGroupId,
     source: input.platform,
@@ -56,6 +56,20 @@ async function persistForWorkGroup(
 
       if (updateError) throw updateError
       return { status: 'updated', messageId: existing.id as string }
+    }
+  } else {
+    const { data: existing, error: findError } = await db
+      .from('messages')
+      .select('id')
+      .eq('work_group_id', row.work_group_id)
+      .eq('source', row.source)
+      .eq('external_message_id', row.external_message_id)
+      .maybeSingle()
+
+    if (findError) throw findError
+
+    if (existing?.id) {
+      return { status: 'duplicate', messageId: existing.id as string }
     }
   }
 
@@ -120,7 +134,7 @@ export async function ingestChannelMessage(
   }
 
   const items: IngestStoredItem[] = []
-  let lastStatus: 'stored' | 'updated' = 'stored'
+  let lastStatus: 'stored' | 'updated' | 'duplicate' = 'stored'
 
   for (const connection of connections) {
     const workGroupId = connection.work_group_id as string

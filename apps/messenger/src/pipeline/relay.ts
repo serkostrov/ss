@@ -21,6 +21,14 @@ export type RelaySiblingInput = {
   fromOutbound?: boolean
 }
 
+type RelayRow = {
+  id: string
+  status: 'pending' | 'sent' | 'failed'
+  created_at?: string
+}
+
+const STALE_PENDING_MS = 90_000
+
 function platformLabel(platform: MessengerPlatform): string {
   return platform === 'telegram' ? 'Telegram' : 'Max'
 }
@@ -34,6 +42,133 @@ function formatRelayText(input: RelaySiblingInput): string {
   }
   const who = input.authorName?.trim() || 'Участник'
   return `[${platformLabel(input.sourcePlatform)} · ${who}]\n${body}`
+}
+
+function isUniqueViolation(error: { code?: string } | null | undefined): boolean {
+  return error?.code === '23505'
+}
+
+async function loadRelayRow(
+  db: DbClient,
+  messageId: string,
+  targetPlatform: MessengerPlatform,
+): Promise<RelayRow | null> {
+  const { data, error } = await db
+    .from('message_relays')
+    .select('id, status, created_at')
+    .eq('message_id', messageId)
+    .eq('target_platform', targetPlatform)
+    .maybeSingle()
+
+  if (error) {
+    log('warn', 'Relay row lookup failed', {
+      message: error.message,
+      messageId,
+      targetPlatform,
+    })
+    return null
+  }
+
+  if (!data?.id) return null
+  return {
+    id: data.id as string,
+    status: data.status as RelayRow['status'],
+    created_at: data.created_at as string | undefined,
+  }
+}
+
+function isStalePending(relay: RelayRow): boolean {
+  if (relay.status !== 'pending' || !relay.created_at) return false
+  return Date.now() - new Date(relay.created_at).getTime() >= STALE_PENDING_MS
+}
+
+/**
+ * Reserve a relay row or skip if this message was already delivered to the target.
+ * Webhook retries must not call Telegram/Max API twice for the same source message.
+ */
+async function reserveRelayRow(
+  db: DbClient,
+  input: { messageId: string; targetPlatform: MessengerPlatform; targetChatId: string },
+): Promise<{ relayId: string; shouldSend: boolean } | null> {
+  const existing = await loadRelayRow(db, input.messageId, input.targetPlatform)
+  if (existing?.status === 'sent') {
+    log('info', 'Relay skipped — already sent', {
+      messageId: input.messageId,
+      targetPlatform: input.targetPlatform,
+      relayId: existing.id,
+    })
+    return { relayId: existing.id, shouldSend: false }
+  }
+
+  if (existing?.status === 'pending') {
+    if (!isStalePending(existing)) {
+      log('info', 'Relay skipped — delivery in progress', {
+        messageId: input.messageId,
+        targetPlatform: input.targetPlatform,
+        relayId: existing.id,
+      })
+      return { relayId: existing.id, shouldSend: false }
+    }
+    log('info', 'Relay retry — stale pending reservation', {
+      messageId: input.messageId,
+      targetPlatform: input.targetPlatform,
+      relayId: existing.id,
+    })
+    return { relayId: existing.id, shouldSend: true }
+  }
+
+  if (existing?.status === 'failed') {
+    return { relayId: existing.id, shouldSend: true }
+  }
+
+  const { data: inserted, error: insertError } = await db
+    .from('message_relays')
+    .insert({
+      message_id: input.messageId,
+      target_platform: input.targetPlatform,
+      target_chat_id: input.targetChatId,
+      status: 'pending',
+    })
+    .select('id')
+    .single()
+
+  if (!insertError && inserted?.id) {
+    return { relayId: inserted.id as string, shouldSend: true }
+  }
+
+  if (isUniqueViolation(insertError)) {
+    const raced = await loadRelayRow(db, input.messageId, input.targetPlatform)
+    if (!raced) return null
+    if (raced.status === 'sent') {
+      log('info', 'Relay skipped — concurrent reservation', {
+        messageId: input.messageId,
+        targetPlatform: input.targetPlatform,
+        relayId: raced.id,
+        status: raced.status,
+      })
+      return { relayId: raced.id, shouldSend: false }
+    }
+    if (raced.status === 'pending' && !isStalePending(raced)) {
+      log('info', 'Relay skipped — concurrent reservation', {
+        messageId: input.messageId,
+        targetPlatform: input.targetPlatform,
+        relayId: raced.id,
+        status: raced.status,
+      })
+      return { relayId: raced.id, shouldSend: false }
+    }
+    return {
+      relayId: raced.id,
+      shouldSend: raced.status === 'failed' || isStalePending(raced),
+    }
+  }
+
+  log('warn', 'Relay row insert failed', {
+    message: insertError?.message,
+    messageId: input.messageId,
+    targetPlatform: input.targetPlatform,
+  })
+  return null
 }
 
 /**
@@ -72,25 +207,15 @@ export async function relaySiblingChats(
       continue
     }
 
-    const { data: relayRow, error: insertError } = await db
-      .from('message_relays')
-      .insert({
-        message_id: input.messageId,
-        target_platform: targetPlatform,
-        target_chat_id: targetChatId,
-        status: 'pending',
-      })
-      .select('id')
-      .single()
+    const reserved = await reserveRelayRow(db, {
+      messageId: input.messageId,
+      targetPlatform,
+      targetChatId,
+    })
+    if (!reserved) continue
+    if (!reserved.shouldSend) continue
 
-    if (insertError || !relayRow?.id) {
-      log('warn', 'Relay row insert failed', {
-        message: insertError?.message,
-        targetPlatform,
-        messageId: input.messageId,
-      })
-      continue
-    }
+    const relayRowId = reserved.relayId
 
     try {
       const delivered = await deliverToBoundChat(db, config, {
@@ -108,7 +233,7 @@ export async function relaySiblingChats(
           target_external_message_id: delivered.externalMessageId,
           relayed_at: new Date().toISOString(),
         })
-        .eq('id', relayRow.id)
+        .eq('id', relayRowId)
 
       // Mirror into site history for the target thread (skipRelay via payload).
       await ingestChannelMessage(db, {
@@ -141,10 +266,7 @@ export async function relaySiblingChats(
       })
     } catch (relayError) {
       const message = relayError instanceof Error ? relayError.message : String(relayError)
-      await db
-        .from('message_relays')
-        .update({ status: 'failed' })
-        .eq('id', relayRow.id)
+      await db.from('message_relays').update({ status: 'failed' }).eq('id', relayRowId)
       log('warn', 'Relay send failed', {
         workGroupId: input.workGroupId,
         from: input.sourcePlatform,

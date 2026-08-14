@@ -431,7 +431,14 @@ async function handleMessageCreated(
     }
   }
 
-  log('info', 'Max message processed', { chatId, kind, mid, result: result.status, isEdit })
+  log('info', 'Max message processed', {
+    chatId,
+    kind,
+    mid,
+    result: result.status,
+    isEdit,
+    duplicate: result.status === 'duplicate',
+  })
 }
 
 export async function handleMaxUpdate(

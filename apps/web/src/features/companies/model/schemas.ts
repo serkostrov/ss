@@ -103,6 +103,18 @@ export function accessStatusLabel(status: CompanyAccessStatus | 'all'): string {
   }
 }
 
+/** Singular label for member cabinet (company card, alerts). */
+export function companyAccessStatusMemberLabel(status: CompanyAccessStatus): string {
+  switch (status) {
+    case 'active':
+      return 'Активна'
+    case 'suspended':
+      return 'Приостановлена'
+    case 'archived':
+      return 'Вышедшая'
+  }
+}
+
 export function formatCompanyDate(value: string): string {
   try {
     return new Intl.DateTimeFormat('ru-RU', {

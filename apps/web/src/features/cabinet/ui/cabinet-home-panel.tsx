@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Building2, FileText, ShieldAlert, Vote } from 'lucide-react'
 
 import { useAuth } from '@app/providers'
+import { companyAccessStatusMemberLabel } from '@features/companies'
 import { useClearNavNotificationBadges } from '@features/notifications'
 import { routes } from '@shared/config'
 import {
@@ -51,8 +52,9 @@ export function CabinetHomePanel() {
           <ShieldAlert className="size-4" />
           <AlertTitle>Доступ компании ограничен</AlertTitle>
           <AlertDescription>
-            Статус компании «{membership.companyName}»: {membership.accessStatus}. Материалы скрыты
-            до восстановления доступа.
+            Статус компании «{membership.companyName}»:{' '}
+            {companyAccessStatusMemberLabel(membership.accessStatus)}. Материалы скрыты до
+            восстановления доступа.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -88,7 +90,10 @@ export function CabinetHomePanel() {
                   {companyActive ? (
                     <StatusBadge status="active" label="Активна" />
                   ) : (
-                    <StatusBadge status="blocked" label={membership.accessStatus} />
+                    <StatusBadge
+                      status={membership.accessStatus}
+                      label={companyAccessStatusMemberLabel(membership.accessStatus)}
+                    />
                   )}
                 </p>
                 <p>

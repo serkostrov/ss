@@ -37,6 +37,19 @@ type CompanyProductsPanelProps = {
   editable?: boolean
 }
 
+function formatProductUrlLabel(url: string): string {
+  try {
+    const parsed = new URL(url)
+    const host = parsed.hostname.replace(/^www\./i, '')
+    const path = parsed.pathname.replace(/\/$/, '')
+    if (!path || path === '/') return host
+    const tail = path.length > 18 ? `…${path.slice(-16)}` : path
+    return `${host}${tail}`
+  } catch {
+    return url.length > 28 ? `${url.slice(0, 26)}…` : url
+  }
+}
+
 export function CompanyProductsPanel({
   companyId,
   title = 'Продукция',
@@ -52,6 +65,7 @@ export function CompanyProductsPanel({
   const [deleting, setDeleting] = useState<CompanyProduct | null>(null)
 
   const products = query.data ?? []
+  const showUrlColumn = products.some((product) => Boolean(product.url?.trim()))
 
   const openCreate = () => {
     setEditing(null)
@@ -95,20 +109,22 @@ export function CompanyProductsPanel({
                   <TableHead
                     className={cn(
                       'px-3 py-2 text-[11px] font-medium tracking-wide uppercase',
-                      editable ? 'w-[48%]' : 'w-[58%]',
+                      editable ? 'w-[42%]' : 'w-[52%]',
                     )}
                   >
                     Продукция
                   </TableHead>
-                  <TableHead className="w-[22%] px-3 py-2 text-[11px] font-medium tracking-wide uppercase">
+                  <TableHead className="w-[20%] px-3 py-2 text-[11px] font-medium tracking-wide uppercase">
                     Примечание
                   </TableHead>
                   <TableHead className="w-[14%] px-3 py-2 text-[11px] font-medium tracking-wide uppercase">
                     Статус
                   </TableHead>
-                  <TableHead className="w-12 px-3 py-2 text-right text-[11px] font-medium tracking-wide uppercase">
-                    URL
-                  </TableHead>
+                  {showUrlColumn ? (
+                    <TableHead className="w-[18%] min-w-[8.5rem] px-3 py-2 text-[11px] font-medium tracking-wide uppercase">
+                      Ссылка
+                    </TableHead>
+                  ) : null}
                   {editable ? (
                     <TableHead className="w-[16%] px-2 py-2 text-right text-[11px] font-medium tracking-wide uppercase">
                       Действия
@@ -177,22 +193,24 @@ export function CompanyProductsPanel({
                     <TableCell className="px-3 py-2.5 align-middle">
                       <StatusBadge status={product.moderation_status} />
                     </TableCell>
-                    <TableCell className="px-3 py-2.5 align-middle text-right">
-                      {product.url ? (
-                        <a
-                          href={product.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="border-border text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-accent inline-flex size-8 items-center justify-center rounded-md border transition-colors"
-                          title={product.url}
-                        >
-                          <ExternalLink className="size-3.5" />
-                          <span className="sr-only">Открыть ссылку</span>
-                        </a>
-                      ) : (
-                        <span className="text-muted-foreground/50 text-xs">—</span>
-                      )}
-                    </TableCell>
+                    {showUrlColumn ? (
+                      <TableCell className="px-3 py-2.5 align-middle">
+                        {product.url ? (
+                          <a
+                            href={product.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary inline-flex max-w-full items-center gap-1.5 text-xs font-medium hover:underline"
+                            title={product.url}
+                          >
+                            <ExternalLink className="size-3.5 shrink-0" aria-hidden />
+                            <span className="truncate">{formatProductUrlLabel(product.url)}</span>
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
+                      </TableCell>
+                    ) : null}
                     {editable ? (
                       <TableCell className="px-1 py-1.5 align-middle">
                         <div className="flex items-center justify-end gap-0.5">
