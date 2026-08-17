@@ -28,7 +28,8 @@ export function CabinetHomePanel() {
   const materials = useCabinetMaterials()
   const membership = profile?.membership
 
-  const companyActive = membership?.accessStatus === 'active'
+  const companyActive =
+    membership?.accessStatusIsDefault ?? membership?.accessStatus === 'active'
   const hasLevel = Boolean(membership?.participationLevelId)
 
   return (

@@ -41,7 +41,7 @@ function buildDefaults(application: RegistrationApplication): ConfirmRegistratio
     companyName: application.company_name_hint ?? '',
     companyInn: application.company_inn_hint ?? '',
     fullName: application.full_name ?? '',
-    position: '',
+    position: application.position_hint ?? '',
     phone: application.phone ?? '',
     email: application.email ?? '',
     telegramUsername: application.telegram_username ?? '',

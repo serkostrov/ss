@@ -42,6 +42,11 @@ const RPC_AUDIT: Partial<Record<RpcName, RpcAuditSpec>> = {
     entity_type: 'users',
     entityId: (args) => String(args.p_user_id ?? ''),
   },
+  delete_company_access_status: {
+    action: 'company_access_statuses.delete',
+    entity_type: 'company_access_statuses',
+    entityId: (args) => String(args.p_slug ?? ''),
+  },
   delete_participation_level: {
     action: 'participation_levels.delete',
     entity_type: 'participation_levels',

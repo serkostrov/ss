@@ -23,7 +23,27 @@ export const CABINET_RESOURCES: CabinetResource[] = [
   'invoices',
 ]
 
-export const COMPANY_ACCESS_STATUSES: CompanyAccessStatus[] = ['active', 'suspended', 'archived']
+export type AccessStatusDefaults = {
+  slugs: string[]
+  defaultSlug: string
+  programSlugs: string[]
+}
+
+export function buildAccessStatusDefaults(
+  records: Array<{ slug: string; is_default?: boolean; excludes_from_program?: boolean }>,
+): AccessStatusDefaults {
+  const slugs = records.map((record) => record.slug)
+  const defaultSlug = records.find((record) => record.is_default)?.slug ?? slugs[0] ?? 'active'
+  const programSlugs = records
+    .filter((record) => !record.excludes_from_program)
+    .map((record) => record.slug)
+
+  return {
+    slugs,
+    defaultSlug,
+    programSlugs: programSlugs.length ? programSlugs : ['active', 'suspended'],
+  }
+}
 
 export function cabinetResourceLabel(resource: CabinetResource): string {
   switch (resource) {
@@ -42,27 +62,17 @@ export function cabinetResourceLabel(resource: CabinetResource): string {
   }
 }
 
-export function companyAccessStatusLabel(status: CompanyAccessStatus): string {
-  switch (status) {
-    case 'active':
-      return 'Активна'
-    case 'suspended':
-      return 'Приостановлена'
-    case 'archived':
-      return 'Вышедшая'
-  }
-}
-
-export function defaultLevelResourceAccessRows(): LevelResourceAccessRow[] {
+export function defaultLevelResourceAccessRows(defaults: AccessStatusDefaults): LevelResourceAccessRow[] {
   return CABINET_RESOURCES.map((resource) => ({
     resource,
-    visibility_statuses: ['active', 'suspended'],
-    content_statuses: ['active'],
+    visibility_statuses: [...defaults.programSlugs],
+    content_statuses: [defaults.defaultSlug],
   }))
 }
 
 export function normalizeLevelResourceAccessRows(
   rows: LevelResourceAccessRow[] | null | undefined,
+  defaults: AccessStatusDefaults,
 ): LevelResourceAccessRow[] {
   const byResource = new Map((rows ?? []).map((row) => [row.resource, row]))
   return CABINET_RESOURCES.map((resource) => {
@@ -71,10 +81,10 @@ export function normalizeLevelResourceAccessRows(
       resource,
       visibility_statuses: existing?.visibility_statuses?.length
         ? [...existing.visibility_statuses]
-        : ['active', 'suspended'],
+        : [...defaults.programSlugs],
       content_statuses: existing?.content_statuses?.length
         ? [...existing.content_statuses]
-        : ['active'],
+        : [defaults.defaultSlug],
     }
   })
 }

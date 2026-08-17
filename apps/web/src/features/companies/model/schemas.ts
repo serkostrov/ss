@@ -1,9 +1,11 @@
 import { z } from 'zod'
 
-import type { CompanyAccessStatus } from '@shared/api'
+import type { CompanyAccessStatus, CompanyAccessStatusRecord } from '@shared/api'
 
-export const companyAccessFilterSchema = z.enum(['all', 'active', 'suspended', 'archived'])
-export type CompanyAccessFilter = z.infer<typeof companyAccessFilterSchema>
+import { companyAccessStatusLabel as lookupAccessStatusLabel } from '@features/access-statuses'
+
+export const companyAccessFilterSchema = z.string()
+export type CompanyAccessFilter = string
 
 const optionalText = (max: number) =>
   z.string().trim().max(max, `Не более ${max} символов`).optional().or(z.literal(''))
@@ -58,10 +60,7 @@ export const companyFormSchema = z.object({
   website: optionalUrl,
   address: optionalText(500),
   participationLevelId: z.string().uuid().optional().or(z.literal('')),
-  accessStatus: z.enum(['active', 'suspended', 'archived'] satisfies [
-    CompanyAccessStatus,
-    ...CompanyAccessStatus[],
-  ]),
+  accessStatus: z.string({ required_error: 'Выберите статус' }).min(1, 'Выберите статус'),
   notes: optionalText(4000),
   balance: z
     .string()
@@ -90,29 +89,20 @@ export const companyCommentSchema = z.object({
 
 export type CompanyCommentFormValues = z.infer<typeof companyCommentSchema>
 
-export function accessStatusLabel(status: CompanyAccessStatus | 'all'): string {
-  switch (status) {
-    case 'active':
-      return 'Активные'
-    case 'suspended':
-      return 'Приостановленные'
-    case 'archived':
-      return 'Вышедшие'
-    default:
-      return 'Все статусы'
-  }
+export function accessStatusLabel(
+  status: CompanyAccessFilter,
+  statuses?: CompanyAccessStatusRecord[] | null,
+): string {
+  if (status === 'all') return 'Все статусы'
+  return lookupAccessStatusLabel(status, statuses)
 }
 
 /** Singular label for member cabinet (company card, alerts). */
-export function companyAccessStatusMemberLabel(status: CompanyAccessStatus): string {
-  switch (status) {
-    case 'active':
-      return 'Активна'
-    case 'suspended':
-      return 'Приостановлена'
-    case 'archived':
-      return 'Вышедшая'
-  }
+export function companyAccessStatusMemberLabel(
+  status: CompanyAccessStatus,
+  statuses?: CompanyAccessStatusRecord[] | null,
+): string {
+  return lookupAccessStatusLabel(status, statuses)
 }
 
 export function formatCompanyDate(value: string): string {

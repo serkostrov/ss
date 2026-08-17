@@ -45,6 +45,12 @@ export const registerSchema = z
       .trim()
       .min(2, 'ФИО слишком короткое')
       .max(120, 'ФИО слишком длинное'),
+    position: z
+      .string()
+      .trim()
+      .max(120, 'Должность слишком длинная')
+      .optional()
+      .or(z.literal('')),
     phone: z.string().trim().max(32, 'Телефон слишком длинный').optional().or(z.literal('')),
     telegramUsername: optionalMessengerUsername,
     companyInnHint: z
@@ -71,6 +77,17 @@ export const registerSchema = z
     message: 'Пароли не совпадают',
     path: ['confirmPassword'],
   })
+  .refine(
+    (data) => {
+      const hasCompany = Boolean(data.companyInnHint?.trim() || data.companyNameHint?.trim())
+      if (!hasCompany) return true
+      return (data.position?.trim().length ?? 0) >= 2
+    },
+    {
+      message: 'Укажите должность',
+      path: ['position'],
+    },
+  )
 
 export type RegisterFormValues = z.infer<typeof registerSchema>
 

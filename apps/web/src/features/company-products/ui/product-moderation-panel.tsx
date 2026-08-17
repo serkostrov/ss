@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ExternalLink } from 'lucide-react'
 
 import type { ProductModerationStatus } from '@shared/api'
+import { routes } from '@shared/config'
 import {
   Button,
   EmptyState,
@@ -64,7 +66,12 @@ export function ProductModerationPanel() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium">{product.name}</p>
+                    <Link
+                      to={routes.admin.product(product.id)}
+                      className="font-medium underline-offset-4 hover:underline"
+                    >
+                      {product.name}
+                    </Link>
                     <StatusBadge status={product.moderation_status} />
                   </div>
                   {(product.okpd || product.proposed_okpd_code) && (

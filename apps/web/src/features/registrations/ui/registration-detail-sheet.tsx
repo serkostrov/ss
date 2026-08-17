@@ -177,6 +177,7 @@ function ApplicationCard({ application }: { application: RegistrationApplication
       <Separator />
 
       <dl className="grid gap-3">
+        <Field label="Должность" value={application.position_hint} />
         <Field label="Телефон" value={application.phone} />
         <Field
           label="Telegram"

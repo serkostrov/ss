@@ -28,6 +28,10 @@ export type { ParticipationLevelFormValues, LevelActiveFilter } from './model/sc
 export {
   CABINET_RESOURCES,
   cabinetResourceLabel,
-  companyAccessStatusLabel,
+  buildAccessStatusDefaults,
 } from './model/resource-access'
-export type { CabinetResource, LevelResourceAccessRow } from './model/resource-access'
+export type {
+  AccessStatusDefaults,
+  CabinetResource,
+  LevelResourceAccessRow,
+} from './model/resource-access'

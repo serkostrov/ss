@@ -22,6 +22,7 @@ export type SignUpInput = {
   email: string
   password: string
   fullName: string
+  position?: string
   phone?: string
   companyNameHint?: string
   companyInnHint?: string
@@ -42,6 +43,8 @@ export type MemberMembership = {
   companyId: string
   companyName: string
   accessStatus: CompanyAccessStatus
+  accessStatusExcludesProgram: boolean
+  accessStatusIsDefault: boolean
   participationLevelId: string | null
   participationLevelName: string | null
   participationLevelActive: boolean | null
@@ -75,6 +78,11 @@ export type UpdateOwnMemberProfileInput = {
   showContactsToMembers: boolean
 }
 
+type ProfileCompanyAccessStatusRow = {
+  excludes_from_program: boolean
+  is_default: boolean
+}
+
 type ProfileCompanyRow = {
   id: string
   name: string
@@ -91,6 +99,10 @@ type ProfileCompanyRow = {
         name: string
         is_active: boolean
       }>
+    | null
+  company_access_statuses:
+    | ProfileCompanyAccessStatusRow
+    | ProfileCompanyAccessStatusRow[]
     | null
 }
 
@@ -140,6 +152,7 @@ function mapMembership(row: ProfileQueryRow): MemberMembership | null {
   if (!company) return null
 
   const level = firstRelation(company.participation_levels)
+  const accessStatusMeta = firstRelation(company.company_access_statuses)
 
   return {
     representativeId: representative.id,
@@ -147,6 +160,9 @@ function mapMembership(row: ProfileQueryRow): MemberMembership | null {
     companyId: company.id,
     companyName: company.name,
     accessStatus: company.access_status,
+    accessStatusExcludesProgram:
+      accessStatusMeta?.excludes_from_program ?? company.access_status === 'archived',
+    accessStatusIsDefault: accessStatusMeta?.is_default ?? company.access_status === 'active',
     participationLevelId: company.participation_level_id,
     participationLevelName: level?.name ?? null,
     participationLevelActive: level?.is_active ?? null,
@@ -218,6 +234,10 @@ const PROFILE_SELECT = `
         id,
         name,
         is_active
+      ),
+      company_access_statuses (
+        excludes_from_program,
+        is_default
       )
     )
   )
@@ -285,6 +305,7 @@ export const authService = {
       options: {
         data: {
           full_name: input.fullName,
+          position_hint: input.position?.trim() || null,
           phone: input.phone ?? null,
           company_name_hint: input.companyNameHint ?? null,
           company_inn_hint: input.companyInnHint ?? null,
@@ -366,6 +387,10 @@ export const authService = {
                   id,
                   name,
                   is_active
+                ),
+                company_access_statuses (
+                  excludes_from_program,
+                  is_default
                 )
               )
             )

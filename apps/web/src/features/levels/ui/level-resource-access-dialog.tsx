@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ShieldCheck } from 'lucide-react'
 
 import type { ParticipationLevel } from '@shared/api'
@@ -20,13 +20,14 @@ import {
 
 import {
   CABINET_RESOURCES,
-  COMPANY_ACCESS_STATUSES,
+  buildAccessStatusDefaults,
   cabinetResourceLabel,
-  companyAccessStatusLabel,
+  defaultLevelResourceAccessRows,
   normalizeLevelResourceAccessRows,
   toggleStatus,
   type LevelResourceAccessRow,
 } from '../model/resource-access'
+import { useCompanyAccessStatuses } from '@features/access-statuses'
 import {
   useLevelResourceAccess,
   useSaveLevelResourceAccessMutation,
@@ -42,21 +43,23 @@ function StatusCheckboxes({
   selected,
   onChange,
   disabled,
+  options,
 }: {
   selected: CompanyAccessStatus[]
   onChange: (next: CompanyAccessStatus[]) => void
   disabled?: boolean
+  options: Array<{ slug: string; name: string }>
 }) {
   return (
     <div className="flex flex-wrap gap-x-3 gap-y-1">
-      {COMPANY_ACCESS_STATUSES.map((status) => (
-        <label key={status} className="inline-flex items-center gap-1.5 text-xs">
+      {options.map((status) => (
+        <label key={status.slug} className="inline-flex items-center gap-1.5 text-xs">
           <Checkbox
-            checked={selected.includes(status)}
+            checked={selected.includes(status.slug)}
             disabled={disabled}
-            onCheckedChange={() => onChange(toggleStatus(selected, status))}
+            onCheckedChange={() => onChange(toggleStatus(selected, status.slug))}
           />
-          {companyAccessStatusLabel(status)}
+          {status.name}
         </label>
       ))}
     </div>
@@ -70,17 +73,20 @@ export function LevelResourceAccessDialog({
 }: LevelResourceAccessDialogProps) {
   const levelId = level?.id ?? null
   const query = useLevelResourceAccess(open ? levelId : null)
+  const statusesQuery = useCompanyAccessStatuses(false)
   const saveMutation = useSaveLevelResourceAccessMutation(levelId ?? '')
+  const statusOptions = (statusesQuery.data ?? []).filter((item) => item.is_active)
+  const statusDefaults = useMemo(() => buildAccessStatusDefaults(statusOptions), [statusOptions])
   const [rows, setRows] = useState<LevelResourceAccessRow[]>(() =>
-    normalizeLevelResourceAccessRows([]),
+    defaultLevelResourceAccessRows(statusDefaults),
   )
   const [formError, setFormError] = useState<string>()
 
   useEffect(() => {
     if (!open) return
-    setRows(normalizeLevelResourceAccessRows(query.data))
+    setRows(normalizeLevelResourceAccessRows(query.data, statusDefaults))
     setFormError(undefined)
-  }, [open, query.data])
+  }, [open, query.data, statusDefaults])
 
   const patchRow = (
     resource: LevelResourceAccessRow['resource'],
@@ -169,6 +175,7 @@ export function LevelResourceAccessDialog({
                         <StatusCheckboxes
                           selected={row.visibility_statuses}
                           disabled={saveMutation.isPending}
+                          options={statusOptions}
                           onChange={(visibility_statuses) =>
                             patchRow(resource, { visibility_statuses })
                           }
@@ -178,6 +185,7 @@ export function LevelResourceAccessDialog({
                         <StatusCheckboxes
                           selected={row.content_statuses}
                           disabled={saveMutation.isPending}
+                          options={statusOptions}
                           onChange={(content_statuses) => patchRow(resource, { content_statuses })}
                         />
                       </TableCell>

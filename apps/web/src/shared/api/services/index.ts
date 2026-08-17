@@ -8,6 +8,11 @@ export type {
 } from './auth.service'
 export { companyLookupService, normalizeInnDigits } from './company-lookup.service'
 export type { CompanyByInn } from './company-lookup.service'
+export { companyAccessStatusesService } from './company-access-statuses.service'
+export type {
+  CompanyAccessStatusRecord,
+  CompanyAccessStatusInput,
+} from './company-access-statuses.service'
 export { directoryService, cabinetPollsMetaService } from './directory.service'
 export type {
   DirectoryCompany,

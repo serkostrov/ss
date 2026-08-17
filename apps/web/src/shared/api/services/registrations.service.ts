@@ -28,6 +28,7 @@ export type RegistrationApplication = Pick<
   | 'status'
   | 'full_name'
   | 'phone'
+  | 'position_hint'
   | 'company_name_hint'
   | 'company_inn_hint'
   | 'pd_consent_at'
@@ -83,6 +84,7 @@ const APPLICATION_SELECT = `
   status,
   full_name,
   phone,
+  position_hint,
   company_name_hint,
   company_inn_hint,
   pd_consent_at,
@@ -137,6 +139,7 @@ export const registrationsService = {
             `full_name.ilike."${pattern}"`,
             `email.ilike."${pattern}"`,
             `phone.ilike."${pattern}"`,
+            `position_hint.ilike."${pattern}"`,
             `company_name_hint.ilike."${pattern}"`,
             `company_inn_hint.ilike."${pattern}"`,
           ].join(','),

@@ -4,6 +4,10 @@ import { Plus } from 'lucide-react'
 import { CanAccess } from '@features/auth/ui/can-access'
 import { permissions } from '@features/auth/model/permissions'
 import { DirectionsPanel, type DirectionsPanelHandle } from '@features/directions'
+import {
+  AccessStatusesPanel,
+  type AccessStatusesPanelHandle,
+} from '@features/access-statuses'
 import { LevelsPanel, type LevelsPanelHandle } from '@features/levels'
 import {
   MaterialCategoriesPanel,
@@ -28,6 +32,7 @@ import {
 
 type SettingsTab =
   | 'users'
+  | 'accessStatuses'
   | 'levels'
   | 'directions'
   | 'materialCategories'
@@ -36,6 +41,7 @@ type SettingsTab =
 
 export function AdminSettingsPage() {
   const [tab, setTab] = useState<SettingsTab>('users')
+  const accessStatusesRef = useRef<AccessStatusesPanelHandle>(null)
   const levelsRef = useRef<LevelsPanelHandle>(null)
   const directionsRef = useRef<DirectionsPanelHandle>(null)
   const materialCategoriesRef = useRef<MaterialCategoriesPanelHandle>(null)
@@ -45,7 +51,9 @@ export function AdminSettingsPage() {
   const showAddAction = tab !== 'users'
 
   const addPermission =
-    tab === 'levels'
+    tab === 'accessStatuses'
+      ? permissions['admin.companies']
+      : tab === 'levels'
       ? permissions['admin.levels']
       : tab === 'directions'
         ? permissions['admin.workGroups']
@@ -68,6 +76,7 @@ export function AdminSettingsPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <TabsList className="w-auto">
               <TabsTrigger value="users">Пользователи</TabsTrigger>
+              <TabsTrigger value="accessStatuses">Статусы доступа</TabsTrigger>
               <TabsTrigger value="levels">Уровни</TabsTrigger>
               <TabsTrigger value="directions">Направления</TabsTrigger>
               <TabsTrigger value="materialCategories">Категории материалов</TabsTrigger>
@@ -79,7 +88,8 @@ export function AdminSettingsPage() {
                 <PageHeaderAction
                   type="button"
                   onClick={() => {
-                    if (tab === 'levels') levelsRef.current?.openCreate()
+                    if (tab === 'accessStatuses') accessStatusesRef.current?.openCreate()
+                    else if (tab === 'levels') levelsRef.current?.openCreate()
                     else if (tab === 'directions') directionsRef.current?.openCreate()
                     else if (tab === 'materialCategories') {
                       materialCategoriesRef.current?.openCreate()
@@ -99,6 +109,20 @@ export function AdminSettingsPage() {
 
           <TabsContent value="users">
             <RegisteredUsersPanel />
+          </TabsContent>
+
+          <TabsContent value="accessStatuses">
+            <CanAccess
+              permission={permissions['admin.companies']}
+              fallback={
+                <ErrorState
+                  title="Нет доступа"
+                  description="Недостаточно прав для управления статусами доступа."
+                />
+              }
+            >
+              <AccessStatusesPanel ref={accessStatusesRef} />
+            </CanAccess>
           </TabsContent>
 
           <TabsContent value="levels">

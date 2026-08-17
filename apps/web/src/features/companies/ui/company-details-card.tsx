@@ -1,8 +1,12 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Archive, ExternalLink, PauseCircle, Pencil, PlayCircle, Trash2 } from 'lucide-react'
+import { ExternalLink, Pencil, Tags, Trash2 } from 'lucide-react'
 
 import { CompanyProductsPanel } from '@features/company-products'
+import {
+  companyAccessStatusLabel,
+  useCompanyAccessStatuses,
+} from '@features/access-statuses'
 import { routes } from '@shared/config'
 import { useTargetHighlightFlash } from '@shared/lib/use-target-highlight-flash'
 import {
@@ -14,6 +18,10 @@ import {
   CardTitle,
   ConfirmDialog,
   DeleteDialog,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   ErrorState,
   IconButton,
   LoadingState,
@@ -36,13 +44,18 @@ export function CompanyDetailsCard() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const query = useCompany(id)
+  const statusesQuery = useCompanyAccessStatuses(false)
+  const statusOptions = useMemo(
+    () => (statusesQuery.data ?? []).filter((item) => item.is_active),
+    [statusesQuery.data],
+  )
   const statusMutation = useSetCompanyStatusMutation()
   const deleteMutation = useDeleteCompanyMutation()
   useTargetHighlightFlash()
 
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const [statusTarget, setStatusTarget] = useState<'active' | 'suspended' | 'archived' | null>(null)
+  const [statusTarget, setStatusTarget] = useState<string | null>(null)
 
   if (query.isLoading) {
     return <LoadingState label="Загрузка карточки компании…" />
@@ -73,6 +86,9 @@ export function CompanyDetailsCard() {
       : `https://${company.website}`
     : null
 
+  const otherStatuses = statusOptions.filter((item) => item.slug !== company.access_status)
+  const targetStatus = statusOptions.find((item) => item.slug === statusTarget) ?? null
+
   return (
     <div className="space-y-6">
       <div id={`company-${company.id}`} className="scroll-mt-20 rounded-lg">
@@ -85,37 +101,31 @@ export function CompanyDetailsCard() {
               ? ` · ${company.description}`
               : ' · Карточка компании — участника ассоциации.')
           }
-          status={<StatusBadge status={company.access_status} />}
+          status={
+            <StatusBadge
+              status={company.access_status}
+              label={companyAccessStatusLabel(company.access_status, statusOptions)}
+            />
+          }
         >
         <IconButton label="Изменить" onClick={() => setEditOpen(true)}>
           <Pencil />
         </IconButton>
-        {company.access_status !== 'active' ? (
-          <IconButton
-            label="Активировать"
-            disabled={statusMutation.isPending}
-            onClick={() => setStatusTarget('active')}
-          >
-            <PlayCircle />
-          </IconButton>
-        ) : null}
-        {company.access_status !== 'suspended' ? (
-          <IconButton
-            label="Приостановить"
-            disabled={statusMutation.isPending}
-            onClick={() => setStatusTarget('suspended')}
-          >
-            <PauseCircle />
-          </IconButton>
-        ) : null}
-        {company.access_status !== 'archived' ? (
-          <IconButton
-            label="Вышедшая"
-            disabled={statusMutation.isPending}
-            onClick={() => setStatusTarget('archived')}
-          >
-            <Archive />
-          </IconButton>
+        {otherStatuses.length > 0 ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <IconButton label="Статус доступа" disabled={statusMutation.isPending}>
+                <Tags />
+              </IconButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {otherStatuses.map((status) => (
+                <DropdownMenuItem key={status.slug} onClick={() => setStatusTarget(status.slug)}>
+                  {status.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         ) : null}
         <IconButton
           label="Удалить"
@@ -207,11 +217,8 @@ export function CompanyDetailsCard() {
         }}
         title="Изменить статус доступа?"
         description={
-          statusTarget === 'active'
-            ? 'Компания снова получит доступ к материалам кабинета (при подтверждённых участниках).'
-            : statusTarget === 'suspended'
-              ? 'Доступ представителей будет ограничен до повторной активации.'
-              : 'Компания будет помечена как архивная.'
+          targetStatus?.description?.trim() ||
+          `Компания получит статус «${targetStatus?.name ?? statusTarget}».`
         }
         confirmLabel="Применить"
         loading={statusMutation.isPending}

@@ -97,14 +97,7 @@ export function useSetCompanyStatusMutation() {
     {
       ensureFreshSession: true,
       invalidateKeys: invalidateAll,
-      onSuccess: (_data, variables) => {
-        const labels: Record<CompanyAccessStatus, string> = {
-          active: 'Компания активирована',
-          suspended: 'Доступ приостановлен',
-          archived: 'Компания отмечена как вышедшая',
-        }
-        notify.success(labels[variables.status])
-      },
+      onSuccess: () => notify.success('Статус доступа изменён'),
       onError: (error) => notify.fromError(error, 'Не удалось изменить статус'),
     },
   )

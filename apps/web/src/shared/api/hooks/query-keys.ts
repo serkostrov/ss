@@ -49,6 +49,12 @@ export const queryKeys = {
       ['apss', 'materials', 'categories', 'moderation', status] as const,
     categoryUsage: (id: string) => ['apss', 'materials', 'categories', 'usage', id] as const,
   },
+  companyAccessStatuses: {
+    all: ['apss', 'company-access-statuses'] as const,
+    list: (includeInactive = true) =>
+      ['apss', 'company-access-statuses', 'list', includeInactive] as const,
+    usage: (slug: string) => ['apss', 'company-access-statuses', 'usage', slug] as const,
+  },
   companyProducts: {
     all: ['apss', 'company-products'] as const,
     byCompany: (companyId: string) => ['apss', 'company-products', 'company', companyId] as const,

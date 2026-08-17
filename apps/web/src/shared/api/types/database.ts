@@ -7,7 +7,7 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 
 export type UserRole = 'admin' | 'member'
 export type UserStatus = 'pending' | 'confirmed' | 'blocked'
-export type CompanyAccessStatus = 'active' | 'suspended' | 'archived'
+export type CompanyAccessStatus = string
 export type WorkGroupStatus = 'active' | 'paused' | 'archived'
 export type VoteMode = 'per_company' | 'per_representative'
 export type PollStatus = 'draft' | 'active' | 'closed'
@@ -65,6 +65,7 @@ export type Database = {
           status: UserStatus
           full_name: string | null
           phone: string | null
+          position_hint: string | null
           company_name_hint: string | null
           company_inn_hint: string | null
           staff_position: string | null
@@ -86,6 +87,7 @@ export type Database = {
           status?: UserStatus
           full_name?: string | null
           phone?: string | null
+          position_hint?: string | null
           company_name_hint?: string | null
           company_inn_hint?: string | null
           staff_position?: string | null
@@ -106,6 +108,7 @@ export type Database = {
           status?: UserStatus
           full_name?: string | null
           phone?: string | null
+          position_hint?: string | null
           company_name_hint?: string | null
           company_inn_hint?: string | null
           staff_position?: string | null
@@ -150,6 +153,42 @@ export type Database = {
           description?: string | null
           sort_order?: number
           is_active?: boolean
+        }
+        Relationships: []
+      }
+      company_access_statuses: {
+        Row: {
+          slug: string
+          name: string
+          description: string | null
+          sort_order: number
+          is_active: boolean
+          is_system: boolean
+          is_default: boolean
+          excludes_from_program: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          slug: string
+          name: string
+          description?: string | null
+          sort_order?: number
+          is_active?: boolean
+          is_system?: boolean
+          is_default?: boolean
+          excludes_from_program?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          name?: string
+          description?: string | null
+          sort_order?: number
+          is_active?: boolean
+          is_default?: boolean
+          excludes_from_program?: boolean
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1679,11 +1718,18 @@ export type Database = {
         Args: { p_rows: Json }
         Returns: Json
       }
+      get_company_access_status_usage: {
+        Args: { p_slug: string }
+        Returns: Json
+      }
+      delete_company_access_status: {
+        Args: { p_slug: string }
+        Returns: null
+      }
     }
     Enums: {
       user_role: UserRole
       user_status: UserStatus
-      company_access_status: CompanyAccessStatus
       work_group_status: WorkGroupStatus
       vote_mode: VoteMode
       poll_status: PollStatus

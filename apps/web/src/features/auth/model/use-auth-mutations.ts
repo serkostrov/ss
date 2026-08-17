@@ -68,6 +68,7 @@ export function useRegisterMutation() {
         email: values.email,
         password: values.password,
         fullName: values.fullName,
+        position: values.position?.trim() || undefined,
         phone: values.phone || undefined,
         companyNameHint: values.companyNameHint || undefined,
         companyInnHint: values.companyInnHint || undefined,

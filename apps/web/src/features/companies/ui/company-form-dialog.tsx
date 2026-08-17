@@ -14,6 +14,7 @@ import {
   Spinner,
   Textarea,
 } from '@shared/ui'
+import { useCompanyAccessStatuses } from '@features/access-statuses'
 
 import { companyFormSchema, formatCompanyAutoId, type CompanyFormValues } from '../model/schemas'
 import {
@@ -30,7 +31,10 @@ type CompanyFormDialogProps = {
   onCreated?: (company: Company) => void
 }
 
-function toFormValues(company?: Company | null): CompanyFormValues {
+function toFormValues(
+  company?: Company | null,
+  defaultStatusSlug = 'active',
+): CompanyFormValues {
   return {
     name: company?.name ?? '',
     inn: company?.inn ?? '',
@@ -40,7 +44,7 @@ function toFormValues(company?: Company | null): CompanyFormValues {
     website: company?.website ?? '',
     address: company?.address ?? '',
     participationLevelId: company?.participation_level_id ?? '',
-    accessStatus: company?.access_status ?? 'active',
+    accessStatus: company?.access_status ?? defaultStatusSlug,
     notes: company?.notes ?? '',
     balance: company?.balance != null ? String(company.balance).replace('.', ',') : '0',
   }
@@ -54,16 +58,22 @@ export function CompanyFormDialog({
 }: CompanyFormDialogProps) {
   const isEdit = Boolean(company)
   const levels = useActiveLevelsForSelect()
+  const statusesQuery = useCompanyAccessStatuses(false)
+  const statusOptions = (statusesQuery.data ?? []).filter((item) => item.is_active)
+  const defaultStatusSlug =
+    statusOptions.find((item) => item.is_default)?.slug ?? statusOptions[0]?.slug ?? 'active'
   const createMutation = useCreateCompanyMutation()
   const updateMutation = useUpdateCompanyMutation()
-  const [values, setValues] = useState<CompanyFormValues>(() => toFormValues(company))
+  const [values, setValues] = useState<CompanyFormValues>(() =>
+    toFormValues(company, defaultStatusSlug),
+  )
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (!open) return
-    setValues(toFormValues(company))
+    setValues(toFormValues(company, defaultStatusSlug))
     setErrors({})
-  }, [open, company])
+  }, [open, company, defaultStatusSlug])
 
   const pending = createMutation.isPending || updateMutation.isPending
 
@@ -182,9 +192,11 @@ export function CompanyFormDialog({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="active">Активна</SelectItem>
-              <SelectItem value="suspended">Приостановлена</SelectItem>
-              <SelectItem value="archived">Вышедшая</SelectItem>
+              {statusOptions.map((status) => (
+                <SelectItem key={status.slug} value={status.slug}>
+                  {status.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </FormField>

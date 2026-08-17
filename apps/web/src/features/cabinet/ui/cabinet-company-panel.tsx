@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 
 import { CompanyProductsPanel } from '@features/company-products'
 import { companyAccessStatusMemberLabel } from '@features/companies'
+import { isExitedCompany } from '@features/cabinet/model/company-access'
 import { useAuth } from '@app/providers'
 import { normalizeInnDigits } from '@shared/api'
 import {
@@ -94,7 +95,7 @@ export function CabinetCompanyPanel({ isEditing, onEditingChange }: CabinetCompa
   }
 
   const company = companyQuery.data
-  const exited = profile?.membership?.accessStatus === 'archived'
+  const exited = isExitedCompany(profile)
 
   return (
     <div className="space-y-4">

@@ -74,6 +74,7 @@ export function useModerationFeed(
           title: row.full_name || 'Без имени',
           subtitle: [
             row.company_name_hint || row.representative?.company?.name || 'Компания не указана',
+            row.position_hint,
             row.email,
           ]
             .filter(Boolean)
@@ -120,6 +121,7 @@ export function useModerationFeed(
             .filter(Boolean)
             .join(' · '),
           meta: row.url || undefined,
+          href: routes.admin.product(row.id),
           status: row.moderation_status,
           sortAt: row.created_at,
           rawId: row.id,

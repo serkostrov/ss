@@ -14,6 +14,7 @@ import {
   StatusBadge,
   type FilterFieldConfig,
 } from '@shared/ui'
+import { companyAccessStatusLabel, useCompanyAccessStatuses } from '@features/access-statuses'
 
 import {
   accessStatusLabel,
@@ -40,6 +41,8 @@ export function CompaniesPanel() {
   const [importOpen, setImportOpen] = useState(false)
 
   const levels = useActiveLevelsForSelect()
+  const statusesQuery = useCompanyAccessStatuses(false)
+  const statusOptions = statusesQuery.data ?? []
   const query = useCompanies({
     search,
     accessStatus,
@@ -65,9 +68,10 @@ export function CompaniesPanel() {
       onChange: (value) => setAccessStatus(value as CompanyAccessFilter),
       options: [
         { value: 'all', label: accessStatusLabel('all') },
-        { value: 'active', label: accessStatusLabel('active') },
-        { value: 'suspended', label: accessStatusLabel('suspended') },
-        { value: 'archived', label: accessStatusLabel('archived') },
+        ...statusOptions.map((status) => ({
+          value: status.slug,
+          label: accessStatusLabel(status.slug, statusOptions),
+        })),
       ],
     },
     {
@@ -170,7 +174,7 @@ export function CompaniesPanel() {
         cell: ({ row }) => (
           <StatusBadge
             status={row.original.access_status}
-            label={row.original.access_status === 'archived' ? 'Вышедшая' : undefined}
+            label={companyAccessStatusLabel(row.original.access_status, statusOptions)}
           />
         ),
       },
@@ -187,7 +191,7 @@ export function CompaniesPanel() {
         ),
       },
     ],
-    [],
+    [statusOptions],
   )
 
   return (
