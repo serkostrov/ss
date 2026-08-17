@@ -2,7 +2,7 @@ import type { MessengerConfig } from '../config/index.js'
 import type { DbClient } from '../db.js'
 import { markBotChannelInactive, upsertBotChannel } from '../pipeline/channels.js'
 import { ingestChannelMessage } from '../pipeline/ingest.js'
-import { relaySiblingChats } from '../pipeline/relay.js'
+import { relaySiblingChats, retryUndeliveredRelaysForWorkGroup } from '../pipeline/relay.js'
 import {
   contentPlaceholder,
   log,
@@ -167,7 +167,9 @@ async function handleIncomingMessage(
   })
 
   if (result.status !== 'skipped' && !isEdit) {
+    const workGroups = new Set<string>()
     for (const item of result.items) {
+      workGroups.add(item.workGroupId)
       try {
         await relaySiblingChats(db, config, {
           workGroupId: item.workGroupId,
@@ -182,6 +184,17 @@ async function handleIncomingMessage(
         log('warn', 'Telegram sibling relay failed', {
           message: relayError instanceof Error ? relayError.message : String(relayError),
           workGroupId: item.workGroupId,
+        })
+      }
+    }
+
+    for (const workGroupId of workGroups) {
+      try {
+        await retryUndeliveredRelaysForWorkGroup(db, config, workGroupId)
+      } catch (retryError) {
+        log('warn', 'Telegram undelivered relay retry failed', {
+          message: retryError instanceof Error ? retryError.message : String(retryError),
+          workGroupId,
         })
       }
     }

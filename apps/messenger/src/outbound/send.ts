@@ -2,7 +2,7 @@ import type { MessengerConfig } from '../config/index.js'
 import type { DbClient } from '../db.js'
 import { deleteLinkedAcrossPlatforms } from '../pipeline/delete-linked.js'
 import { ingestChannelMessage } from '../pipeline/ingest.js'
-import { relaySiblingChats } from '../pipeline/relay.js'
+import { relaySiblingChats, retryUndeliveredRelaysForWorkGroup } from '../pipeline/relay.js'
 import { log, type MessageContentType } from '../types.js'
 import { deliverToBoundChat, type DeliverFile } from './deliver.js'
 
@@ -106,7 +106,9 @@ export async function sendOutboundMessage(
   })
 
   if (ingested.status !== 'skipped') {
+    const workGroups = new Set<string>()
     for (const item of ingested.items) {
+      workGroups.add(item.workGroupId)
       try {
         await relaySiblingChats(db, config, {
           workGroupId: item.workGroupId,
@@ -122,6 +124,17 @@ export async function sendOutboundMessage(
         log('warn', 'Outbound sibling relay failed', {
           message: relayError instanceof Error ? relayError.message : String(relayError),
           workGroupId: item.workGroupId,
+        })
+      }
+    }
+
+    for (const workGroupId of workGroups) {
+      try {
+        await retryUndeliveredRelaysForWorkGroup(db, config, workGroupId)
+      } catch (retryError) {
+        log('warn', 'Outbound undelivered relay retry failed', {
+          message: retryError instanceof Error ? retryError.message : String(retryError),
+          workGroupId,
         })
       }
     }

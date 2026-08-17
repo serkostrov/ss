@@ -3,7 +3,7 @@ import type { MessengerConfig } from '../config/index.js'
 import { markBotChannelInactive, upsertBotChannel } from '../pipeline/channels.js'
 import { deleteLinkedByExternalMessageId } from '../pipeline/delete-linked.js'
 import { ingestChannelMessage } from '../pipeline/ingest.js'
-import { relaySiblingChats } from '../pipeline/relay.js'
+import { relaySiblingChats, retryUndeliveredRelaysForWorkGroup } from '../pipeline/relay.js'
 import {
   contentPlaceholder,
   log,
@@ -411,7 +411,9 @@ async function handleMessageCreated(
   })
 
   if (result.status !== 'skipped' && !isEdit && options.config) {
+    const workGroups = new Set<string>()
     for (const item of result.items) {
+      workGroups.add(item.workGroupId)
       try {
         await relaySiblingChats(db, options.config, {
           workGroupId: item.workGroupId,
@@ -426,6 +428,17 @@ async function handleMessageCreated(
         log('warn', 'Max sibling relay failed', {
           message: relayError instanceof Error ? relayError.message : String(relayError),
           workGroupId: item.workGroupId,
+        })
+      }
+    }
+
+    for (const workGroupId of workGroups) {
+      try {
+        await retryUndeliveredRelaysForWorkGroup(db, options.config, workGroupId)
+      } catch (retryError) {
+        log('warn', 'Max undelivered relay retry failed', {
+          message: retryError instanceof Error ? retryError.message : String(retryError),
+          workGroupId,
         })
       }
     }
