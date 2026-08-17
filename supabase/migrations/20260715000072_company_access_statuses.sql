@@ -63,8 +63,29 @@ on conflict (slug) do nothing;
 alter table public.companies
   alter column access_status drop default;
 
+do $migrate$
+begin
+  if exists (
+    select 1
+    from pg_catalog.pg_attribute att
+    join pg_catalog.pg_class rel on rel.oid = att.attrelid
+    join pg_catalog.pg_namespace nsp on nsp.oid = rel.relnamespace
+    join pg_catalog.pg_type typ on typ.oid = att.atttypid
+    where nsp.nspname = 'public'
+      and rel.relname = 'companies'
+      and att.attname = 'access_status'
+      and att.attnum > 0
+      and not att.attisdropped
+      and typ.typname = 'company_access_status'
+  ) then
+    alter table public.companies
+      alter column access_status type text using access_status::text;
+  end if;
+end;
+$migrate$;
+
 alter table public.companies
-  alter column access_status type text using access_status::text;
+  drop constraint if exists companies_access_status_fkey;
 
 alter table public.companies
   add constraint companies_access_status_fkey
@@ -73,11 +94,92 @@ alter table public.companies
 alter table public.companies
   alter column access_status set default 'active';
 
-alter table public.participation_level_resource_access
-  alter column visibility_statuses type text[] using visibility_statuses::text[];
+do $migrate$
+begin
+  if exists (
+    select 1
+    from pg_catalog.pg_type t
+    join pg_catalog.pg_namespace n on n.oid = t.typnamespace
+    where n.nspname = 'public'
+      and t.typname = '_company_access_status'
+  ) then
+    alter table public.participation_level_resource_access
+      alter column visibility_statuses type text[] using visibility_statuses::text[];
 
-alter table public.participation_level_resource_access
-  alter column content_statuses type text[] using content_statuses::text[];
+    alter table public.participation_level_resource_access
+      alter column content_statuses type text[] using content_statuses::text[];
+  end if;
+end;
+$migrate$;
+
+-- RLS policies depend on member_cabinet_resource_allowed — replace in place, do not drop.
+create or replace function public.member_cabinet_resource_allowed(
+  p_resource public.cabinet_resource,
+  p_kind text
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+set row_security = off
+as $$
+  select
+    public.is_confirmed_member()
+    and coalesce(
+      (
+        select case
+          when p_kind = 'visibility' then
+            c.access_status = any(plra.visibility_statuses)
+          when p_kind = 'content' then
+            c.access_status = any(plra.content_statuses)
+          else false
+        end
+        from public.users u
+        join public.representatives r on r.id = u.representative_id
+        join public.companies c on c.id = r.company_id
+        join public.participation_level_resource_access plra
+          on plra.participation_level_id = c.participation_level_id
+         and plra.resource = p_resource
+        where u.id = auth.uid()
+          and u.representative_id is not null
+          and (
+            (u.role = 'member' and u.status = 'confirmed')
+            or (u.role = 'admin' and u.status is distinct from 'blocked')
+          )
+      ),
+      (
+        select case
+          when p_kind = 'visibility' then
+            c.access_status in ('active', 'suspended')
+          when p_kind = 'content' then
+            c.access_status = 'active'
+          else false
+        end
+        from public.users u
+        join public.representatives r on r.id = u.representative_id
+        join public.companies c on c.id = r.company_id
+        where u.id = auth.uid()
+          and u.representative_id is not null
+          and (
+            (u.role = 'member' and u.status = 'confirmed')
+            or (u.role = 'admin' and u.status is distinct from 'blocked')
+          )
+        limit 1
+      )
+    );
+$$;
+
+-- Remaining enum-dependent functions can be dropped before the type.
+drop trigger if exists participation_levels_seed_resource_access on public.participation_levels;
+drop function if exists public.current_company_access_status();
+drop function if exists public.set_participation_level_resource_access(uuid, jsonb);
+drop function if exists public.trg_seed_level_resource_access();
+drop function if exists public.import_companies(jsonb);
+drop function if exists public.request_work_group_membership(
+  uuid,
+  public.work_group_membership_request_kind
+);
 
 drop type if exists public.company_access_status;
 
@@ -283,6 +385,12 @@ begin
   return new;
 end;
 $$;
+
+drop trigger if exists participation_levels_seed_resource_access on public.participation_levels;
+create trigger participation_levels_seed_resource_access
+after insert on public.participation_levels
+for each row
+execute function public.trg_seed_level_resource_access();
 
 create or replace function public.set_participation_level_resource_access(
   p_level_id uuid,
@@ -504,6 +612,161 @@ begin
 end;
 $$;
 
+create or replace function public.import_companies(p_rows jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_row jsonb;
+  v_inn text;
+  v_name text;
+  v_status text;
+  v_level_name text;
+  v_level_id uuid;
+  v_existing_id uuid;
+  v_created int := 0;
+  v_updated int := 0;
+  v_skipped int := 0;
+  v_errors jsonb := '[]'::jsonb;
+  v_idx int := 0;
+begin
+  if not public.is_admin() then
+    raise exception 'forbidden' using errcode = '42501';
+  end if;
+
+  if p_rows is null or jsonb_typeof(p_rows) <> 'array' then
+    raise exception 'rows_must_be_array' using errcode = 'P0001';
+  end if;
+
+  for v_row in select * from jsonb_array_elements(p_rows)
+  loop
+    v_idx := v_idx + 1;
+    begin
+      v_name := nullif(trim(coalesce(v_row->>'name', '')), '');
+      v_inn := nullif(regexp_replace(coalesce(v_row->>'inn', ''), '\D', '', 'g'), '');
+      v_level_name := nullif(trim(coalesce(v_row->>'participation_level', '')), '');
+
+      if v_name is null then
+        v_skipped := v_skipped + 1;
+        v_errors := v_errors || jsonb_build_array(jsonb_build_object(
+          'row', v_idx,
+          'error', 'empty_name',
+          'message', 'Пустое название'
+        ));
+        continue;
+      end if;
+
+      if v_inn is not null and v_inn !~ '^\d{10}(\d{2})?$' then
+        v_skipped := v_skipped + 1;
+        v_errors := v_errors || jsonb_build_array(jsonb_build_object(
+          'row', v_idx,
+          'error', 'invalid_inn',
+          'message', 'Некорректный ИНН',
+          'inn', v_inn
+        ));
+        continue;
+      end if;
+
+      v_status := case lower(trim(coalesce(v_row->>'access_status', 'active')))
+        when 'active' then 'active'
+        when 'активна' then 'active'
+        when 'активный' then 'active'
+        when 'suspended' then 'suspended'
+        when 'приостановлена' then 'suspended'
+        when 'приостановлен' then 'suspended'
+        when 'archived' then 'archived'
+        when 'архив' then 'archived'
+        when 'вышла' then 'archived'
+        when 'вышедшая' then 'archived'
+        when 'вышедшие' then 'archived'
+        when 'exited' then 'archived'
+        else 'active'
+      end;
+
+      if not public.validate_company_access_status_slug(v_status) then
+        v_status := public.default_company_access_status_slug();
+      end if;
+
+      v_level_id := null;
+      if v_level_name is not null then
+        select pl.id into v_level_id
+        from public.participation_levels pl
+        where lower(pl.name) = lower(v_level_name)
+        limit 1;
+      end if;
+
+      v_existing_id := null;
+      if v_inn is not null then
+        select c.id into v_existing_id
+        from public.companies c
+        where c.inn = v_inn
+        limit 1;
+      end if;
+
+      if v_existing_id is null then
+        insert into public.companies (
+          name,
+          inn,
+          description,
+          phone,
+          email,
+          website,
+          address,
+          participation_level_id,
+          access_status,
+          notes
+        )
+        values (
+          v_name,
+          v_inn,
+          nullif(trim(coalesce(v_row->>'description', '')), ''),
+          nullif(trim(coalesce(v_row->>'phone', '')), ''),
+          nullif(lower(trim(coalesce(v_row->>'email', ''))), ''),
+          nullif(trim(coalesce(v_row->>'website', '')), ''),
+          nullif(trim(coalesce(v_row->>'address', '')), ''),
+          v_level_id,
+          v_status,
+          nullif(trim(coalesce(v_row->>'notes', '')), '')
+        );
+        v_created := v_created + 1;
+      else
+        update public.companies
+        set
+          name = v_name,
+          description = coalesce(nullif(trim(coalesce(v_row->>'description', '')), ''), description),
+          phone = coalesce(nullif(trim(coalesce(v_row->>'phone', '')), ''), phone),
+          email = coalesce(nullif(lower(trim(coalesce(v_row->>'email', ''))), ''), email),
+          website = coalesce(nullif(trim(coalesce(v_row->>'website', '')), ''), website),
+          address = coalesce(nullif(trim(coalesce(v_row->>'address', '')), ''), address),
+          participation_level_id = coalesce(v_level_id, participation_level_id),
+          access_status = v_status,
+          notes = coalesce(nullif(trim(coalesce(v_row->>'notes', '')), ''), notes),
+          updated_at = now()
+        where id = v_existing_id;
+        v_updated := v_updated + 1;
+      end if;
+    exception when others then
+      v_skipped := v_skipped + 1;
+      v_errors := v_errors || jsonb_build_array(jsonb_build_object(
+        'row', v_idx,
+        'error', SQLSTATE,
+        'message', SQLERRM
+      ));
+    end;
+  end loop;
+
+  return jsonb_build_object(
+    'created', v_created,
+    'updated', v_updated,
+    'skipped', v_skipped,
+    'errors', v_errors
+  );
+end;
+$$;
+
 alter table public.company_access_statuses enable row level security;
 
 drop policy if exists company_access_statuses_admin_all on public.company_access_statuses;
@@ -532,3 +795,24 @@ grant execute on function public.validate_company_access_status_slug(text) to au
 
 revoke all on function public.validate_company_access_status_slug_array(text[]) from public;
 grant execute on function public.validate_company_access_status_slug_array(text[]) to authenticated, service_role;
+
+revoke all on function public.current_company_access_status() from public;
+grant execute on function public.current_company_access_status() to authenticated, service_role;
+
+revoke all on function public.member_cabinet_resource_allowed(public.cabinet_resource, text) from public;
+grant execute on function public.member_cabinet_resource_allowed(public.cabinet_resource, text) to authenticated, service_role;
+
+revoke all on function public.set_participation_level_resource_access(uuid, jsonb) from public;
+grant execute on function public.set_participation_level_resource_access(uuid, jsonb) to authenticated, service_role;
+
+revoke all on function public.import_companies(jsonb) from public;
+grant execute on function public.import_companies(jsonb) to authenticated, service_role;
+
+revoke all on function public.request_work_group_membership(
+  uuid,
+  public.work_group_membership_request_kind
+) from public;
+grant execute on function public.request_work_group_membership(
+  uuid,
+  public.work_group_membership_request_kind
+) to authenticated;

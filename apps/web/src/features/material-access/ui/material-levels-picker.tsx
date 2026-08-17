@@ -22,7 +22,7 @@ export function MaterialLevelsPicker({
   error,
   className,
   showInactive = true,
-  emptyLabel = 'Нет уровней участия. Создайте их в разделе «Уровни».',
+  emptyLabel = 'Нет уровней компании. Создайте их в настройках: Компании → Уровни.',
 }: MaterialLevelsPickerProps) {
   const visible = showInactive ? levels : levels.filter((level) => level.is_active)
   const selected = new Set(value)

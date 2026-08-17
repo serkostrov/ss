@@ -12,6 +12,9 @@ import {
   DataTable,
   ErrorState,
   Filters,
+  SettingsEmbeddedPanel,
+  settingsEmbeddedFiltersClassName,
+  settingsEmbeddedTableClassName,
   StatusBadge,
   type FilterFieldConfig,
 } from '@shared/ui'
@@ -31,7 +34,7 @@ import {
 } from '../model/use-registered-users'
 import { RegisteredUserFormDialog } from './registered-user-form-dialog'
 
-export function RegisteredUsersPanel() {
+export function RegisteredUsersPanel({ embedded = true }: { embedded?: boolean }) {
   const { profile } = useAuth()
   const [search, setSearch] = useState('')
   const [role, setRole] = useState<RegisteredUserRoleFilter>('all')
@@ -190,29 +193,58 @@ export function RegisteredUsersPanel() {
 
   const deleteLabel = deleting?.full_name || deleting?.email || 'пользователя'
 
+  const listBody = query.isError ? (
+    embedded ? (
+      <div className="p-4">
+        <ErrorState error={query.error} onRetry={() => void query.refetch()} compact />
+      </div>
+    ) : (
+      <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+    )
+  ) : (
+    <DataTable
+      columns={columns}
+      data={query.data ?? []}
+      loading={query.isLoading}
+      emptyTitle="Пользователей пока нет"
+      emptyDescription="Здесь появятся все зарегистрированные учётные записи."
+      getRowId={(row) => row.id}
+      onRowClick={(row) => setEditing(row)}
+      compact={embedded}
+      className={embedded ? settingsEmbeddedTableClassName : undefined}
+    />
+  )
+
   return (
     <div className="space-y-4">
-      <Filters
-        fields={filterFields}
-        onReset={() => {
-          setSearch('')
-          setRole('all')
-          setStatus('all')
-        }}
-      />
-
-      {query.isError ? (
-        <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+      {embedded ? (
+        <SettingsEmbeddedPanel
+          filters={
+            <Filters
+              fields={filterFields}
+              className={settingsEmbeddedFiltersClassName}
+              onReset={() => {
+                setSearch('')
+                setRole('all')
+                setStatus('all')
+              }}
+            />
+          }
+        >
+          {listBody}
+        </SettingsEmbeddedPanel>
       ) : (
-        <DataTable
-          columns={columns}
-          data={query.data ?? []}
-          loading={query.isLoading}
-          emptyTitle="Пользователей пока нет"
-          emptyDescription="Здесь появятся все зарегистрированные учётные записи."
-          getRowId={(row) => row.id}
-          onRowClick={(row) => setEditing(row)}
-        />
+        <>
+          <Filters
+            fields={filterFields}
+            onReset={() => {
+              setSearch('')
+              setRole('all')
+              setStatus('all')
+            }}
+          />
+          {listBody}
+        </>
       )}
 
       <RegisteredUserFormDialog

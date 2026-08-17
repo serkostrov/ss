@@ -12,6 +12,9 @@ import {
   Filters,
   PageHeader,
   PageHeaderAction,
+  SettingsEmbeddedPanel,
+  settingsEmbeddedFiltersClassName,
+  settingsEmbeddedTableClassName,
   StatusBadge,
   type FilterFieldConfig,
 } from '@shared/ui'
@@ -219,11 +222,11 @@ export const LevelsPanel = forwardRef<LevelsPanelHandle, LevelsPanelProps>(funct
     : null
 
   return (
-    <div className="space-y-6">
+    <div className={embedded ? 'space-y-4' : 'space-y-6'}>
       {embedded ? null : (
         <PageHeader
-          title="Уровни участия"
-          description="Редактор уровней, порядок отображения, доступ к ресурсам кабинета и защита от удаления используемых."
+          title="Уровни компании"
+          description="Редактор уровней компании, порядок отображения, доступ к ресурсам кабинета и защита от удаления используемых."
           actions={
             <PageHeaderAction type="button" onClick={openCreate}>
               <Plus className="size-4" />
@@ -233,25 +236,59 @@ export const LevelsPanel = forwardRef<LevelsPanelHandle, LevelsPanelProps>(funct
         />
       )}
 
-      <Filters
-        fields={filterFields}
-        onReset={() => {
-          setSearch('')
-          setActive('all')
-        }}
-      />
-
-      {query.isError ? (
-        <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+      {embedded ? (
+        <SettingsEmbeddedPanel
+          filters={
+            <Filters
+              fields={filterFields}
+              className={settingsEmbeddedFiltersClassName}
+              onReset={() => {
+                setSearch('')
+                setActive('all')
+              }}
+            />
+          }
+        >
+          {query.isError ? (
+            <div className="p-4">
+              <ErrorState error={query.error} onRetry={() => void query.refetch()} compact />
+            </div>
+          ) : (
+            <DataTable
+              columns={columns}
+              data={rows}
+              loading={query.isLoading}
+              emptyTitle="Уровней пока нет"
+              emptyDescription="Создайте первый уровень компании."
+              getRowId={(row) => row.id}
+              compact
+              className={settingsEmbeddedTableClassName}
+            />
+          )}
+        </SettingsEmbeddedPanel>
       ) : (
-        <DataTable
-          columns={columns}
-          data={rows}
-          loading={query.isLoading}
-          emptyTitle="Уровней пока нет"
-          emptyDescription="Создайте первый уровень участия."
-          getRowId={(row) => row.id}
-        />
+        <>
+          <Filters
+            fields={filterFields}
+            onReset={() => {
+              setSearch('')
+              setActive('all')
+            }}
+          />
+
+          {query.isError ? (
+            <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+          ) : (
+            <DataTable
+              columns={columns}
+              data={rows}
+              loading={query.isLoading}
+              emptyTitle="Уровней пока нет"
+              emptyDescription="Создайте первый уровень компании."
+              getRowId={(row) => row.id}
+            />
+          )}
+        </>
       )}
 
       <LevelFormDialog

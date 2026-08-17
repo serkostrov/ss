@@ -12,6 +12,9 @@ import {
   Filters,
   PageHeader,
   PageHeaderAction,
+  SettingsEmbeddedPanel,
+  settingsEmbeddedFiltersClassName,
+  settingsEmbeddedTableClassName,
   StatusBadge,
   type FilterFieldConfig,
 } from '@shared/ui'
@@ -207,7 +210,7 @@ export const MaterialCategoriesPanel = forwardRef<
   const inUse = (usage?.total ?? 0) > 0
 
   return (
-    <div className="space-y-6">
+    <div className={embedded ? 'space-y-4' : 'space-y-6'}>
       {embedded ? null : (
         <PageHeader
           title="Категории материалов"
@@ -221,25 +224,59 @@ export const MaterialCategoriesPanel = forwardRef<
         />
       )}
 
-      <Filters
-        fields={filterFields}
-        onReset={() => {
-          setSearch('')
-          setActive('all')
-        }}
-      />
-
-      {query.isError ? (
-        <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+      {embedded ? (
+        <SettingsEmbeddedPanel
+          filters={
+            <Filters
+              fields={filterFields}
+              className={settingsEmbeddedFiltersClassName}
+              onReset={() => {
+                setSearch('')
+                setActive('all')
+              }}
+            />
+          }
+        >
+          {query.isError ? (
+            <div className="p-4">
+              <ErrorState error={query.error} onRetry={() => void query.refetch()} compact />
+            </div>
+          ) : (
+            <DataTable
+              columns={columns}
+              data={rows}
+              loading={query.isLoading}
+              emptyTitle="Категорий пока нет"
+              emptyDescription="Создайте первую категорию материалов."
+              getRowId={(row) => row.id}
+              compact
+              className={settingsEmbeddedTableClassName}
+            />
+          )}
+        </SettingsEmbeddedPanel>
       ) : (
-        <DataTable
-          columns={columns}
-          data={rows}
-          loading={query.isLoading}
-          emptyTitle="Категорий пока нет"
-          emptyDescription="Создайте первую категорию материалов."
-          getRowId={(row) => row.id}
-        />
+        <>
+          <Filters
+            fields={filterFields}
+            onReset={() => {
+              setSearch('')
+              setActive('all')
+            }}
+          />
+
+          {query.isError ? (
+            <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+          ) : (
+            <DataTable
+              columns={columns}
+              data={rows}
+              loading={query.isLoading}
+              emptyTitle="Категорий пока нет"
+              emptyDescription="Создайте первую категорию материалов."
+              getRowId={(row) => row.id}
+            />
+          )}
+        </>
       )}
 
       <MaterialCategoryFormDialog

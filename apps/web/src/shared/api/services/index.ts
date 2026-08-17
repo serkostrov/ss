@@ -13,6 +13,8 @@ export type {
   CompanyAccessStatusRecord,
   CompanyAccessStatusInput,
 } from './company-access-statuses.service'
+export { companyAccessStatusResourceAccessService } from './company-access-status-resource-access.service'
+export type { AccessStatusResourceAccessRow } from './company-access-status-resource-access.service'
 export { directoryService, cabinetPollsMetaService } from './directory.service'
 export type {
   DirectoryCompany,

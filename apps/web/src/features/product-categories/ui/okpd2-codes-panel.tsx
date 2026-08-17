@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useMemo, useState } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Eye, EyeOff, Pencil, Trash2 } from 'lucide-react'
 
 import type { Okpd2Code } from '@shared/api'
 import {
@@ -17,6 +17,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SettingsEmbeddedPanel,
   StatusBadge,
   Textarea,
 } from '@shared/ui'
@@ -30,6 +31,10 @@ import {
 
 export type Okpd2CodesPanelHandle = {
   openCreate: () => void
+}
+
+type Okpd2CodesPanelProps = {
+  embedded?: boolean
 }
 
 function indentForLevel(level: number): number {
@@ -59,10 +64,8 @@ function blockedParentIds(codes: Okpd2Code[], rootId: string): Set<string> {
   return blocked
 }
 
-export const Okpd2CodesPanel = forwardRef<Okpd2CodesPanelHandle>(function Okpd2CodesPanel(
-  _props,
-  ref,
-) {
+export const Okpd2CodesPanel = forwardRef<Okpd2CodesPanelHandle, Okpd2CodesPanelProps>(
+  function Okpd2CodesPanel({ embedded = false }, ref) {
   const query = useOkpd2Codes()
   const createMutation = useCreateOkpd2CodeMutation()
   const updateMutation = useUpdateOkpd2CodeMutation()
@@ -148,73 +151,98 @@ export const Okpd2CodesPanel = forwardRef<Okpd2CodesPanelHandle>(function Okpd2C
     return <LoadingState label="Загрузка классификатора ОКПД 2…" />
   }
   if (query.isError) {
-    return <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+    return (
+      <ErrorState
+        error={query.error}
+        onRetry={() => void query.refetch()}
+        compact={embedded}
+      />
+    )
   }
 
-  return (
-    <div className="space-y-4">
-      <SearchInput
-        value={search}
-        onValueChange={setSearch}
-        placeholder="Поиск по коду или расшифровке…"
-        aria-label="Поиск ОКПД 2"
-        className="max-w-md"
-      />
+  const searchField = (
+    <SearchInput
+      value={search}
+      onValueChange={setSearch}
+      placeholder="Поиск по коду или расшифровке…"
+      aria-label="Поиск ОКПД 2"
+      className={embedded ? 'max-w-md' : 'max-w-md'}
+    />
+  )
 
-      {filtered.length === 0 ? (
-        <EmptyState
-          title={codes.length === 0 ? 'Классификатор пуст' : 'Ничего не найдено'}
-          description={
-            codes.length === 0
-              ? 'Добавьте коды ОКПД 2 — они будут доступны при создании продукции.'
-              : 'Измените поисковый запрос.'
-          }
-        />
-      ) : (
-        <div className="divide-y rounded-lg border">
-          {filtered.map((item) => (
-            <div key={item.id} className="flex items-start gap-3 px-4 py-3">
-              <div className="min-w-0 flex-1" style={{ paddingLeft: indentForLevel(item.level) }}>
-                <p className="font-mono text-sm font-medium">{item.code}</p>
-                <p className="text-sm text-muted-foreground">{item.title}</p>
-                <StatusBadge
-                  status={item.is_active ? 'active' : 'archived'}
-                  label={item.is_active ? 'Доступен' : 'Скрыт'}
-                  className="mt-1"
-                />
-              </div>
+  const listContent =
+    filtered.length === 0 ? (
+      <EmptyState
+        title={codes.length === 0 ? 'Классификатор пуст' : 'Ничего не найдено'}
+        description={
+          codes.length === 0
+            ? 'Добавьте коды ОКПД 2 — они будут доступны при создании продукции.'
+            : 'Измените поисковый запрос.'
+        }
+      />
+    ) : (
+      <div className="divide-y">
+        {filtered.map((item) => (
+          <div key={item.id} className="flex items-start gap-3 px-4 py-3">
+            <div className="min-w-0 flex-1" style={{ paddingLeft: indentForLevel(item.level) }}>
+              <p className="font-mono text-sm font-medium">{item.code}</p>
+              <p className="text-muted-foreground text-sm">{item.title}</p>
+              <StatusBadge
+                status={item.is_active ? 'active' : 'archived'}
+                label={item.is_active ? 'Доступен' : 'Скрыт'}
+                className="mt-1"
+              />
+            </div>
+            <div className="flex shrink-0 items-center gap-0.5">
               <Button
                 type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  updateMutation.mutate({ id: item.id, isActive: !item.is_active })
-                }
+                variant="ghost"
+                size="icon"
+                className="size-7"
+                aria-label={item.is_active ? 'Скрыть' : 'Показать'}
+                onClick={() => updateMutation.mutate({ id: item.id, isActive: !item.is_active })}
               >
-                {item.is_active ? 'Скрыть' : 'Показать'}
+                {item.is_active ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
+                className="size-7"
                 aria-label="Редактировать"
                 onClick={() => openEdit(item)}
               >
-                <Pencil className="size-4" />
+                <Pencil className="size-3.5" />
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="text-destructive"
+                className="text-destructive size-7"
                 aria-label="Удалить"
                 onClick={() => setDeleting(item)}
               >
-                <Trash2 className="size-4" />
+                <Trash2 className="size-3.5" />
               </Button>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
+      </div>
+    )
+
+  return (
+    <div className="space-y-4">
+      {embedded ? (
+        <SettingsEmbeddedPanel
+          filters={<div className="border-b bg-muted/20 px-4 py-3">{searchField}</div>}
+        >
+          {listContent}
+        </SettingsEmbeddedPanel>
+      ) : (
+        <>
+          {searchField}
+          <div className="overflow-hidden rounded-lg border bg-background">{listContent}</div>
+        </>
       )}
 
       <Modal
@@ -301,4 +329,5 @@ export const Okpd2CodesPanel = forwardRef<Okpd2CodesPanelHandle>(function Okpd2C
       />
     </div>
   )
-})
+  },
+)

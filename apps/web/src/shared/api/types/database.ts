@@ -192,6 +192,25 @@ export type Database = {
         }
         Relationships: []
       }
+      company_access_status_resource_access: {
+        Row: {
+          status_slug: string
+          resource: string
+          allows_visibility: boolean
+          allows_content: boolean
+        }
+        Insert: {
+          status_slug: string
+          resource: string
+          allows_visibility?: boolean
+          allows_content?: boolean
+        }
+        Update: {
+          allows_visibility?: boolean
+          allows_content?: boolean
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           id: string
@@ -1725,6 +1744,14 @@ export type Database = {
       delete_company_access_status: {
         Args: { p_slug: string }
         Returns: null
+      }
+      get_company_access_status_resource_access: {
+        Args: { p_slug: string }
+        Returns: Json
+      }
+      set_company_access_status_resource_access: {
+        Args: { p_slug: string; p_rows: Json }
+        Returns: Json
       }
     }
     Enums: {

@@ -78,8 +78,8 @@ export function LevelFormDialog({ open, onOpenChange, level }: LevelFormDialogPr
     <Modal
       open={open}
       onOpenChange={onOpenChange}
-      title={isEdit ? 'Редактировать уровень' : 'Новый уровень участия'}
-      description="Уровни определяют доступ компаний к ресурсам кабинета. Настройка видимости и содержания — в таблице уровней (иконка щита)."
+      title={isEdit ? 'Редактировать уровень' : 'Новый уровень компании'}
+      description="Уровни компании определяют доступ к ресурсам кабинета. Настройка видимости и содержания — в таблице уровней (иконка щита)."
       footer={
         <>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

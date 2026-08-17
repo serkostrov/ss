@@ -1,139 +1,62 @@
-import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
-import { ArrowDown, ArrowUp, Pencil, Trash2 } from 'lucide-react'
+import { forwardRef, useImperativeHandle, useState } from 'react'
+import { ArrowDown, ArrowUp, Pencil, ShieldCheck, Trash2 } from 'lucide-react'
 
+import { cabinetResourceLabel } from '@features/levels'
 import type { CompanyAccessStatusRecord } from '@shared/api'
 import {
   Button,
-  Checkbox,
   DeleteDialog,
   EmptyState,
   ErrorState,
-  FormField,
-  Input,
   LoadingState,
-  Modal,
-  Spinner,
   StatusBadge,
-  Textarea,
 } from '@shared/ui'
 
 import {
-  accessStatusFormSchema,
-  suggestAccessStatusSlug,
-  type AccessStatusFormValues,
-} from '../model/schemas'
+  applyExcludesFromProgramToResourceRows,
+  formatAccessStatusCapabilitiesSummary,
+  normalizeAccessStatusResourceRows,
+} from '../model/status-resource-access'
+import { useAllAccessStatusResourceAccess } from '../model/use-access-status-resource-access'
 import {
   useCompanyAccessStatusUsage,
-  useCreateCompanyAccessStatusMutation,
   useDeleteCompanyAccessStatusMutation,
   useMoveCompanyAccessStatusMutation,
-  useUpdateCompanyAccessStatusMutation,
   useCompanyAccessStatuses,
 } from '../model/use-company-access-statuses'
+import { AccessStatusCapabilitiesDialog } from './access-status-capabilities-dialog'
+import { AccessStatusFormDialog } from './access-status-form-dialog'
 
 export type AccessStatusesPanelHandle = {
   openCreate: () => void
 }
 
-function toFormValues(item?: CompanyAccessStatusRecord | null): AccessStatusFormValues {
-  return {
-    slug: item?.slug ?? '',
-    name: item?.name ?? '',
-    description: item?.description ?? '',
-    excludesFromProgram: item?.excludes_from_program ?? false,
-    isActive: item?.is_active ?? true,
-  }
+type AccessStatusesPanelProps = {
+  embedded?: boolean
 }
 
-export const AccessStatusesPanel = forwardRef<AccessStatusesPanelHandle>(
-  function AccessStatusesPanel(_props, ref) {
+export const AccessStatusesPanel = forwardRef<AccessStatusesPanelHandle, AccessStatusesPanelProps>(
+  function AccessStatusesPanel({ embedded = false }, ref) {
     const query = useCompanyAccessStatuses(true)
-    const createMutation = useCreateCompanyAccessStatusMutation()
-    const updateMutation = useUpdateCompanyAccessStatusMutation()
+    const capabilitiesQuery = useAllAccessStatusResourceAccess()
     const deleteMutation = useDeleteCompanyAccessStatusMutation()
     const moveMutation = useMoveCompanyAccessStatusMutation()
 
     const [formOpen, setFormOpen] = useState(false)
     const [editing, setEditing] = useState<CompanyAccessStatusRecord | null>(null)
+    const [capabilitiesStatus, setCapabilitiesStatus] = useState<CompanyAccessStatusRecord | null>(
+      null,
+    )
     const [deleting, setDeleting] = useState<CompanyAccessStatusRecord | null>(null)
-    const [values, setValues] = useState<AccessStatusFormValues>(() => toFormValues())
-    const [errors, setErrors] = useState<Record<string, string>>({})
-    const [slugTouched, setSlugTouched] = useState(false)
 
     const usageQuery = useCompanyAccessStatusUsage(deleting?.slug ?? null)
 
     const openCreate = () => {
       setEditing(null)
-      setValues(toFormValues())
-      setErrors({})
-      setSlugTouched(false)
       setFormOpen(true)
     }
 
     useImperativeHandle(ref, () => ({ openCreate }))
-
-    const openEdit = (item: CompanyAccessStatusRecord) => {
-      setEditing(item)
-      setValues(toFormValues(item))
-      setErrors({})
-      setSlugTouched(true)
-      setFormOpen(true)
-    }
-
-    useEffect(() => {
-      if (!formOpen || editing || slugTouched) return
-      const suggested = suggestAccessStatusSlug(values.name)
-      if (suggested) {
-        setValues((prev) => ({ ...prev, slug: suggested }))
-      }
-    }, [formOpen, editing, slugTouched, values.name])
-
-    const patch = <K extends keyof AccessStatusFormValues>(
-      key: K,
-      value: AccessStatusFormValues[K],
-    ) => {
-      setValues((prev) => ({ ...prev, [key]: value }))
-      setErrors((prev) => {
-        const next = { ...prev }
-        delete next[key]
-        return next
-      })
-    }
-
-    const submit = async () => {
-      const parsed = accessStatusFormSchema.safeParse(values)
-      if (!parsed.success) {
-        const next: Record<string, string> = {}
-        for (const issue of parsed.error.issues) {
-          const key = issue.path[0]
-          if (typeof key === 'string' && !next[key]) next[key] = issue.message
-        }
-        setErrors(next)
-        return
-      }
-
-      if (editing) {
-        await updateMutation.mutateAsync({
-          slug: editing.slug,
-          values: {
-            name: parsed.data.name,
-            description: parsed.data.description || null,
-            excludesFromProgram: parsed.data.excludesFromProgram,
-            isActive: parsed.data.isActive,
-          },
-        })
-      } else {
-        await createMutation.mutateAsync({
-          slug: parsed.data.slug,
-          name: parsed.data.name,
-          description: parsed.data.description || null,
-          excludesFromProgram: parsed.data.excludesFromProgram,
-          isActive: parsed.data.isActive,
-        })
-      }
-
-      setFormOpen(false)
-    }
 
     const move = async (slug: string, direction: 'up' | 'down') => {
       const rows = query.data ?? []
@@ -146,11 +69,10 @@ export const AccessStatusesPanel = forwardRef<AccessStatusesPanelHandle>(
       await moveMutation.mutateAsync(next.map((item) => item.slug))
     }
 
-    const pending =
-      createMutation.isPending || updateMutation.isPending || moveMutation.isPending
     const statuses = query.data ?? []
+    const capabilitiesBySlug = capabilitiesQuery.data ?? {}
 
-    if (query.isLoading && !query.data) {
+    if ((query.isLoading && !query.data) || (capabilitiesQuery.isLoading && !capabilitiesQuery.data)) {
       return <LoadingState label="Загрузка статусов…" />
     }
 
@@ -160,10 +82,12 @@ export const AccessStatusesPanel = forwardRef<AccessStatusesPanelHandle>(
 
     return (
       <div className="space-y-4">
-        <p className="text-muted-foreground text-sm">
-          Статусы компании используются в карточке участника и в настройках доступа к ресурсам
-          кабинета по уровням участия (видимость раздела и доступ к содержимому).
-        </p>
+        {embedded ? null : (
+          <p className="text-muted-foreground text-sm">
+            Для каждого статуса задайте, какие разделы кабинета компания видит и где доступно
+            содержимое (иконка щита). Уровень участия может дополнительно сужать доступ.
+          </p>
+        )}
 
         {statuses.length === 0 ? (
           <EmptyState
@@ -171,149 +95,122 @@ export const AccessStatusesPanel = forwardRef<AccessStatusesPanelHandle>(
             description="Добавьте первый статус доступа для компаний."
           />
         ) : (
-          <div className="divide-y rounded-lg border">
-            {statuses.map((item, index) => (
-              <div key={item.slug} className="flex items-start gap-3 px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium">{item.name}</p>
-                    <code className="text-muted-foreground text-xs">{item.slug}</code>
-                    {item.is_default ? (
-                      <StatusBadge status="active" label="По умолчанию" />
-                    ) : null}
-                    {!item.is_active ? (
-                      <StatusBadge status="archived" label="Скрыт" />
-                    ) : null}
-                    {item.excludes_from_program ? (
-                      <StatusBadge status="blocked" label="Вне программы" />
-                    ) : null}
-                    {item.is_system ? (
-                      <StatusBadge status="pending" label="Системный" />
+          <div className="divide-y rounded-lg border bg-background">
+            {statuses.map((item, index) => {
+              const capabilityRows = applyExcludesFromProgramToResourceRows(
+                normalizeAccessStatusResourceRows(capabilitiesBySlug[item.slug], {
+                  excludesFromProgram: item.excludes_from_program,
+                  isDefault: item.is_default,
+                }),
+                item.excludes_from_program,
+              )
+              const summary = formatAccessStatusCapabilitiesSummary(
+                capabilityRows,
+                cabinetResourceLabel,
+              )
+
+              return (
+                <div key={item.slug} className="flex items-start gap-3 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium">{item.name}</p>
+                      {item.is_default ? (
+                        <StatusBadge status="active" label="По умолчанию" />
+                      ) : null}
+                      {!item.is_active ? (
+                        <StatusBadge status="archived" label="Скрыт" />
+                      ) : null}
+                      {item.excludes_from_program ? (
+                        <StatusBadge status="blocked" label="Вне программы" />
+                      ) : null}
+                    </div>
+                    <p className="text-muted-foreground mt-1 text-sm">{summary}</p>
+                    {item.description ? (
+                      <p className="text-muted-foreground mt-1 text-xs">{item.description}</p>
                     ) : null}
                   </div>
-                  {item.description ? (
-                    <p className="text-muted-foreground mt-1 text-sm">{item.description}</p>
-                  ) : null}
-                </div>
 
-                <div className="flex shrink-0 items-center gap-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Выше"
-                    disabled={index === 0 || moveMutation.isPending}
-                    onClick={() => void move(item.slug, 'up')}
-                  >
-                    <ArrowUp className="size-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Ниже"
-                    disabled={index === statuses.length - 1 || moveMutation.isPending}
-                    onClick={() => void move(item.slug, 'down')}
-                  >
-                    <ArrowDown className="size-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Редактировать"
-                    onClick={() => openEdit(item)}
-                  >
-                    <Pencil className="size-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive"
-                    aria-label="Удалить"
-                    disabled={item.is_system}
-                    title={item.is_system ? 'Системный статус нельзя удалить' : undefined}
-                    onClick={() => setDeleting(item)}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      aria-label="Доступ в кабинете"
+                      onClick={() => setCapabilitiesStatus(item)}
+                    >
+                      <ShieldCheck className="size-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      aria-label="Выше"
+                      disabled={index === 0 || moveMutation.isPending}
+                      onClick={() => void move(item.slug, 'up')}
+                    >
+                      <ArrowUp className="size-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      aria-label="Ниже"
+                      disabled={index === statuses.length - 1 || moveMutation.isPending}
+                      onClick={() => void move(item.slug, 'down')}
+                    >
+                      <ArrowDown className="size-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      aria-label="Редактировать"
+                      onClick={() => {
+                        setEditing(item)
+                        setFormOpen(true)
+                      }}
+                    >
+                      <Pencil className="size-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive size-7"
+                      aria-label="Удалить"
+                      disabled={item.is_system}
+                      title={item.is_system ? 'Системный статус нельзя удалить' : undefined}
+                      onClick={() => setDeleting(item)}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
 
-        <Modal
+        <AccessStatusFormDialog
           open={formOpen}
-          onOpenChange={setFormOpen}
-          title={editing ? 'Редактировать статус' : 'Новый статус доступа'}
-          description="Код статуса используется в системе и не меняется после создания."
-          footer={
-            <>
-              <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>
-                Отмена
-              </Button>
-              <Button type="button" disabled={pending} onClick={() => void submit()}>
-                {pending ? <Spinner size="sm" className="text-current" /> : null}
-                {editing ? 'Сохранить' : 'Добавить'}
-              </Button>
-            </>
-          }
-        >
-          <div className="space-y-3">
-            <FormField label="Название" required error={errors.name}>
-              <Input
-                value={values.name}
-                onChange={(event) => patch('name', event.target.value)}
-                placeholder="Например, На паузе"
-                autoFocus
-              />
-            </FormField>
+          onOpenChange={(open) => {
+            setFormOpen(open)
+            if (!open) setEditing(null)
+          }}
+          status={editing}
+        />
 
-            <FormField
-              label="Код"
-              required
-              description="Латиница, цифры и _ — для импорта и API"
-              error={errors.slug}
-            >
-              <Input
-                value={values.slug}
-                disabled={Boolean(editing)}
-                onChange={(event) => {
-                  setSlugTouched(true)
-                  patch('slug', event.target.value.toLowerCase())
-                }}
-                placeholder="on_pause"
-              />
-            </FormField>
-
-            <FormField label="Описание" error={errors.description}>
-              <Textarea
-                value={values.description}
-                onChange={(event) => patch('description', event.target.value)}
-                placeholder="Когда применять этот статус"
-                rows={3}
-              />
-            </FormField>
-
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={values.excludesFromProgram}
-                onCheckedChange={(checked) => patch('excludesFromProgram', checked === true)}
-              />
-              Компания вне программы (как «Вышедшая»)
-            </label>
-
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={values.isActive}
-                onCheckedChange={(checked) => patch('isActive', checked === true)}
-              />
-              Доступен для выбора
-            </label>
-          </div>
-        </Modal>
+        <AccessStatusCapabilitiesDialog
+          open={Boolean(capabilitiesStatus)}
+          onOpenChange={(open) => {
+            if (!open) setCapabilitiesStatus(null)
+          }}
+          status={capabilitiesStatus}
+        />
 
         <DeleteDialog
           open={Boolean(deleting)}

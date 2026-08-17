@@ -44,24 +44,31 @@ function StatusCheckboxes({
   onChange,
   disabled,
   options,
+  emptyLabel = 'Никому на этом уровне',
 }: {
   selected: CompanyAccessStatus[]
   onChange: (next: CompanyAccessStatus[]) => void
   disabled?: boolean
   options: Array<{ slug: string; name: string }>
+  emptyLabel?: string
 }) {
   return (
-    <div className="flex flex-wrap gap-x-3 gap-y-1">
-      {options.map((status) => (
-        <label key={status.slug} className="inline-flex items-center gap-1.5 text-xs">
-          <Checkbox
-            checked={selected.includes(status.slug)}
-            disabled={disabled}
-            onCheckedChange={() => onChange(toggleStatus(selected, status.slug))}
-          />
-          {status.name}
-        </label>
-      ))}
+    <div className="space-y-1">
+      <div className="flex flex-wrap gap-x-3 gap-y-1">
+        {options.map((status) => (
+          <label key={status.slug} className="inline-flex items-center gap-1.5 text-xs">
+            <Checkbox
+              checked={selected.includes(status.slug)}
+              disabled={disabled}
+              onCheckedChange={() => onChange(toggleStatus(selected, status.slug))}
+            />
+            {status.name}
+          </label>
+        ))}
+      </div>
+      {selected.length === 0 ? (
+        <p className="text-muted-foreground text-xs italic">{emptyLabel}</p>
+      ) : null}
     </div>
   )
 }
@@ -80,12 +87,10 @@ export function LevelResourceAccessDialog({
   const [rows, setRows] = useState<LevelResourceAccessRow[]>(() =>
     defaultLevelResourceAccessRows(statusDefaults),
   )
-  const [formError, setFormError] = useState<string>()
 
   useEffect(() => {
     if (!open) return
     setRows(normalizeLevelResourceAccessRows(query.data, statusDefaults))
-    setFormError(undefined)
   }, [open, query.data, statusDefaults])
 
   const patchRow = (
@@ -95,18 +100,9 @@ export function LevelResourceAccessDialog({
     setRows((current) =>
       current.map((row) => (row.resource === resource ? { ...row, ...patch } : row)),
     )
-    setFormError(undefined)
   }
 
   const submit = async () => {
-    const invalid = rows.find(
-      (row) => row.visibility_statuses.length === 0 || row.content_statuses.length === 0,
-    )
-    if (invalid) {
-      setFormError('Для каждого ресурса выберите хотя бы один статус компании.')
-      return
-    }
-
     if (!levelId) return
     await saveMutation.mutateAsync(rows)
     onOpenChange(false)
@@ -148,8 +144,9 @@ export function LevelResourceAccessDialog({
               <span className="text-foreground font-medium">Видимость</span> — раздел показывается в
               меню кабинета.{' '}
               <span className="text-foreground font-medium">Содержание</span> — доступ к данным внутри
-              раздела. Например, при приостановленной компании можно показать раздел, но скрыть
-              содержимое.
+              раздела. Можно снять все галочки в «Содержание», чтобы на этом уровне разделы были видны,
+              но данные недоступны ни при одном статусе компании. Итоговый доступ также зависит от
+              настроек статуса компании.
             </p>
           </div>
 
@@ -195,8 +192,6 @@ export function LevelResourceAccessDialog({
               </TableBody>
             </Table>
           </div>
-
-          {formError ? <p className="text-destructive text-sm font-medium">{formError}</p> : null}
         </div>
       ) : null}
     </Modal>

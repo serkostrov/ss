@@ -8,7 +8,11 @@ import {
 } from '@shared/api'
 import { notify } from '@shared/lib/notify'
 
-const invalidateKeys = [queryKeys.companyAccessStatuses.all, queryKeys.companies.all]
+const invalidateKeys = [
+  queryKeys.companyAccessStatuses.all,
+  queryKeys.companyAccessStatuses.resourceAccessAll,
+  queryKeys.companies.all,
+]
 
 export function useCompanyAccessStatuses(includeInactive = true) {
   return useSupabaseQuery(

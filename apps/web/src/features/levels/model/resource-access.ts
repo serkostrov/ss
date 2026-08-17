@@ -79,12 +79,10 @@ export function normalizeLevelResourceAccessRows(
     const existing = byResource.get(resource)
     return {
       resource,
-      visibility_statuses: existing?.visibility_statuses?.length
+      visibility_statuses: existing
         ? [...existing.visibility_statuses]
         : [...defaults.programSlugs],
-      content_statuses: existing?.content_statuses?.length
-        ? [...existing.content_statuses]
-        : [defaults.defaultSlug],
+      content_statuses: existing ? [...existing.content_statuses] : [defaults.defaultSlug],
     }
   })
 }

@@ -137,6 +137,11 @@ export { SearchInput } from './search-input'
 export type { SearchInputProps } from './search-input'
 export { Filters } from './filters'
 export type { FiltersProps, FilterFieldConfig, FilterOption } from './filters'
+export {
+  SettingsEmbeddedPanel,
+  settingsEmbeddedFiltersClassName,
+  settingsEmbeddedTableClassName,
+} from './settings-embedded-panel'
 export { FormField } from './form-field'
 export type { FormFieldProps } from './form-field'
 export { UploadField } from './upload-field'

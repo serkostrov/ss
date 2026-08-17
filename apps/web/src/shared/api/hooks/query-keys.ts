@@ -54,6 +54,9 @@ export const queryKeys = {
     list: (includeInactive = true) =>
       ['apss', 'company-access-statuses', 'list', includeInactive] as const,
     usage: (slug: string) => ['apss', 'company-access-statuses', 'usage', slug] as const,
+    resourceAccess: (slug: string) =>
+      ['apss', 'company-access-statuses', 'resource-access', slug] as const,
+    resourceAccessAll: ['apss', 'company-access-statuses', 'resource-access', 'all'] as const,
   },
   companyProducts: {
     all: ['apss', 'company-products'] as const,

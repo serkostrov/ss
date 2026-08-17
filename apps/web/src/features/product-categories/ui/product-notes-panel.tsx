@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useState } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Eye, EyeOff, Pencil, Trash2 } from 'lucide-react'
 
 import type { ProductNote } from '@shared/api'
 import {
@@ -11,6 +11,7 @@ import {
   Input,
   LoadingState,
   Modal,
+  SettingsEmbeddedPanel,
   StatusBadge,
 } from '@shared/ui'
 
@@ -25,10 +26,12 @@ export type ProductNotesPanelHandle = {
   openCreate: () => void
 }
 
-export const ProductNotesPanel = forwardRef<ProductNotesPanelHandle>(function ProductNotesPanel(
-  _props,
-  ref,
-) {
+type ProductNotesPanelProps = {
+  embedded?: boolean
+}
+
+export const ProductNotesPanel = forwardRef<ProductNotesPanelHandle, ProductNotesPanelProps>(
+  function ProductNotesPanel({ embedded = false }, ref) {
   const query = useProductNotes()
   const createMutation = useCreateProductNoteMutation()
   const updateMutation = useUpdateProductNoteMutation()
@@ -76,60 +79,76 @@ export const ProductNotesPanel = forwardRef<ProductNotesPanelHandle>(function Pr
     return <LoadingState label="Загрузка примечаний…" />
   }
   if (query.isError) {
-    return <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+    return (
+      <ErrorState
+        error={query.error}
+        onRetry={() => void query.refetch()}
+        compact={embedded}
+      />
+    )
   }
 
-  return (
-    <div className="space-y-4">
-      {notes.length === 0 ? (
-        <EmptyState
-          title="Примечаний пока нет"
-          description="Добавьте варианты примечаний для продукции (например, для школ или парков)."
-        />
-      ) : (
-        <div className="divide-y rounded-lg border">
-          {notes.map((note) => (
-            <div key={note.id} className="flex items-center gap-3 px-4 py-3">
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{note.name}</p>
-                <StatusBadge
-                  status={note.is_active ? 'active' : 'archived'}
-                  label={note.is_active ? 'Доступно' : 'Скрыто'}
-                  className="mt-1"
-                />
-              </div>
+  const listContent =
+    notes.length === 0 ? (
+      <EmptyState
+        title="Примечаний пока нет"
+        description="Добавьте варианты примечаний для продукции (например, для школ или парков)."
+      />
+    ) : (
+      <div className="divide-y">
+        {notes.map((note) => (
+          <div key={note.id} className="flex items-center gap-3 px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium">{note.name}</p>
+              <StatusBadge
+                status={note.is_active ? 'active' : 'archived'}
+                label={note.is_active ? 'Доступно' : 'Скрыто'}
+                className="mt-1"
+              />
+            </div>
+            <div className="flex shrink-0 items-center gap-0.5">
               <Button
                 type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  updateMutation.mutate({ id: note.id, isActive: !note.is_active })
-                }
+                variant="ghost"
+                size="icon"
+                className="size-7"
+                aria-label={note.is_active ? 'Скрыть' : 'Показать'}
+                onClick={() => updateMutation.mutate({ id: note.id, isActive: !note.is_active })}
               >
-                {note.is_active ? 'Скрыть' : 'Показать'}
+                {note.is_active ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
+                className="size-7"
                 aria-label="Редактировать"
                 onClick={() => openEdit(note)}
               >
-                <Pencil className="size-4" />
+                <Pencil className="size-3.5" />
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="text-destructive"
+                className="text-destructive size-7"
                 aria-label="Удалить"
                 onClick={() => setDeleting(note)}
               >
-                <Trash2 className="size-4" />
+                <Trash2 className="size-3.5" />
               </Button>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
+      </div>
+    )
+
+  return (
+    <div className="space-y-4">
+      {embedded ? (
+        <SettingsEmbeddedPanel>{listContent}</SettingsEmbeddedPanel>
+      ) : (
+        <div className="overflow-hidden rounded-lg border bg-background">{listContent}</div>
       )}
 
       <Modal
@@ -177,4 +196,5 @@ export const ProductNotesPanel = forwardRef<ProductNotesPanelHandle>(function Pr
       />
     </div>
   )
-})
+  },
+)
