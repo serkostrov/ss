@@ -35,14 +35,24 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
   return JSON.parse(raw) as unknown
 }
 
-function send(res: ServerResponse, status: number, body: unknown) {
+function corsHeaders(req: IncomingMessage): Record<string, string> {
+  const requestHeaders = req.headers['access-control-request-headers']
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers':
+      (Array.isArray(requestHeaders) ? requestHeaders[0] : requestHeaders) ||
+      'Authorization, Content-Type, x-apss-webhook-secret',
+    'Access-Control-Max-Age': '86400',
+  }
+}
+
+function send(res: ServerResponse, status: number, body: unknown, req?: IncomingMessage) {
   const payload = JSON.stringify(body)
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Content-Length': Buffer.byteLength(payload),
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Authorization, Content-Type, x-apss-webhook-secret',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    ...corsHeaders(req ?? { headers: {} } as IncomingMessage),
   })
   res.end(payload)
 }
@@ -137,7 +147,8 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
       const path = normalizeApiPath(url.pathname)
 
       if (req.method === 'OPTIONS') {
-        send(res, 204, { ok: true })
+        res.writeHead(204, corsHeaders(req))
+        res.end()
         return
       }
 

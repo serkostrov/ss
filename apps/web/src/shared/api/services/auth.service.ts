@@ -234,18 +234,20 @@ function cleanupPasswordRecoveryUrl(): void {
   window.history.replaceState({}, document.title, routes.updatePassword)
 }
 
-function passwordResetApiUrl(path = ''): string {
+function passwordResetApiUrls(path = ''): string[] {
   const suffix = `/v1/auth/password-reset${path}`
-  if (env.isDev) return `/api/messenger${suffix}`
-  const base = env.messengerApiUrl
-  return base ? `${base}${suffix}` : `/api/messenger${suffix}`
+  const absolute = env.messengerApiUrl ? `${env.messengerApiUrl}${suffix}` : null
+  const sameOrigin = `/api/messenger${suffix}`
+  const urls = env.isDev ? [sameOrigin, absolute] : [absolute, sameOrigin]
+  return [...new Set(urls.filter((url): url is string => Boolean(url)))]
 }
 
 const PASSWORD_RESET_MESSAGES: Record<string, string> = {
   email_required: 'Укажите email',
   invalid_payload: 'Некорректные данные',
   invalid_password: 'Пароль должен содержать от 8 до 72 символов',
-  not_found: 'Сервис восстановления пароля недоступен. Обновите messenger и попробуйте снова.',
+  not_found: 'Сервис восстановления пароля недоступен. Нужно пересобрать messenger.',
+  messenger_api_unavailable: 'Сервис восстановления пароля недоступен. Нужно пересобрать messenger.',
   password_reset_not_configured:
     'Восстановление пароля не настроено: проверьте SMTPBZ_API_KEY, SMTP_FROM и APP_URL у messenger.',
   password_reset_email_failed: 'Не удалось отправить письмо. Попробуйте позже.',
@@ -256,39 +258,51 @@ const PASSWORD_RESET_MESSAGES: Record<string, string> = {
   password_reset_failed: 'Не удалось обновить пароль. Запросите новую ссылку.',
 }
 
+function mapPasswordResetError(code: string | undefined, status: number): string {
+  if (code && PASSWORD_RESET_MESSAGES[code]) return PASSWORD_RESET_MESSAGES[code]
+  if (status === 404) return PASSWORD_RESET_MESSAGES.not_found
+  if (status === 429) return PASSWORD_RESET_MESSAGES.password_reset_rate_limited
+  if (status >= 500) return 'Не удалось сохранить пароль. Попробуйте позже.'
+  return 'Не удалось восстановить пароль. Попробуйте позже.'
+}
+
 async function postPasswordReset<T>(path: string, body: Record<string, unknown>): Promise<T> {
-  let response: Response
-  try {
-    response = await fetch(passwordResetApiUrl(path), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-  } catch {
-    throw toApiError(
-      new Error('Сервис восстановления пароля недоступен. Проверьте messenger.'),
-    )
+  const payload = JSON.stringify(body)
+  const urls = passwordResetApiUrls(path)
+  let lastError: Error | null = null
+
+  for (const url of urls) {
+    let response: Response
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        // text/plain avoids CORS preflight, which Traefik often blocks with a 404.
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: payload,
+      })
+    } catch {
+      lastError = new Error(mapPasswordResetError('not_found', 0))
+      continue
+    }
+
+    const json = (await response.json().catch(() => null)) as
+      | { ok?: boolean; error?: string }
+      | null
+
+    if (response.ok && json?.ok) {
+      return json as T
+    }
+
+    const code = json?.error?.trim()
+    if (response.status === 404 || code === 'not_found' || code === 'messenger_api_unavailable') {
+      lastError = new Error(mapPasswordResetError(code, response.status))
+      continue
+    }
+
+    throw toApiError(new Error(mapPasswordResetError(code, response.status)))
   }
 
-  const json = (await response.json().catch(() => null)) as
-    | { ok?: boolean; error?: string }
-    | null
-
-  if (!response.ok || !json?.ok) {
-    const code = json?.error?.trim() || `password_reset_http_${response.status}`
-    throw toApiError(
-      new Error(
-        PASSWORD_RESET_MESSAGES[code] ??
-          (response.status === 404
-            ? PASSWORD_RESET_MESSAGES.not_found
-            : response.status >= 500
-              ? 'Не удалось отправить письмо. Попробуйте позже.'
-              : code),
-      ),
-    )
-  }
-
-  return json as T
+  throw toApiError(lastError ?? new Error(PASSWORD_RESET_MESSAGES.not_found))
 }
 
 const PROFILE_SELECT = `
