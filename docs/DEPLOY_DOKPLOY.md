@@ -148,6 +148,23 @@ where key = 'notification_email_webhook_secret';
 
 Пока URL пустой или secrets не заданы, in-app уведомления работают, письма не уходят.
 
+Те же `SMTPBZ_*` / `SMTP_FROM` / `APP_URL` нужны для **восстановления пароля**.
+После миграции `20260819000075_password_reset_tokens.sql` сделайте **Rebuild messenger** (не Restart).
+
+Проверка:
+
+```bash
+curl -sS https://hooks.example.com/health
+# {"ok":true,"service":"messenger","build":"password-reset-smtpbz-2026-08-19","passwordReset":true}
+
+curl -sS -X POST https://hooks.example.com/v1/auth/password-reset/request \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"user@example.com"}'
+# {"ok":true}
+```
+
+Если `/health` отдаёт старый `build` или `POST .../password-reset/request` отвечает `not_found` — задеплоен старый образ messenger.
+
 ---
 
 ## 4. После старта ботов
@@ -194,7 +211,8 @@ Web nginx проксирует `/webhooks/` → messenger. Домен у web о�
 | Max: `fetch failed` | TLS; `MAX_TLS_INSECURE=1` или корневой CA Минцифры |
 | Чаты не в picker | Messenger не запущен / бот не в чате / webhook не зарегистрирован |
 | `/env.js` с `${VITE_...}` | Нет runtime `VITE_*` в Environment Dokploy |
-| `WebSocket …/realtime/v1/websocket` → **403** | См. раздел 7. Чат всё равно обновляется опросом (~2 с); для мгновенного Realtime почините Kong/прокси |
+| `not_found` на `/v1/auth/password-reset/request` | Старый образ messenger. **Rebuild** приложения Messenger после коммита |
+| `/health` без `"passwordReset":true` | Нет `SMTPBZ_API_KEY` / `SMTP_FROM` / `APP_URL` у messenger |
 
 ---
 

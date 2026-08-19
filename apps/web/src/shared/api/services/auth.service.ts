@@ -235,12 +235,25 @@ function cleanupPasswordRecoveryUrl(): void {
 }
 
 function passwordResetApiUrl(path = ''): string {
-  if (env.isDev) {
-    return `/api/messenger/v1/auth/password-reset${path}`
-  }
+  const suffix = `/v1/auth/password-reset${path}`
+  if (env.isDev) return `/api/messenger${suffix}`
   const base = env.messengerApiUrl
-  if (base) return `${base}/v1/auth/password-reset${path}`
-  return `/api/messenger/v1/auth/password-reset${path}`
+  return base ? `${base}${suffix}` : `/api/messenger${suffix}`
+}
+
+const PASSWORD_RESET_MESSAGES: Record<string, string> = {
+  email_required: 'Укажите email',
+  invalid_payload: 'Некорректные данные',
+  invalid_password: 'Пароль должен содержать от 8 до 72 символов',
+  not_found: 'Сервис восстановления пароля недоступен. Обновите messenger и попробуйте снова.',
+  password_reset_not_configured:
+    'Восстановление пароля не настроено: проверьте SMTPBZ_API_KEY, SMTP_FROM и APP_URL у messenger.',
+  password_reset_email_failed: 'Не удалось отправить письмо. Попробуйте позже.',
+  password_reset_rate_limited: 'Слишком много попыток. Подождите несколько минут.',
+  password_reset_token_invalid: 'Ссылка для восстановления недействительна',
+  password_reset_token_expired: 'Срок действия ссылки истёк. Запросите новую',
+  password_reset_token_required: 'Отсутствует токен восстановления пароля',
+  password_reset_failed: 'Не удалось обновить пароль. Запросите новую ссылку.',
 }
 
 async function postPasswordReset<T>(path: string, body: Record<string, unknown>): Promise<T> {
@@ -251,8 +264,10 @@ async function postPasswordReset<T>(path: string, body: Record<string, unknown>)
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
-  } catch (error) {
-    throw toApiError(error)
+  } catch {
+    throw toApiError(
+      new Error('Сервис восстановления пароля недоступен. Проверьте messenger.'),
+    )
   }
 
   const json = (await response.json().catch(() => null)) as
@@ -260,7 +275,17 @@ async function postPasswordReset<T>(path: string, body: Record<string, unknown>)
     | null
 
   if (!response.ok || !json?.ok) {
-    throw toApiError(new Error(json?.error || `password_reset_http_${response.status}`))
+    const code = json?.error?.trim() || `password_reset_http_${response.status}`
+    throw toApiError(
+      new Error(
+        PASSWORD_RESET_MESSAGES[code] ??
+          (response.status === 404
+            ? PASSWORD_RESET_MESSAGES.not_found
+            : response.status >= 500
+              ? 'Не удалось отправить письмо. Попробуйте позже.'
+              : code),
+      ),
+    )
   }
 
   return json as T

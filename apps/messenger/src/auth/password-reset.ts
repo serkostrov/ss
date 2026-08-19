@@ -11,15 +11,19 @@ type UserRow = {
   full_name: string | null
 }
 
-type TokenRow = {
-  id: string
-  user_id: string
-  created_at: string
-}
-
 const RESET_TOKEN_BYTES = 32
 const RESET_TTL_MS = 30 * 60 * 1000
 const RESET_COOLDOWN_MS = 60 * 1000
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000
+const RATE_LIMIT_MAX = 5
+
+const requestHits = new Map<string, number[]>()
+
+function httpError(code: string, status: number): Error {
+  const err = new Error(code)
+  ;(err as Error & { status: number }).status = status
+  return err
+}
 
 function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
@@ -33,19 +37,42 @@ function buildResetLink(appUrl: string, token: string): string {
   return `${normalizeAppUrl(appUrl)}/update-password?token=${encodeURIComponent(token)}`
 }
 
+export function isPasswordResetConfigured(config: MessengerConfig): boolean {
+  return Boolean(isSmtpBzConfigured(config) && config.appUrl)
+}
+
 function ensurePasswordResetConfigured(config: MessengerConfig): void {
-  if (!isSmtpBzConfigured(config) || !config.appUrl) {
-    const err = new Error('password_reset_not_configured')
-    ;(err as Error & { status: number }).status = 503
-    throw err
+  if (!isPasswordResetConfigured(config)) {
+    throw httpError('password_reset_not_configured', 503)
   }
+}
+
+function isMissingTableError(error: { message?: string; code?: string } | null | undefined): boolean {
+  const message = error?.message ?? ''
+  return (
+    error?.code === '42P01' ||
+    /password_reset_tokens/i.test(message) ||
+    /does not exist/i.test(message)
+  )
+}
+
+function allowRequest(key: string): boolean {
+  const now = Date.now()
+  const recent = (requestHits.get(key) ?? []).filter((at) => now - at < RATE_LIMIT_WINDOW_MS)
+  if (recent.length >= RATE_LIMIT_MAX) {
+    requestHits.set(key, recent)
+    return false
+  }
+  recent.push(now)
+  requestHits.set(key, recent)
+  return true
 }
 
 async function findUserByEmail(db: DbClient, email: string): Promise<UserRow | null> {
   const { data, error } = await db
     .from('users')
     .select('id, email, full_name')
-    .ilike('email', email)
+    .ilike('email', email.replace(/[%_]/g, ''))
     .maybeSingle()
 
   if (error) throw error
@@ -63,7 +90,10 @@ async function recentResetRequestExists(db: DbClient, userId: string): Promise<b
     .limit(1)
     .maybeSingle()
 
-  if (error) throw error
+  if (error) {
+    if (isMissingTableError(error)) throw httpError('password_reset_not_configured', 503)
+    throw error
+  }
   return Boolean(data?.id)
 }
 
@@ -74,7 +104,10 @@ async function revokeUnusedResetTokens(db: DbClient, userId: string): Promise<vo
     .eq('user_id', userId)
     .is('used_at', null)
 
-  if (error) throw error
+  if (error) {
+    if (isMissingTableError(error)) throw httpError('password_reset_not_configured', 503)
+    throw error
+  }
 }
 
 async function createResetToken(db: DbClient, userId: string): Promise<string> {
@@ -88,7 +121,10 @@ async function createResetToken(db: DbClient, userId: string): Promise<string> {
     expires_at: expiresAt,
   })
 
-  if (error) throw error
+  if (error) {
+    if (isMissingTableError(error)) throw httpError('password_reset_not_configured', 503)
+    throw error
+  }
   return rawToken
 }
 
@@ -143,19 +179,22 @@ export async function requestPasswordReset(
   db: DbClient,
   config: MessengerConfig,
   email: string,
+  clientKey = 'unknown',
 ): Promise<{ ok: true }> {
   ensurePasswordResetConfigured(config)
 
   const normalizedEmail = email.trim().toLowerCase()
-  if (!normalizedEmail) {
-    const err = new Error('email_required')
-    ;(err as Error & { status: number }).status = 400
-    throw err
+  if (!normalizedEmail || !normalizedEmail.includes('@')) {
+    throw httpError('email_required', 400)
+  }
+
+  if (!allowRequest(`ip:${clientKey}`) || !allowRequest(`email:${normalizedEmail}`)) {
+    throw httpError('password_reset_rate_limited', 429)
   }
 
   const user = await findUserByEmail(db, normalizedEmail)
   if (!user?.email) {
-    log('info', 'Password reset requested for unknown email', { email: normalizedEmail })
+    log('info', 'Password reset requested for unknown email')
     return { ok: true }
   }
 
@@ -166,9 +205,18 @@ export async function requestPasswordReset(
 
   await revokeUnusedResetTokens(db, user.id)
   const rawToken = await createResetToken(db, user.id)
-  await sendPasswordResetEmail(config, user, rawToken)
 
-  log('info', 'Password reset email sent', { userId: user.id, email: user.email })
+  try {
+    await sendPasswordResetEmail(config, user, rawToken)
+  } catch (error) {
+    log('error', 'Password reset email failed', {
+      userId: user.id,
+      message: error instanceof Error ? error.message : String(error),
+    })
+    throw httpError('password_reset_email_failed', 503)
+  }
+
+  log('info', 'Password reset email sent', { userId: user.id })
   return { ok: true }
 }
 
@@ -177,28 +225,38 @@ async function consumeResetToken(
   rawToken: string,
 ): Promise<{ tokenId: string; userId: string }> {
   const tokenHash = hashToken(rawToken)
+  const now = new Date().toISOString()
+
   const { data, error } = await db
     .from('password_reset_tokens')
-    .select('id, user_id, created_at, expires_at, used_at')
+    .update({ used_at: now })
     .eq('token_hash', tokenHash)
+    .is('used_at', null)
+    .gt('expires_at', now)
+    .select('id, user_id')
     .maybeSingle()
 
-  if (error) throw error
-
-  const token = (data as (TokenRow & { expires_at: string; used_at: string | null }) | null) ?? null
-  if (!token || token.used_at) {
-    const err = new Error('password_reset_token_invalid')
-    ;(err as Error & { status: number }).status = 400
-    throw err
+  if (error) {
+    if (isMissingTableError(error)) throw httpError('password_reset_not_configured', 503)
+    throw error
   }
 
-  if (new Date(token.expires_at).getTime() < Date.now()) {
-    const err = new Error('password_reset_token_expired')
-    ;(err as Error & { status: number }).status = 400
-    throw err
+  if (!data?.id || !data.user_id) {
+    const { data: existing, error: lookupError } = await db
+      .from('password_reset_tokens')
+      .select('id, expires_at, used_at')
+      .eq('token_hash', tokenHash)
+      .maybeSingle()
+
+    if (lookupError) throw lookupError
+    if (existing?.used_at) throw httpError('password_reset_token_invalid', 400)
+    if (existing && new Date(existing.expires_at as string).getTime() < Date.now()) {
+      throw httpError('password_reset_token_expired', 400)
+    }
+    throw httpError('password_reset_token_invalid', 400)
   }
 
-  return { tokenId: token.id, userId: token.user_id }
+  return { tokenId: data.id as string, userId: data.user_id as string }
 }
 
 export async function confirmPasswordReset(
@@ -207,16 +265,10 @@ export async function confirmPasswordReset(
   input: { token: string; password: string },
 ): Promise<{ ok: true }> {
   const rawToken = input.token.trim()
-  if (!rawToken) {
-    const err = new Error('password_reset_token_required')
-    ;(err as Error & { status: number }).status = 400
-    throw err
-  }
+  if (!rawToken) throw httpError('password_reset_token_required', 400)
 
   if (input.password.length < 8 || input.password.length > 72) {
-    const err = new Error('invalid_password')
-    ;(err as Error & { status: number }).status = 400
-    throw err
+    throw httpError('invalid_password', 400)
   }
 
   const { tokenId, userId } = await consumeResetToken(db, rawToken)
@@ -225,14 +277,15 @@ export async function confirmPasswordReset(
     password: input.password,
     email_confirm: true,
   })
-  if (authError) throw authError
 
-  const { error: markError } = await db
-    .from('password_reset_tokens')
-    .update({ used_at: new Date().toISOString() })
-    .eq('id', tokenId)
-
-  if (markError) throw markError
+  if (authError) {
+    await db.from('password_reset_tokens').update({ used_at: null }).eq('id', tokenId)
+    log('warn', 'Password reset confirm failed', {
+      userId,
+      message: authError.message,
+    })
+    throw httpError('password_reset_failed', 500)
+  }
 
   log('info', 'Password reset confirmed', { userId })
   return { ok: true }

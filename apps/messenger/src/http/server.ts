@@ -1,7 +1,11 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 
 import { handleMaxUpdate, type MaxUpdate } from '../adapters/max.js'
-import { confirmPasswordReset, requestPasswordReset } from '../auth/password-reset.js'
+import {
+  confirmPasswordReset,
+  isPasswordResetConfigured,
+  requestPasswordReset,
+} from '../auth/password-reset.js'
 import { handleTelegramUpdate, type TelegramUpdate } from '../adapters/telegram.js'
 import type { MessengerConfig } from '../config/index.js'
 import type { DbClient } from '../db.js'
@@ -48,6 +52,21 @@ function timingSafeEqual(a: string, b: string): boolean {
   let out = 0
   for (let i = 0; i < a.length; i += 1) out |= a.charCodeAt(i) ^ b.charCodeAt(i)
   return out === 0
+}
+
+function normalizeApiPath(pathname: string): string {
+  let path = pathname.replace(/\/+$/, '') || '/'
+  if (path.startsWith('/api/messenger/')) {
+    path = `/${path.slice('/api/messenger/'.length)}`
+  }
+  return path
+}
+
+function clientKey(req: IncomingMessage): string {
+  const forwarded = req.headers['x-forwarded-for']
+  const raw = Array.isArray(forwarded) ? forwarded[0] : forwarded
+  const ip = raw?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown'
+  return ip
 }
 
 function statusFromError(error: unknown): number {
@@ -115,7 +134,7 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`)
-      const path = url.pathname
+      const path = normalizeApiPath(url.pathname)
 
       if (req.method === 'OPTIONS') {
         send(res, 204, { ok: true })
@@ -126,8 +145,8 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
         send(res, 200, {
           ok: true,
           service: 'messenger',
-          // Bump when outbound Max addressing changes — verify deploy via /health
-          build: 'cross-delete-relay-2026-08-05',
+          build: 'password-reset-smtpbz-2026-08-19',
+          passwordReset: isPasswordResetConfigured(config),
         })
         return
       }
@@ -242,7 +261,7 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
             return
           }
 
-          const result = await requestPasswordReset(db, config, email)
+          const result = await requestPasswordReset(db, config, email, clientKey(req))
           send(res, 200, result)
         } catch (error) {
           const status = statusFromError(error)

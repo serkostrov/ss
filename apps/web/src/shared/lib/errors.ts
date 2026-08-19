@@ -55,6 +55,14 @@ const SUPABASE_AUTH_MESSAGES: Record<string, string> = {
   password_reset_token_required: 'Отсутствует токен восстановления пароля',
   invalid_password: 'Пароль должен содержать от 8 до 72 символов',
   email_required: 'Укажите email',
+  password_reset_email_failed: 'Не удалось отправить письмо. Попробуйте позже',
+  password_reset_rate_limited: 'Слишком много попыток. Подождите несколько минут',
+  password_reset_failed: 'Не удалось обновить пароль. Запросите новую ссылку',
+  not_found: 'Сервис восстановления пароля недоступен. Обновите messenger и попробуйте снова',
+  password_reset_http_404:
+    'Сервис восстановления пароля недоступен. Обновите messenger и попробуйте снова',
+  password_reset_http_500: 'Не удалось отправить письмо. Попробуйте позже',
+  password_reset_http_503: 'Восстановление пароля временно недоступно. Попробуйте позже',
 }
 
 function mapHttpStatusMessage(status?: number): string | undefined {

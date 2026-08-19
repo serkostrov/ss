@@ -22,3 +22,6 @@ for all
 to authenticated
 using (false)
 with check (false);
+
+grant all on table public.password_reset_tokens to service_role;
+revoke all on table public.password_reset_tokens from anon, authenticated;
