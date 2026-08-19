@@ -8,7 +8,7 @@ import {
   type LoginLocationState,
 } from '@app/lib/intended-route'
 import { authService } from '@shared/api'
-import { appConfig, routes } from '@shared/config'
+import { routes } from '@shared/config'
 import { getErrorMessage } from '@shared/lib/errors'
 import { notify } from '@shared/lib/notify'
 
@@ -97,8 +97,7 @@ export function useRegisterMutation() {
 export function useResetPasswordMutation() {
   return useMutation({
     mutationFn: async (values: ResetPasswordFormValues) => {
-      const redirectTo = `${appConfig.env.appUrl}${routes.updatePassword}`
-      await authService.requestPasswordReset(values.email, redirectTo)
+      await authService.requestPasswordReset(values.email)
     },
     meta: { suppressErrorToast: true },
     onSuccess: () => {
@@ -110,12 +109,18 @@ export function useResetPasswordMutation() {
   })
 }
 
-export function useUpdatePasswordMutation() {
+export function useUpdatePasswordMutation(token?: string | null) {
   const navigate = useNavigate()
   const { signOut } = useAuth()
+  const resetToken = token?.trim() || null
 
   return useMutation({
     mutationFn: async (values: UpdatePasswordFormValues) => {
+      if (resetToken) {
+        await authService.confirmPasswordReset(resetToken, values.password)
+        return
+      }
+
       await authService.updatePassword(values.password)
       await signOut()
     },

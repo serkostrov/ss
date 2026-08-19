@@ -49,6 +49,12 @@ const SUPABASE_AUTH_MESSAGES: Record<string, string> = {
   weak_password: 'Пароль слишком простой',
   over_request_rate_limit: 'Слишком много запросов. Попробуйте позже',
   session_not_found: 'Сессия истекла. Войдите снова',
+  password_reset_token_invalid: 'Ссылка для восстановления недействительна',
+  password_reset_token_expired: 'Срок действия ссылки истёк. Запросите новую',
+  password_reset_not_configured: 'Восстановление пароля пока не настроено',
+  password_reset_token_required: 'Отсутствует токен восстановления пароля',
+  invalid_password: 'Пароль должен содержать от 8 до 72 символов',
+  email_required: 'Укажите email',
 }
 
 function mapHttpStatusMessage(status?: number): string | undefined {
@@ -88,8 +94,14 @@ function isAuthLikeError(
 }
 
 function messageFromAuthLike(error: Error & { status?: number; code?: string }): string {
-  const key = error.code ?? error.message
-  return SUPABASE_AUTH_MESSAGES[key] ?? mapHttpStatusMessage(error.status) ?? error.message
+  const message = typeof error.message === 'string' ? error.message.trim() : ''
+  const key = (error.code ?? message).trim()
+
+  return (
+    SUPABASE_AUTH_MESSAGES[key] ??
+    mapHttpStatusMessage(error.status) ??
+    (message && message !== '{}' ? message : 'Ошибка авторизации. Попробуйте позже')
+  )
 }
 
 export function toApiError(error: unknown): ApiError {
@@ -167,7 +179,11 @@ export function toApiError(error: unknown): ApiError {
   }
 
   if (error instanceof Error) {
-    return new ApiError(error.message || 'Неизвестная ошибка', {
+    const message =
+      SUPABASE_AUTH_MESSAGES[error.message.trim()] ||
+      error.message ||
+      'Неизвестная ошибка'
+    return new ApiError(message, {
       code: 'unknown',
       cause: error,
     })

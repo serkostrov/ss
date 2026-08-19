@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 
 import { handleMaxUpdate, type MaxUpdate } from '../adapters/max.js'
+import { confirmPasswordReset, requestPasswordReset } from '../auth/password-reset.js'
 import { handleTelegramUpdate, type TelegramUpdate } from '../adapters/telegram.js'
 import type { MessengerConfig } from '../config/index.js'
 import type { DbClient } from '../db.js'
@@ -73,6 +74,15 @@ type OutboundDeleteBody = {
   workGroupId?: string
   externalMessageId?: string
   messageId?: string | null
+}
+
+type PasswordResetRequestBody = {
+  email?: string
+}
+
+type PasswordResetConfirmBody = {
+  token?: string
+  password?: string
 }
 
 function parseOutboundFiles(body: OutboundBody): OutboundFile[] {
@@ -218,6 +228,47 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
           const status = statusFromError(error)
           const message = error instanceof Error ? error.message : 'error'
           log('warn', 'Notification email API failed', { status, message })
+          send(res, status, { ok: false, error: message })
+        }
+        return
+      }
+
+      if (req.method === 'POST' && path === '/v1/auth/password-reset/request') {
+        try {
+          const body = (await readJson(req)) as PasswordResetRequestBody | null
+          const email = body?.email?.trim() ?? ''
+          if (!email) {
+            send(res, 400, { ok: false, error: 'email_required' })
+            return
+          }
+
+          const result = await requestPasswordReset(db, config, email)
+          send(res, 200, result)
+        } catch (error) {
+          const status = statusFromError(error)
+          const message = error instanceof Error ? error.message : 'error'
+          log('warn', 'Password reset request failed', { status, message })
+          send(res, status, { ok: false, error: message })
+        }
+        return
+      }
+
+      if (req.method === 'POST' && path === '/v1/auth/password-reset/confirm') {
+        try {
+          const body = (await readJson(req)) as PasswordResetConfirmBody | null
+          const token = body?.token?.trim() ?? ''
+          const password = body?.password ?? ''
+          if (!token || !password) {
+            send(res, 400, { ok: false, error: 'invalid_payload' })
+            return
+          }
+
+          const result = await confirmPasswordReset(db, config, { token, password })
+          send(res, 200, result)
+        } catch (error) {
+          const status = statusFromError(error)
+          const message = error instanceof Error ? error.message : 'error'
+          log('warn', 'Password reset confirm failed', { status, message })
           send(res, status, { ok: false, error: message })
         }
         return

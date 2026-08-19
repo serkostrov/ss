@@ -16,8 +16,12 @@ import {
 import { updatePasswordSchema, type UpdatePasswordFormValues } from '../model/schemas'
 import { useUpdatePasswordMutation } from '../model/use-auth-mutations'
 
-export function UpdatePasswordForm() {
-  const updatePassword = useUpdatePasswordMutation()
+type UpdatePasswordFormProps = {
+  token?: string | null
+}
+
+export function UpdatePasswordForm({ token }: UpdatePasswordFormProps) {
+  const updatePassword = useUpdatePasswordMutation(token)
 
   const form = useForm<UpdatePasswordFormValues>({
     resolver: zodResolver(updatePasswordSchema),

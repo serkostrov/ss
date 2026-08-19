@@ -38,10 +38,7 @@ export const router = createBrowserRouter([
               { path: routes.resetPassword, element: <pages.ResetPasswordPage /> },
             ],
           },
-          {
-            element: <RequireAuth />,
-            children: [{ path: routes.updatePassword, element: <pages.UpdatePasswordPage /> }],
-          },
+          { path: routes.updatePassword, element: <pages.UpdatePasswordPage /> },
         ],
       },
       {

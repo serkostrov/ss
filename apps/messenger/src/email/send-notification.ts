@@ -1,6 +1,7 @@
 import type { DbClient } from '../db.js'
 import type { MessengerConfig } from '../config/index.js'
 import { log } from '../types.js'
+import { escapeHtml, isSmtpBzConfigured, sendViaSmtpBz } from './smtpbz.js'
 
 type NotificationRow = {
   id: string
@@ -17,14 +18,6 @@ type UserRow = {
   email_notifications_enabled: boolean
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-}
-
 function absoluteLink(appUrl: string, link: string | null): string | null {
   if (!link) return null
   if (/^https?:\/\//i.test(link)) return link
@@ -33,44 +26,9 @@ function absoluteLink(appUrl: string, link: string | null): string | null {
   return `${base}${path}`
 }
 
-async function sendViaSmtpBz(input: {
-  apiKey: string
-  from: string
-  fromName: string
-  to: string
-  toName: string | null
-  subject: string
-  html: string
-  text: string
-}): Promise<void> {
-  const form = new FormData()
-  form.set('from', input.from)
-  form.set('name', input.fromName)
-  form.set('to', input.to)
-  if (input.toName) form.set('to_name', input.toName)
-  form.set('subject', input.subject)
-  form.set('html', input.html)
-  form.set('text', input.text)
-  form.set('tag', 'apss-notification')
-
-  const response = await fetch('https://api.smtp.bz/v1/smtp/send', {
-    method: 'POST',
-    headers: {
-      Authorization: input.apiKey,
-      Accept: 'application/json',
-    },
-    body: form,
-  })
-
-  if (!response.ok) {
-    const detail = await response.text()
-    throw new Error(`smtp.bz error ${response.status}: ${detail}`)
-  }
-}
-
 export function isEmailDispatchConfigured(config: MessengerConfig): boolean {
   return Boolean(
-    config.smtpbzApiKey &&
+    isSmtpBzConfigured(config) &&
       config.smtpFrom &&
       config.emailWebhookSecret &&
       config.appUrl,
@@ -154,6 +112,7 @@ export async function dispatchNotificationEmail(
     subject: row.title,
     html,
     text,
+    tag: 'apss-notification',
   })
 
   log('info', 'Notification email sent', {

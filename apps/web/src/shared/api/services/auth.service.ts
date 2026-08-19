@@ -8,6 +8,7 @@ import type {
 } from '@supabase/supabase-js'
 
 import { toApiError } from '@shared/lib/errors'
+import { env, routes } from '@shared/config'
 
 import { supabaseClient, syncRealtimeAuth } from '../lib/client'
 import { fromSupabaseError, unwrapMaybe } from '../lib/helpers'
@@ -200,6 +201,71 @@ function throwAuth(error: SupabaseAuthError | null): asserts error is null {
   }
 }
 
+type PasswordRecoveryParams = {
+  code: string | null
+  type: string | null
+  accessToken: string | null
+  refreshToken: string | null
+}
+
+function readPasswordRecoveryParams(): PasswordRecoveryParams {
+  if (typeof window === 'undefined') {
+    return {
+      code: null,
+      type: null,
+      accessToken: null,
+      refreshToken: null,
+    }
+  }
+
+  const search = new URLSearchParams(window.location.search)
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+
+  return {
+    code: search.get('code'),
+    type: search.get('type') ?? hash.get('type'),
+    accessToken: hash.get('access_token'),
+    refreshToken: hash.get('refresh_token'),
+  }
+}
+
+function cleanupPasswordRecoveryUrl(): void {
+  if (typeof window === 'undefined') return
+  window.history.replaceState({}, document.title, routes.updatePassword)
+}
+
+function passwordResetApiUrl(path = ''): string {
+  if (env.isDev) {
+    return `/api/messenger/v1/auth/password-reset${path}`
+  }
+  const base = env.messengerApiUrl
+  if (base) return `${base}/v1/auth/password-reset${path}`
+  return `/api/messenger/v1/auth/password-reset${path}`
+}
+
+async function postPasswordReset<T>(path: string, body: Record<string, unknown>): Promise<T> {
+  let response: Response
+  try {
+    response = await fetch(passwordResetApiUrl(path), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch (error) {
+    throw toApiError(error)
+  }
+
+  const json = (await response.json().catch(() => null)) as
+    | { ok?: boolean; error?: string }
+    | null
+
+  if (!response.ok || !json?.ok) {
+    throw toApiError(new Error(json?.error || `password_reset_http_${response.status}`))
+  }
+
+  return json as T
+}
+
 const PROFILE_SELECT = `
   id,
   email,
@@ -326,11 +392,55 @@ export const authService = {
     throwAuth(error)
   },
 
-  async requestPasswordReset(email: string, redirectTo?: string): Promise<void> {
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo,
+  async requestPasswordReset(email: string): Promise<void> {
+    await postPasswordReset('/request', {
+      email: email.trim().toLowerCase(),
     })
-    throwAuth(error)
+  },
+
+  async confirmPasswordReset(token: string, password: string): Promise<void> {
+    await postPasswordReset('/confirm', {
+      token: token.trim(),
+      password,
+    })
+  },
+
+  hasPasswordRecoveryParams(): boolean {
+    const params = readPasswordRecoveryParams()
+    return Boolean(
+      params.code ||
+        (params.accessToken && params.refreshToken) ||
+        params.type === 'recovery',
+    )
+  },
+
+  async restorePasswordRecoverySession(): Promise<boolean> {
+    const params = readPasswordRecoveryParams()
+    const isRecovery =
+      params.type === 'recovery' ||
+      Boolean(params.code) ||
+      Boolean(params.accessToken && params.refreshToken)
+
+    if (!isRecovery) return false
+
+    if (params.code) {
+      const { error } = await supabaseClient.auth.exchangeCodeForSession(params.code)
+      throwAuth(error)
+      cleanupPasswordRecoveryUrl()
+      return true
+    }
+
+    if (params.accessToken && params.refreshToken) {
+      const { error } = await supabaseClient.auth.setSession({
+        access_token: params.accessToken,
+        refresh_token: params.refreshToken,
+      })
+      throwAuth(error)
+      cleanupPasswordRecoveryUrl()
+      return true
+    }
+
+    return false
   },
 
   async updatePassword(password: string): Promise<User> {
