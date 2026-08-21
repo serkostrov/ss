@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual as cryptoTimingSafeEqual } from 'node:crypto'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 
 import { handleMaxUpdate, type MaxUpdate } from '../adapters/max.js'
@@ -58,10 +59,9 @@ function send(res: ServerResponse, status: number, body: unknown, req?: Incoming
 }
 
 function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false
-  let out = 0
-  for (let i = 0; i < a.length; i += 1) out |= a.charCodeAt(i) ^ b.charCodeAt(i)
-  return out === 0
+  const left = createHash('sha256').update(a).digest()
+  const right = createHash('sha256').update(b).digest()
+  return cryptoTimingSafeEqual(left, right)
 }
 
 function normalizeApiPath(pathname: string): string {

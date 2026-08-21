@@ -68,10 +68,8 @@ export function loadConfig(): MessengerConfig {
     // DEV: в корневом .env обычно лежат VITE_* переменные для web.
     // Worker использует non-VITE ключи, поэтому даём fallback.
     supabaseUrl: process.env.SUPABASE_URL?.trim() || process.env.VITE_SUPABASE_URL?.trim() || required('SUPABASE_URL'),
-    supabaseServiceRoleKey:
-      process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
-      process.env.VITE_SUPABASE_SERVICE_ROLE_KEY?.trim() ||
-      required('SUPABASE_SERVICE_ROLE_KEY'),
+    // Never read VITE_* service-role keys — Vite would bake them into the SPA.
+    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || required('SUPABASE_SERVICE_ROLE_KEY'),
     telegramBotToken: optional('TELEGRAM_BOT_TOKEN'),
     telegramWebhookSecret: optional('TELEGRAM_WEBHOOK_SECRET'),
     maxBotToken: optional('MAX_BOT_TOKEN'),

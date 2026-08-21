@@ -19,7 +19,14 @@ coverage
 # Env & secrets
 .env
 .env.*
+**/.env
+**/.env.*
 !.env.example
+!**/.env.example
+**/*.pem
+**/*.key
+**/*.crt
+**/.git
 
 # Local / OS
 *.log
