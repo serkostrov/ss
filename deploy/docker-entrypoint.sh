@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-TEMPLATE="/etc/nginx/templates-custom/env.template.js"
-TARGET="/usr/share/nginx/html/env.js"
+INDEX_HTML="/usr/share/nginx/html/index.html"
 NGINX_CONF="/etc/nginx/conf.d/default.conf"
+export INDEX_HTML
 
 # Runtime env from Dokploy (or docker -e). Optional trailing slash strip on APP_URL not needed.
 : "${VITE_SUPABASE_URL:=}"
@@ -27,11 +27,30 @@ fi
 
 export VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY VITE_APP_URL VITE_TELEGRAM_BOT_URL VITE_MAX_BOT_URL VITE_MESSENGER_API_URL
 
-# Only substitute our vars so `$` elsewhere is untouched
-envsubst '${VITE_SUPABASE_URL} ${VITE_SUPABASE_ANON_KEY} ${VITE_APP_URL} ${VITE_TELEGRAM_BOT_URL} ${VITE_MAX_BOT_URL} ${VITE_MESSENGER_API_URL}' \
-  < "$TEMPLATE" > "$TARGET"
+# Inline runtime env into index.html — do not write a public /env.js file.
+node <<'NODE'
+const fs = require('fs')
+const indexPath = process.env.INDEX_HTML || '/usr/share/nginx/html/index.html'
+const marker = '<!--RUNTIME_ENV-->'
+const env = {
+  VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL || '',
+  VITE_SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY || '',
+  VITE_APP_URL: process.env.VITE_APP_URL || '',
+  VITE_TELEGRAM_BOT_URL: process.env.VITE_TELEGRAM_BOT_URL || '',
+  VITE_MAX_BOT_URL: process.env.VITE_MAX_BOT_URL || '',
+  VITE_MESSENGER_API_URL: process.env.VITE_MESSENGER_API_URL || '',
+}
+const html = fs.readFileSync(indexPath, 'utf8')
+if (!html.includes(marker)) {
+  console.error('index.html is missing <!--RUNTIME_ENV--> marker')
+  process.exit(1)
+}
+const script = `<script>window.__ENV__=${JSON.stringify(env)};</script>`
+fs.writeFileSync(indexPath, html.replace(marker, script))
+NODE
 
-echo "Wrote runtime env to $TARGET"
+rm -f /usr/share/nginx/html/env.js /usr/share/nginx/html/env.js.map
+echo "Inlined runtime env into $INDEX_HTML (env.js not published)"
 
 # Optional: proxy /webhooks/* and override /api/messenger/* to messenger worker.
 # Uses a variable + Docker DNS resolver so nginx can start even if messenger is not up yet.

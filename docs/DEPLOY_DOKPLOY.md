@@ -52,7 +52,7 @@ VITE_MESSENGER_API_URL=https://messenger.example.com
 
 Проверка:
 
-- `https://app.example.com/env.js` — реальные URL, не `${VITE_...}`
+- главная открывается, в исходнике `index.html` есть `window.__ENV__` с реальными URL (отдельной страницы `/env.js` нет)
 - отправка сообщения из админки идёт на `VITE_MESSENGER_API_URL/v1/outbound`
 - В логах старта: `MESSENGER_UPSTREAM empty — /webhooks/ proxy disabled`
 - Открываются `/admin`, `/cabinet`
@@ -210,7 +210,7 @@ Web nginx проксирует `/webhooks/` → messenger. Домен у web о�
 | Max: `Malformed access token` | Токен без `Bearer `, актуальный из кабинета Max |
 | Max: `fetch failed` | TLS; `MAX_TLS_INSECURE=1` или корневой CA Минцифры |
 | Чаты не в picker | Messenger не запущен / бот не в чате / webhook не зарегистрирован |
-| `/env.js` с `${VITE_...}` | Нет runtime `VITE_*` в Environment Dokploy |
+| SPA без Supabase URL / пустой `__ENV__` | Нет runtime `VITE_*` в Environment Dokploy |
 | `not_found` на `/v1/auth/password-reset/request` | Старый образ messenger. **Rebuild** приложения Messenger после коммита |
 | `/health` без `"passwordReset":true` | Нет `SMTPBZ_API_KEY` / `SMTP_FROM` / `APP_URL` у messenger |
 
