@@ -15,11 +15,9 @@ RUN npm ci
 
 COPY . .
 
-# SPA reads VITE_* inlined into index.html at container start (see deploy/docker-entrypoint.sh).
-# No build-time VITE_* required — avoids empty ARG wiping Dokploy env.
-# Tailwind v4 auto-scan hangs in Docker without explicit @source (see index.css).
-ENV NODE_OPTIONS="--max-old-space-size=2048"
-RUN npm run build
+# Skip `tsc` in the image: on a 1–2 GB VPS it swaps and looks hung (3+ min, then Vite).
+# Tailwind sources are explicit in apps/web/src/app/styles/index.css (`source(none)`).
+RUN npm run build:docker -w @apss/web
 
 FROM nginx:1.27-alpine AS runtime
 

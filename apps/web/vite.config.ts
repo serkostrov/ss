@@ -70,4 +70,7 @@ export default defineConfig({
     port: 4173,
     host: listenOnLan ? true : '127.0.0.1',
   },
+  build: {
+    reportCompressedSize: false,
+  },
 })

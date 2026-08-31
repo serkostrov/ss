@@ -16,5 +16,9 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["vite.config.ts", "scripts/inn-lookup-middleware.ts"]
+  "include": [
+    "vite.config.ts",
+    "scripts/inn-lookup-middleware.ts",
+    "scripts/block-sensitive-files.ts"
+  ]
 }

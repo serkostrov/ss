@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:docker": "vite build",
     "preview": "vite preview",
     "lint": "eslint --config ../../eslint.config.js src --max-warnings 0",
     "lint:fix": "eslint --config ../../eslint.config.js src --fix",
