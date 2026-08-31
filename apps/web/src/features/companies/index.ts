@@ -30,6 +30,7 @@ export {
   formatCompanyDate,
   formatCompanyBalance,
   formatCompanyAutoId,
+  companyBalanceClassName,
   parseCompanyBalance,
 } from './model/schemas'
 export type {

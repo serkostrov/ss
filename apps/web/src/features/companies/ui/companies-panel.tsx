@@ -21,6 +21,7 @@ import {
   balanceFilterLabel,
   formatCompanyAutoId,
   formatCompanyBalance,
+  companyBalanceClassName,
   sortByLabel,
   type CompanyAccessFilter,
   type CompanyBalanceFilterValue,
@@ -146,14 +147,8 @@ export function CompaniesPanel() {
         header: 'Баланс',
         cell: ({ row }) => {
           const balance = row.original.balance ?? 0
-          const tone =
-            balance > 0
-              ? 'text-emerald-700 dark:text-emerald-400'
-              : balance < 0
-                ? 'text-destructive'
-                : 'text-muted-foreground'
           return (
-            <span className={`text-sm font-medium tabular-nums ${tone}`}>
+            <span className={`text-sm font-medium tabular-nums ${companyBalanceClassName(balance)}`}>
               {formatCompanyBalance(balance)}
             </span>
           )

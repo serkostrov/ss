@@ -66,3 +66,14 @@ export function connectionLastUpdate(connection: {
 }): string {
   return connection.connected_at ?? connection.created_at
 }
+
+/** Radix Select forbids item values that start with `-` (Telegram group/channel ids). */
+const CHAT_SELECT_PREFIX = 'chat:'
+
+export function toMessengerChatSelectValue(chatId: string): string {
+  return `${CHAT_SELECT_PREFIX}${chatId}`
+}
+
+export function fromMessengerChatSelectValue(value: string): string {
+  return value.startsWith(CHAT_SELECT_PREFIX) ? value.slice(CHAT_SELECT_PREFIX.length) : value
+}

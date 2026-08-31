@@ -19,6 +19,7 @@ const fsGuard: {
   strict: true,
   // Do not allow the monorepo root: that is where `.env` lives (envDir).
   allow: [
+    __dirname,
     path.resolve(repoRoot, 'packages/shared'),
     path.resolve(repoRoot, 'node_modules'),
   ],

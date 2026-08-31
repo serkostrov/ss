@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Building2, FileText, ShieldAlert, Vote } from 'lucide-react'
 
 import { useAuth } from '@app/providers'
-import { companyAccessStatusMemberLabel } from '@features/companies'
+import { companyAccessStatusMemberLabel, companyBalanceClassName, formatCompanyBalance } from '@features/companies'
 import { useClearNavNotificationBadges } from '@features/notifications'
 import { routes } from '@shared/config'
 import {
@@ -107,6 +107,14 @@ export function CabinetHomePanel() {
                     {membership.representativeName}
                   </p>
                 ) : null}
+                <p className="flex flex-wrap items-center gap-2">
+                  <span className="text-muted-foreground">Баланс:</span>
+                  <span
+                    className={`font-medium tabular-nums ${companyBalanceClassName(membership.companyBalance)}`}
+                  >
+                    {formatCompanyBalance(membership.companyBalance)}
+                  </span>
+                </p>
                 <Button asChild variant="outline" size="sm" className="mt-2">
                   <Link to={`${routes.cabinet.account}?tab=company`}>Открыть компанию</Link>
                 </Button>

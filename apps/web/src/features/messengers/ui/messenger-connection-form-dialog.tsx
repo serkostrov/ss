@@ -16,9 +16,11 @@ import {
 } from '@shared/ui'
 
 import {
+  fromMessengerChatSelectValue,
   messengerChatKindLabel,
   messengerConnectionFormSchema,
   messengerPlatformLabel,
+  toMessengerChatSelectValue,
   type MessengerConnectionFormValues,
 } from '../model/schemas'
 import {
@@ -183,7 +185,8 @@ export function MessengerConnectionFormDialog({
     })
   }
 
-  const selectChannel = (externalChatId: string) => {
+  const selectChannel = (selectValue: string) => {
+    const externalChatId = fromMessengerChatSelectValue(selectValue)
     const channel = channels.find((item) => item.external_chat_id === externalChatId)
     setValues((prev) => ({
       ...prev,
@@ -305,13 +308,19 @@ export function MessengerConnectionFormDialog({
               Не найдено чатов
             </div>
           ) : (
-            <Select value={values.chatId || undefined} onValueChange={selectChannel}>
+            <Select
+              value={values.chatId ? toMessengerChatSelectValue(values.chatId) : undefined}
+              onValueChange={selectChannel}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Выберите чат" />
               </SelectTrigger>
               <SelectContent>
                 {channels.map((channel) => (
-                  <SelectItem key={channel.id} value={channel.external_chat_id}>
+                  <SelectItem
+                    key={channel.id}
+                    value={toMessengerChatSelectValue(channel.external_chat_id)}
+                  >
                     {channelLabel(channel)}
                   </SelectItem>
                 ))}

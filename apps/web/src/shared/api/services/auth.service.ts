@@ -43,6 +43,7 @@ export type MemberMembership = {
   representativeName: string | null
   companyId: string
   companyName: string
+  companyBalance: number
   accessStatus: CompanyAccessStatus
   accessStatusExcludesProgram: boolean
   accessStatusIsDefault: boolean
@@ -89,6 +90,7 @@ type ProfileCompanyRow = {
   name: string
   access_status: CompanyAccessStatus
   participation_level_id: string | null
+  balance: number | string | null
   participation_levels:
     | {
         id: string
@@ -160,6 +162,7 @@ function mapMembership(row: ProfileQueryRow): MemberMembership | null {
     representativeName: representative.full_name,
     companyId: company.id,
     companyName: company.name,
+    companyBalance: Number(company.balance) || 0,
     accessStatus: company.access_status,
     accessStatusExcludesProgram:
       accessStatusMeta?.excludes_from_program ?? company.access_status === 'archived',
@@ -335,6 +338,7 @@ const PROFILE_SELECT = `
       name,
       access_status,
       participation_level_id,
+      balance,
       participation_levels (
         id,
         name,
@@ -532,6 +536,7 @@ export const authService = {
                 name,
                 access_status,
                 participation_level_id,
+                balance,
                 participation_levels (
                   id,
                   name,

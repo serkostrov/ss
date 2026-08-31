@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 
 import { CompanyProductsPanel } from '@features/company-products'
-import { companyAccessStatusMemberLabel } from '@features/companies'
+import { companyAccessStatusMemberLabel, companyBalanceClassName, formatCompanyBalance } from '@features/companies'
 import { isExitedCompany } from '@features/cabinet/model/company-access'
 import { useAuth } from '@app/providers'
 import { normalizeInnDigits } from '@shared/api'
@@ -124,6 +124,16 @@ export function CabinetCompanyPanel({ isEditing, onEditingChange }: CabinetCompa
               <CompanyField
                 label="Уровень участия"
                 value={profile?.membership?.participationLevelName}
+              />
+              <CompanyField
+                label="Баланс"
+                value={
+                  <span
+                    className={`font-medium tabular-nums ${companyBalanceClassName(company.balance ?? 0)}`}
+                  >
+                    {formatCompanyBalance(company.balance ?? 0)}
+                  </span>
+                }
               />
               <CompanyField label="Телефон" value={company.phone} />
               <CompanyField label="Email" value={company.email} />

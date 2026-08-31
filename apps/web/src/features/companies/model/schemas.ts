@@ -132,6 +132,12 @@ export function formatCompanyBalance(value: number): string {
   }
 }
 
+export function companyBalanceClassName(value: number): string {
+  if (value > 0) return 'text-emerald-700 dark:text-emerald-400'
+  if (value < 0) return 'text-destructive'
+  return 'text-muted-foreground'
+}
+
 export function parseCompanyBalance(value: string | undefined): number {
   if (!value?.trim()) return 0
   const normalized = value.replace(/\s/g, '').replace(',', '.')
