@@ -28,11 +28,11 @@ coverage
 **/*.crt
 **/.git
 
-# Not needed for the web image (and Tailwind v4 must not scan them)
+# Docs / SQL are not part of either Docker image.
+# Do not exclude apps/messenger: Dockerfile.messenger needs tsconfig.json and src.
+# Web image: Tailwind must not walk extra trees — that is handled in CSS (`source(none)`).
 supabase
 docs
-apps/messenger
-!apps/messenger/package.json
 
 # Local / OS
 *.log
