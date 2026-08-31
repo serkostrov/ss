@@ -292,7 +292,7 @@ export function MessengerConnectionFormDialog({
             channelsQuery.isLoading
               ? 'Загрузка чатов…'
               : noChannelsFound
-                ? 'Добавьте бота в канал/группу или напишите ему в ЛС.'
+                ? 'Добавьте бота в канал/группу или напишите ему в ЛС — список обновится сам.'
                 : selectedChannel
                   ? `ID: ${selectedChannel.external_chat_id}`
                   : 'Каналы, группы и личные чаты, где есть бот АПСС.'
@@ -304,8 +304,9 @@ export function MessengerConnectionFormDialog({
               Загрузка…
             </div>
           ) : noChannelsFound ? (
-            <div className="border-input bg-muted/30 text-muted-foreground flex h-9 items-center rounded-md border border-dashed px-3 text-sm">
-              Не найдено чатов
+            <div className="border-input bg-muted/30 text-muted-foreground flex h-9 items-center gap-2 rounded-md border border-dashed px-3 text-sm">
+              <Spinner size="sm" />
+              Ожидание чатов…
             </div>
           ) : (
             <Select

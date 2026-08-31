@@ -1,3 +1,6 @@
+import { useEffect, useRef } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+
 import {
   messengerBotChannelsService,
   messengerConnectionsService,
@@ -29,11 +32,42 @@ export function useMessengerConnections(workGroupId: string) {
 }
 
 export function useMessengerBotChannels(platform: MessengerPlatform, enabled = true) {
-  return useSupabaseQuery(
+  const queryClient = useQueryClient()
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const query = useSupabaseQuery(
     queryKeys.workGroups.botChannels(platform),
     () => messengerBotChannelsService.listActiveChannels(platform),
-    { ensureFreshSession: true, enabled },
+    {
+      ensureFreshSession: true,
+      enabled,
+      refetchInterval: enabled ? 2_000 : false,
+      refetchIntervalInBackground: false,
+      refetchOnWindowFocus: true,
+    },
   )
+
+  useEffect(() => {
+    if (!enabled) return
+
+    const invalidate = () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      debounceRef.current = setTimeout(() => {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.workGroups.botChannels(platform),
+        })
+      }, 120)
+    }
+
+    const unsubscribe = messengerBotChannelsService.subscribeActiveChannels(platform, invalidate)
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      unsubscribe()
+    }
+  }, [platform, enabled, queryClient])
+
+  return query
 }
 
 export function useUpsertMessengerConnectionMutation(workGroupId: string) {

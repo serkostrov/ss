@@ -54,4 +54,41 @@ export const messengerBotChannelsService = {
       return Boolean(id) && id !== '0'
     })
   },
+
+  /**
+   * Live updates when the worker upserts a chat the bot just saw.
+   * Requires `messenger_bot_channels` in `supabase_realtime`. Callers should also poll
+   * while the bind dialog is open (WS is often 403 on self-hosted).
+   */
+  subscribeActiveChannels(platform: MessengerPlatform, onChange: () => void): () => void {
+    const channelName = `messenger-bot-channels:${platform}`
+
+    void supabaseClient.auth.getSession().then(({ data }) => {
+      void supabaseClient.realtime.setAuth(data.session?.access_token ?? null)
+    })
+
+    const channel = supabaseClient
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messenger_bot_channels',
+          filter: `platform=eq.${platform}`,
+        },
+        () => {
+          onChange()
+        },
+      )
+      .subscribe((status) => {
+        if (import.meta.env.DEV && (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT')) {
+          console.warn('[messenger-bot-channels] realtime channel', status, channelName)
+        }
+      })
+
+    return () => {
+      void supabaseClient.removeChannel(channel)
+    }
+  },
 }
