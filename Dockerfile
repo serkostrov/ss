@@ -17,6 +17,8 @@ COPY . .
 
 # SPA reads VITE_* inlined into index.html at container start (see deploy/docker-entrypoint.sh).
 # No build-time VITE_* required — avoids empty ARG wiping Dokploy env.
+# Tailwind v4 auto-scan hangs in Docker without explicit @source (see index.css).
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 RUN npm run build
 
 FROM nginx:1.27-alpine AS runtime

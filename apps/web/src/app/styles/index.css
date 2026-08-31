@@ -1,5 +1,9 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source(none);
 @import 'tw-animate-css';
+
+/* Explicit sources: auto-detect in Docker scans node_modules / the whole image and hangs. */
+@source '../../';
+@source '../../../index.html';
 
 @custom-variant dark (&:is(.dark *));
 

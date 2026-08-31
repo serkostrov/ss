@@ -28,10 +28,13 @@ coverage
 **/*.crt
 **/.git
 
+# Not needed for the web image (and Tailwind v4 must not scan them)
+supabase
+docs
+apps/messenger
+!apps/messenger/package.json
+
 # Local / OS
 *.log
 .DS_Store
 Thumbs.db
-
-# Supabase local (not needed in web image)
-supabase/.temp
