@@ -1236,6 +1236,7 @@ export type Database = {
           target_platform: MessengerPlatform
           target_chat_id: string
           target_external_message_id: string | null
+          source_fingerprint: string | null
           status: RelayStatus
           relayed_at: string | null
           created_at: string
@@ -1246,12 +1247,14 @@ export type Database = {
           target_platform: MessengerPlatform
           target_chat_id: string
           target_external_message_id?: string | null
+          source_fingerprint?: string | null
           status?: RelayStatus
           relayed_at?: string | null
           created_at?: string
         }
         Update: {
           target_external_message_id?: string | null
+          source_fingerprint?: string | null
           status?: RelayStatus
           relayed_at?: string | null
         }

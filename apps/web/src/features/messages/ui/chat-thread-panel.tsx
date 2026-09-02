@@ -19,6 +19,7 @@ import {
   formatMessageTime,
   messageContentTypeLabel,
   messageSourceLabel,
+  crmDisplayText,
   truncateMessageText,
 } from '../model/schemas'
 import { useMessages } from '../model/use-messages'
@@ -107,9 +108,10 @@ function MessageBubble({
   onDelete?: () => void
 }) {
   const isOutbound = isOutboundMessage(message)
+  const displayText = crmDisplayText(message.text, message.author_name)
   const hasMedia = message.content_type !== 'text'
-  const textLooksLikePlaceholder = /^\[.+\]$/.test(message.text.trim())
-  const showText = Boolean(message.text && !(hasMedia && textLooksLikePlaceholder))
+  const textLooksLikePlaceholder = /^\[.+\]$/.test(displayText.trim())
+  const showText = Boolean(displayText && !(hasMedia && textLooksLikePlaceholder))
   const showAuthor = Boolean(message.author_name && !isOutbound && !compactTop)
 
   return (
@@ -151,7 +153,7 @@ function MessageBubble({
           {showText ? (
             <div className="flex flex-wrap items-end gap-x-2 gap-y-0.5">
               <p className="min-w-0 flex-1 leading-relaxed break-words whitespace-pre-wrap">
-                {message.text}
+                {displayText}
               </p>
               <time
                 dateTime={message.sent_at}
@@ -364,7 +366,7 @@ export function ChatThreadPanel({
         title="Удалить сообщение?"
         description={
           deleting
-            ? `«${truncateMessageText(deleting.text, 80)}» будет удалено из Max/Telegram (если чаты связаны) и из истории.`
+            ? `«${truncateMessageText(crmDisplayText(deleting.text, deleting.author_name), 80)}» будет удалено из Max/Telegram (если чаты связаны) и из истории.`
             : undefined
         }
         loading={deleteMutation.isPending}

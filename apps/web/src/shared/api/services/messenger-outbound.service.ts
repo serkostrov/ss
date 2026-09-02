@@ -221,7 +221,7 @@ export const messengerOutboundService = {
           chatId,
           workGroupId: input.workGroupId,
           text: input.text,
-          authorName: input.authorName ?? 'АПСС',
+          authorName: input.authorName?.trim() || null,
           chatKind,
           files,
         }),

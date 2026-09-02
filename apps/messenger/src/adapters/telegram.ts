@@ -1,6 +1,7 @@
 import type { MessengerConfig } from '../config/index.js'
 import type { DbClient } from '../db.js'
 import { markBotChannelInactive, upsertBotChannel } from '../pipeline/channels.js'
+import { isBridgeEchoText, runExclusive } from '../pipeline/dedup.js'
 import { ingestChannelMessage } from '../pipeline/ingest.js'
 import { relaySiblingChats, retryUndeliveredRelaysForWorkGroup } from '../pipeline/relay.js'
 import {
@@ -125,87 +126,101 @@ async function handleIncomingMessage(
   const kind = mapChatKind(message.chat.type)
   if (kind === 'other') return
 
-  // Never relay/echo our own bot messages (prevents loops).
-  if (message.from?.is_bot) {
-    log('info', 'Telegram bot message ignored', {
-      chatId: message.chat.id,
-      messageId: message.message_id,
-    })
-    return
-  }
-
   const chatId = String(message.chat.id)
-  await upsertBotChannel(db, {
-    platform: 'telegram',
-    externalChatId: chatId,
-    title: chatTitle(message.chat),
-    username: message.chat.username ?? null,
-    chatKind: kind,
-    isActive: true,
-  })
+  const externalMessageId = String(message.message_id)
 
-  const contentType = detectContentType(message)
-  const author = resolveAuthor(message)
-  const result = await ingestChannelMessage(db, {
-    platform: 'telegram',
-    externalChatId: chatId,
-    externalMessageId: String(message.message_id),
-    authorName: author.name,
-    authorExternalId: author.externalId,
-    text: resolveText(message, contentType),
-    contentType,
-    payload: {
-      telegram: {
-        chat_kind: kind,
-        has_photo: Boolean(message.photo?.length),
-        has_video: Boolean(message.video || message.animation),
-        has_document: Boolean(message.document),
+  await runExclusive(`telegram:${chatId}:${externalMessageId}`, async () => {
+    if (message.from?.is_bot) {
+      log('info', 'Telegram bot message ignored', {
+        chatId: message.chat.id,
+        messageId: message.message_id,
+      })
+      return
+    }
+
+    const contentType = detectContentType(message)
+    const text = resolveText(message, contentType)
+    if (isBridgeEchoText(text)) {
+      log('info', 'Telegram bridge echo ignored', {
+        chatId: message.chat.id,
+        messageId: message.message_id,
+      })
+      return
+    }
+
+    await upsertBotChannel(db, {
+      platform: 'telegram',
+      externalChatId: chatId,
+      title: chatTitle(message.chat),
+      username: message.chat.username ?? null,
+      chatKind: kind,
+      isActive: true,
+    })
+
+    const author = resolveAuthor(message)
+    const result = await ingestChannelMessage(db, {
+      platform: 'telegram',
+      externalChatId: chatId,
+      externalMessageId,
+      authorName: author.name,
+      authorExternalId: author.externalId,
+      text,
+      contentType,
+      payload: {
+        telegram: {
+          chat_kind: kind,
+          has_photo: Boolean(message.photo?.length),
+          has_video: Boolean(message.video || message.animation),
+          has_document: Boolean(message.document),
+        },
       },
-    },
-    sentAt: new Date((message.edit_date ?? message.date) * 1000).toISOString(),
-    isEdit,
-  })
+      sentAt: new Date((message.edit_date ?? message.date) * 1000).toISOString(),
+      isEdit,
+    })
 
-  if (result.status !== 'skipped' && !isEdit) {
-    const workGroups = new Set<string>()
-    for (const item of result.items) {
-      workGroups.add(item.workGroupId)
-      try {
-        await relaySiblingChats(db, config, {
-          workGroupId: item.workGroupId,
-          sourcePlatform: 'telegram',
-          sourceChatId: chatId,
-          messageId: item.messageId,
-          text: resolveText(message, contentType),
-          contentType,
-          authorName: author.name,
-        })
-      } catch (relayError) {
-        log('warn', 'Telegram sibling relay failed', {
-          message: relayError instanceof Error ? relayError.message : String(relayError),
-          workGroupId: item.workGroupId,
-        })
+    if (result.status !== 'skipped' && !isEdit) {
+      const workGroups = new Set<string>()
+      for (const item of result.items) {
+        workGroups.add(item.workGroupId)
+        if (item.status !== 'stored') continue
+        try {
+          await relaySiblingChats(db, config, {
+            workGroupId: item.workGroupId,
+            sourcePlatform: 'telegram',
+            sourceChatId: chatId,
+            sourceExternalMessageId: externalMessageId,
+            messageId: item.messageId,
+            text,
+            contentType,
+            authorName: author.name,
+          })
+        } catch (relayError) {
+          log('warn', 'Telegram sibling relay failed', {
+            message: relayError instanceof Error ? relayError.message : String(relayError),
+            workGroupId: item.workGroupId,
+          })
+        }
+      }
+
+      for (const workGroupId of workGroups) {
+        try {
+          await retryUndeliveredRelaysForWorkGroup(db, config, workGroupId)
+        } catch (retryError) {
+          log('warn', 'Telegram undelivered relay retry failed', {
+            message: retryError instanceof Error ? retryError.message : String(retryError),
+            workGroupId,
+          })
+        }
       }
     }
 
-    for (const workGroupId of workGroups) {
-      try {
-        await retryUndeliveredRelaysForWorkGroup(db, config, workGroupId)
-      } catch (retryError) {
-        log('warn', 'Telegram undelivered relay retry failed', {
-          message: retryError instanceof Error ? retryError.message : String(retryError),
-          workGroupId,
-        })
-      }
-    }
-  }
-
-  log('info', 'Telegram message processed', {
-    chatId,
-    kind,
-    messageId: message.message_id,
-    result: result.status,
-    isEdit,
+    log('info', 'Telegram message processed', {
+      chatId,
+      kind,
+      messageId: message.message_id,
+      result: result.status,
+      isEdit,
+    })
   })
 }
 

@@ -17,6 +17,7 @@ import {
   formatMessageDate,
   messageSourceLabel,
   relayStatusLabel,
+  crmDisplayText,
 } from '../model/schemas'
 import { useMessage } from '../model/use-messages'
 
@@ -71,7 +72,7 @@ export function MessageDetailSheet({ messageId, fallback, onOpenChange }: Messag
             <div>
               <p className="text-muted-foreground mb-1">Текст</p>
               <p className="bg-muted/30 rounded-md border px-3 py-2 whitespace-pre-wrap">
-                {message.text}
+                {crmDisplayText(message.text, message.author_name)}
               </p>
             </div>
 

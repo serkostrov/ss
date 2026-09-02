@@ -1,6 +1,7 @@
 import type { DbClient } from '../db.js'
 import type { MessengerConfig } from '../config/index.js'
 import { markBotChannelInactive, upsertBotChannel } from '../pipeline/channels.js'
+import { isBridgeEchoText, runExclusive } from '../pipeline/dedup.js'
 import { deleteLinkedByExternalMessageId } from '../pipeline/delete-linked.js'
 import { ingestChannelMessage } from '../pipeline/ingest.js'
 import { relaySiblingChats, retryUndeliveredRelaysForWorkGroup } from '../pipeline/relay.js'
@@ -79,6 +80,47 @@ type ResolvedMaxChat = {
 
 const chatInfoCache = new Map<string, { at: number; value: MaxChat | null }>()
 const CHAT_INFO_TTL_MS = 5 * 60 * 1000
+const MAX_API = 'https://platform-api2.max.ru'
+let cachedBotUserId: number | null | undefined
+
+function maxUpdateDedupeKey(update: MaxUpdate): string {
+  const type = (update.update_type ?? '').toLowerCase()
+  const mid = String(update.message?.body?.mid ?? update.message_id ?? '').trim()
+  if (mid) return `${type}:${mid}`
+  const chat = String(update.chat_id ?? update.message?.recipient?.chat_id ?? '')
+  const ts = String(update.timestamp ?? update.message?.timestamp ?? '')
+  return `${type}:${chat}:${ts}`
+}
+
+/** Flatten Max webhook bodies (single update, `{ updates }`, or a batch) and drop exact duplicates. */
+export function collectMaxUpdates(body: unknown): MaxUpdate[] {
+  const items: MaxUpdate[] = []
+  if (body == null) return items
+  if (Array.isArray(body)) {
+    for (const item of body) {
+      if (item && typeof item === 'object') items.push(item as MaxUpdate)
+    }
+  } else if (typeof body === 'object') {
+    const obj = body as MaxUpdate & { updates?: unknown }
+    if (Array.isArray(obj.updates) && obj.updates.length > 0) {
+      for (const item of obj.updates) {
+        if (item && typeof item === 'object') items.push(item as MaxUpdate)
+      }
+    } else {
+      items.push(obj)
+    }
+  }
+
+  const seen = new Set<string>()
+  const unique: MaxUpdate[] = []
+  for (const item of items) {
+    const key = maxUpdateDedupeKey(item)
+    if (seen.has(key)) continue
+    seen.add(key)
+    unique.push(item)
+  }
+  return unique
+}
 
 function mapChatKind(type: string | undefined): ChatKind {
   const normalized = (type ?? '').toLowerCase()
@@ -141,6 +183,47 @@ function withOptionalTlsInsecure<T>(fn: () => Promise<T>): Promise<T> {
     if (previous === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
     else process.env.NODE_TLS_REJECT_UNAUTHORIZED = previous
   })
+}
+
+async function maxApiFetch(
+  accessToken: string,
+  path: string,
+  init: RequestInit = {},
+): Promise<Response> {
+  const token = accessToken.replace(/^Bearer\s+/i, '').trim()
+  return withOptionalTlsInsecure(() =>
+    fetch(`${MAX_API}${path}`, {
+      ...init,
+      headers: {
+        Authorization: token,
+        ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+        ...init.headers,
+      },
+    }),
+  )
+}
+
+async function getMaxBotUserId(accessToken: string | null | undefined): Promise<number | null> {
+  if (!accessToken) return null
+  if (cachedBotUserId !== undefined) return cachedBotUserId
+  try {
+    const response = await maxApiFetch(accessToken, '/me')
+    if (!response.ok) {
+      cachedBotUserId = null
+      return null
+    }
+    const json = (await response.json()) as {
+      user_id?: number
+      user?: { user_id?: number }
+      bot?: { user_id?: number }
+    }
+    const id = json.user_id ?? json.user?.user_id ?? json.bot?.user_id
+    cachedBotUserId = typeof id === 'number' ? id : null
+    return cachedBotUserId
+  } catch {
+    cachedBotUserId = null
+    return null
+  }
 }
 
 async function fetchMaxChat(accessToken: string, chatId: string): Promise<MaxChat | null> {
@@ -359,98 +442,112 @@ async function handleMessageCreated(
   const message = update.message
   if (!message) return
 
-  // Never relay/echo bot messages (prevents loops with our cross-posts).
-  if (message.sender?.is_bot) {
-    log('info', 'Max bot message ignored', {
-      mid: message.body?.mid ?? null,
-      userId: message.sender.user_id ?? null,
-    })
-    return
-  }
-
-  const accessToken = options.accessToken ?? null
-  const resolved = resolveMessageChat(update)
-  if (!resolved) {
-    log('warn', 'Max message without resolvable chat', {
+  const mid = message.body?.mid
+  if (!mid) {
+    log('warn', 'Max message without mid', {
       chatType: message.recipient?.chat_type ?? update.chat?.type ?? null,
     })
     return
   }
 
-  const cataloged = await catalogChat(db, resolved, true, accessToken)
-  const chatId = cataloged?.externalChatId ?? resolved.externalChatId
-  const kind = cataloged?.kind ?? resolved.kind
+  await runExclusive(`max:${mid}`, async () => {
+    const botUserId = await getMaxBotUserId(options.accessToken)
+    const senderIsOurBot =
+      message.sender?.is_bot === true ||
+      (botUserId != null && message.sender?.user_id === botUserId)
 
-  const mid = message.body?.mid
-  if (!mid) {
-    log('warn', 'Max message without mid', { chatId })
-    return
-  }
+    if (senderIsOurBot) {
+      log('info', 'Max bot message ignored', {
+        mid,
+        userId: message.sender?.user_id ?? null,
+      })
+      return
+    }
 
-  const contentType = detectContentType(message)
-  const author = resolveAuthor(message)
-  const sentAtMs = message.timestamp ?? update.timestamp ?? Date.now()
-  const text = resolveText(message, contentType)
+    const contentType = detectContentType(message)
+    const text = resolveText(message, contentType)
+    if (isBridgeEchoText(text)) {
+      log('info', 'Max bridge echo ignored', { mid })
+      return
+    }
 
-  const result = await ingestChannelMessage(db, {
-    platform: 'max',
-    externalChatId: chatId,
-    externalMessageId: mid,
-    authorName: author.name,
-    authorExternalId: author.externalId,
-    text,
-    contentType,
-    payload: {
-      max: {
-        chat_kind: kind,
-        attachment_types: (message.body?.attachments ?? []).map((item) => item.type ?? null),
+    const accessToken = options.accessToken ?? null
+    const resolved = resolveMessageChat(update)
+    if (!resolved) {
+      log('warn', 'Max message without resolvable chat', {
+        chatType: message.recipient?.chat_type ?? update.chat?.type ?? null,
+      })
+      return
+    }
+
+    const cataloged = await catalogChat(db, resolved, true, accessToken)
+    const chatId = cataloged?.externalChatId ?? resolved.externalChatId
+    const kind = cataloged?.kind ?? resolved.kind
+    const author = resolveAuthor(message)
+    const sentAtMs = message.timestamp ?? update.timestamp ?? Date.now()
+
+    const result = await ingestChannelMessage(db, {
+      platform: 'max',
+      externalChatId: chatId,
+      externalMessageId: mid,
+      authorName: author.name,
+      authorExternalId: author.externalId,
+      text,
+      contentType,
+      payload: {
+        max: {
+          chat_kind: kind,
+          attachment_types: (message.body?.attachments ?? []).map((item) => item.type ?? null),
+        },
       },
-    },
-    sentAt: new Date(sentAtMs).toISOString(),
-    isEdit,
-  })
+      sentAt: new Date(sentAtMs).toISOString(),
+      isEdit,
+    })
 
-  if (result.status !== 'skipped' && !isEdit && options.config) {
-    const workGroups = new Set<string>()
-    for (const item of result.items) {
-      workGroups.add(item.workGroupId)
-      try {
-        await relaySiblingChats(db, options.config, {
-          workGroupId: item.workGroupId,
-          sourcePlatform: 'max',
-          sourceChatId: chatId,
-          messageId: item.messageId,
-          text,
-          contentType,
-          authorName: author.name,
-        })
-      } catch (relayError) {
-        log('warn', 'Max sibling relay failed', {
-          message: relayError instanceof Error ? relayError.message : String(relayError),
-          workGroupId: item.workGroupId,
-        })
+    if (result.status !== 'skipped' && !isEdit && options.config) {
+      const workGroups = new Set<string>()
+      for (const item of result.items) {
+        workGroups.add(item.workGroupId)
+        if (item.status !== 'stored') continue
+        try {
+          await relaySiblingChats(db, options.config, {
+            workGroupId: item.workGroupId,
+            sourcePlatform: 'max',
+            sourceChatId: chatId,
+            sourceExternalMessageId: mid,
+            messageId: item.messageId,
+            text,
+            contentType,
+            authorName: author.name,
+          })
+        } catch (relayError) {
+          log('warn', 'Max sibling relay failed', {
+            message: relayError instanceof Error ? relayError.message : String(relayError),
+            workGroupId: item.workGroupId,
+          })
+        }
+      }
+
+      for (const workGroupId of workGroups) {
+        try {
+          await retryUndeliveredRelaysForWorkGroup(db, options.config, workGroupId)
+        } catch (retryError) {
+          log('warn', 'Max undelivered relay retry failed', {
+            message: retryError instanceof Error ? retryError.message : String(retryError),
+            workGroupId,
+          })
+        }
       }
     }
 
-    for (const workGroupId of workGroups) {
-      try {
-        await retryUndeliveredRelaysForWorkGroup(db, options.config, workGroupId)
-      } catch (retryError) {
-        log('warn', 'Max undelivered relay retry failed', {
-          message: retryError instanceof Error ? retryError.message : String(retryError),
-          workGroupId,
-        })
-      }
-    }
-  }
-
-  log('info', 'Max message processed', {
-    chatId,
-    kind,
-    mid,
-    result: result.status,
-    isEdit,
-    duplicate: result.status === 'duplicate',
+    log('info', 'Max message processed', {
+      chatId,
+      kind,
+      mid,
+      result: result.status,
+      isEdit,
+      duplicate: result.status === 'duplicate',
+    })
   })
 }
 
@@ -505,6 +602,45 @@ export async function registerMaxWebhook(
   secret: string | null,
 ): Promise<void> {
   const url = `${baseUrl}/webhooks/max`
+  const accessToken = token.replace(/^Bearer\s+/i, '').trim()
+
+  try {
+    const listResponse = await maxApiFetch(accessToken, '/subscriptions')
+    if (listResponse.ok) {
+      const listJson = (await listResponse.json()) as
+        | Array<{ url?: string }>
+        | { subscriptions?: Array<{ url?: string }>; webhooks?: Array<{ url?: string }> }
+      const existing = Array.isArray(listJson)
+        ? listJson
+        : [...(listJson.subscriptions ?? []), ...(listJson.webhooks ?? [])]
+      log('info', 'Max subscriptions before register', {
+        count: existing.length,
+        urls: existing.map((item) => item.url ?? null),
+      })
+      for (const item of existing) {
+        const current = item.url?.trim()
+        if (!current) continue
+        const deleteResponse = await maxApiFetch(
+          accessToken,
+          `/subscriptions?url=${encodeURIComponent(current)}`,
+          { method: 'DELETE' },
+        )
+        if (!deleteResponse.ok && deleteResponse.status !== 404) {
+          log('warn', 'Max subscription delete failed', {
+            url: current,
+            status: deleteResponse.status,
+          })
+        }
+      }
+    } else {
+      log('warn', 'Max list subscriptions failed', { status: listResponse.status })
+    }
+  } catch (error) {
+    log('warn', 'Max list/delete subscriptions failed', {
+      message: error instanceof Error ? error.message : String(error),
+    })
+  }
+
   const body: Record<string, unknown> = {
     url,
     update_types: [
@@ -519,32 +655,15 @@ export async function registerMaxWebhook(
   }
   if (secret) body.secret = secret
 
-  // Max expects the raw access token in Authorization — not "Bearer …".
-  // Prefer platform-api2.max.ru (platform-api.max.ru is being retired).
-  const accessToken = token.replace(/^Bearer\s+/i, '').trim()
   const insecure = process.env.MAX_TLS_INSECURE === '1'
-  const previousTls = process.env.NODE_TLS_REJECT_UNAUTHORIZED
   if (insecure) {
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
     log('warn', 'MAX_TLS_INSECURE=1 — TLS verification disabled for Max API')
   }
 
-  let response: Response
-  try {
-    response = await fetch('https://platform-api2.max.ru/subscriptions', {
-      method: 'POST',
-      headers: {
-        Authorization: accessToken,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    })
-  } finally {
-    if (insecure) {
-      if (previousTls === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
-      else process.env.NODE_TLS_REJECT_UNAUTHORIZED = previousTls
-    }
-  }
+  const response = await maxApiFetch(accessToken, '/subscriptions', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
 
   if (!response.ok) {
     const text = await response.text()

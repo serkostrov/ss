@@ -7,31 +7,31 @@ import {
   type MessageContentType,
   type MessengerPlatform,
 } from '../types.js'
+import {
+  isAmbiguousSendError,
+  isUniqueViolation,
+  sourceFingerprint,
+} from './dedup.js'
 import { ingestChannelMessage } from './ingest.js'
 
 export type RelaySiblingInput = {
   workGroupId: string
   sourcePlatform: MessengerPlatform
   sourceChatId: string
+  sourceExternalMessageId: string
   messageId: string
   text: string
   contentType: MessageContentType
   authorName?: string | null
-  /** Site/admin outbound — mirror without messenger prefix noise. */
-  fromOutbound?: boolean
 }
 
 type RelayRow = {
   id: string
   status: 'pending' | 'sent' | 'failed'
-  created_at?: string
+  target_external_message_id?: string | null
 }
 
-/** Pending older than this is treated as abandoned (worker crash / timeout). */
-const STALE_PENDING_MS = 20_000
-
-const DELIVER_ATTEMPTS = 3
-const DELIVER_RETRY_MS = 800
+const BACKLOG_MIN_AGE_MS = 30_000
 
 function isRelayEchoPayload(payload: unknown): boolean {
   if (!payload || typeof payload !== 'object') return false
@@ -39,163 +39,164 @@ function isRelayEchoPayload(payload: unknown): boolean {
   return Boolean(record.apss_relay || record.outbound)
 }
 
-async function deliverWithRetry(
-  db: DbClient,
-  config: MessengerConfig,
-  input: {
-    platform: MessengerPlatform
-    chatId: string
-    workGroupId: string
-    text: string
-  },
-): Promise<{ externalMessageId: string; chatId: string }> {
-  let lastError: unknown
-  for (let attempt = 1; attempt <= DELIVER_ATTEMPTS; attempt += 1) {
-    try {
-      const delivered = await deliverToBoundChat(db, config, input)
-      return { externalMessageId: delivered.externalMessageId, chatId: delivered.chatId }
-    } catch (error) {
-      lastError = error
-      if (attempt < DELIVER_ATTEMPTS) {
-        await new Promise((resolve) => setTimeout(resolve, DELIVER_RETRY_MS * attempt))
-      }
-    }
-  }
-  throw lastError instanceof Error ? lastError : new Error(String(lastError))
-}
-
-function platformLabel(platform: MessengerPlatform): string {
-  return platform === 'telegram' ? 'Telegram' : 'Max'
+export function formatAttributedText(
+  authorName: string | null | undefined,
+  body: string,
+): string {
+  const content = body.trim()
+  const who = authorName?.trim()
+  if (!who) return content
+  if (!content) return `${who}:`
+  return `${who}:\n${content}`
 }
 
 function formatRelayText(input: RelaySiblingInput): string {
   const body =
     input.text.trim() || contentPlaceholder(input.contentType) || '[Сообщение]'
-  if (input.fromOutbound) {
-    const author = input.authorName?.trim()
-    return author ? `${author}: ${body}` : body
-  }
-  const who = input.authorName?.trim() || 'Участник'
-  return `[${platformLabel(input.sourcePlatform)} · ${who}]\n${body}`
-}
-
-function isUniqueViolation(error: { code?: string } | null | undefined): boolean {
-  return error?.code === '23505'
+  return formatAttributedText(input.authorName, body)
 }
 
 async function loadRelayRow(
   db: DbClient,
-  messageId: string,
-  targetPlatform: MessengerPlatform,
+  input: { messageId: string; targetPlatform: MessengerPlatform; fingerprint: string; targetChatId: string },
 ): Promise<RelayRow | null> {
-  const { data, error } = await db
+  const { data: byMessage, error: byMessageError } = await db
     .from('message_relays')
-    .select('id, status, created_at')
-    .eq('message_id', messageId)
-    .eq('target_platform', targetPlatform)
+    .select('id, status, target_external_message_id')
+    .eq('message_id', input.messageId)
+    .eq('target_platform', input.targetPlatform)
     .maybeSingle()
 
-  if (error) {
+  if (byMessageError) {
     log('warn', 'Relay row lookup failed', {
-      message: error.message,
-      messageId,
-      targetPlatform,
+      message: byMessageError.message,
+      messageId: input.messageId,
+      targetPlatform: input.targetPlatform,
     })
+  } else if (byMessage?.id) {
+    return {
+      id: byMessage.id as string,
+      status: byMessage.status as RelayRow['status'],
+      target_external_message_id: (byMessage.target_external_message_id as string | null) ?? null,
+    }
+  }
+
+  const { data: byFingerprint, error: fingerprintError } = await db
+    .from('message_relays')
+    .select('id, status, target_external_message_id')
+    .eq('source_fingerprint', input.fingerprint)
+    .eq('target_platform', input.targetPlatform)
+    .eq('target_chat_id', input.targetChatId)
+    .order('created_at', { ascending: true })
+    .limit(1)
+
+  if (fingerprintError) {
+    if (!/source_fingerprint|42703/.test(`${fingerprintError.code ?? ''} ${fingerprintError.message}`)) {
+      log('warn', 'Relay fingerprint lookup failed', {
+        message: fingerprintError.message,
+        fingerprint: input.fingerprint,
+        targetPlatform: input.targetPlatform,
+      })
+    }
     return null
   }
 
-  if (!data?.id) return null
+  const fingerprintRow = byFingerprint?.[0]
+  if (!fingerprintRow?.id) return null
   return {
-    id: data.id as string,
-    status: data.status as RelayRow['status'],
-    created_at: data.created_at as string | undefined,
+    id: fingerprintRow.id as string,
+    status: fingerprintRow.status as RelayRow['status'],
+    target_external_message_id: (fingerprintRow.target_external_message_id as string | null) ?? null,
   }
-}
-
-function isStalePending(relay: RelayRow): boolean {
-  if (relay.status !== 'pending' || !relay.created_at) return false
-  return Date.now() - new Date(relay.created_at).getTime() >= STALE_PENDING_MS
 }
 
 /**
- * Reserve a relay row or skip if this message was already delivered to the target.
- * Webhook retries must not call Telegram/Max API twice for the same source message.
+ * Claim the right to send exactly once per (source message, target chat).
+ * Parallel webhooks and a second work group bound to the same chats share this claim.
  */
 async function reserveRelayRow(
   db: DbClient,
-  input: { messageId: string; targetPlatform: MessengerPlatform; targetChatId: string },
+  input: {
+    messageId: string
+    targetPlatform: MessengerPlatform
+    targetChatId: string
+    fingerprint: string
+  },
 ): Promise<{ relayId: string; shouldSend: boolean } | null> {
-  const existing = await loadRelayRow(db, input.messageId, input.targetPlatform)
-  if (existing?.status === 'sent') {
-    log('info', 'Relay skipped — already sent', {
-      messageId: input.messageId,
-      targetPlatform: input.targetPlatform,
-      relayId: existing.id,
-    })
-    return { relayId: existing.id, shouldSend: false }
-  }
-
-  if (existing?.status === 'pending') {
-    if (!isStalePending(existing)) {
-      log('info', 'Relay skipped — delivery in progress', {
+  const existing = await loadRelayRow(db, input)
+  if (existing) {
+    if (existing.status === 'sent' || existing.target_external_message_id) {
+      log('info', 'Relay skipped — already sent', {
         messageId: input.messageId,
         targetPlatform: input.targetPlatform,
         relayId: existing.id,
       })
       return { relayId: existing.id, shouldSend: false }
     }
-    log('info', 'Relay retry — stale pending reservation', {
-      messageId: input.messageId,
-      targetPlatform: input.targetPlatform,
-      relayId: existing.id,
-    })
-    return { relayId: existing.id, shouldSend: true }
+    if (existing.status === 'pending') {
+      log('info', 'Relay skipped — delivery in progress or unknown', {
+        messageId: input.messageId,
+        targetPlatform: input.targetPlatform,
+        relayId: existing.id,
+      })
+      return { relayId: existing.id, shouldSend: false }
+    }
+    if (existing.status === 'failed') {
+      const { data: claimed, error: claimError } = await db
+        .from('message_relays')
+        .update({
+          status: 'pending',
+          target_chat_id: input.targetChatId,
+          source_fingerprint: input.fingerprint,
+        })
+        .eq('id', existing.id)
+        .eq('status', 'failed')
+        .select('id')
+        .maybeSingle()
+
+      if (claimError || !claimed?.id) {
+        return { relayId: existing.id, shouldSend: false }
+      }
+      return { relayId: existing.id, shouldSend: true }
+    }
   }
 
-  if (existing?.status === 'failed') {
-    return { relayId: existing.id, shouldSend: true }
+  const insertPayload: Record<string, unknown> = {
+    message_id: input.messageId,
+    target_platform: input.targetPlatform,
+    target_chat_id: input.targetChatId,
+    status: 'pending',
+    source_fingerprint: input.fingerprint,
   }
 
-  const { data: inserted, error: insertError } = await db
+  let { data: inserted, error: insertError } = await db
     .from('message_relays')
-    .insert({
-      message_id: input.messageId,
-      target_platform: input.targetPlatform,
-      target_chat_id: input.targetChatId,
-      status: 'pending',
-    })
+    .insert(insertPayload)
     .select('id')
-    .single()
+    .maybeSingle()
+
+  if (insertError && /source_fingerprint|42703/.test(`${insertError.code ?? ''} ${insertError.message}`)) {
+    delete insertPayload.source_fingerprint
+    const fallback = await db.from('message_relays').insert(insertPayload).select('id').maybeSingle()
+    inserted = fallback.data
+    insertError = fallback.error
+  }
 
   if (!insertError && inserted?.id) {
     return { relayId: inserted.id as string, shouldSend: true }
   }
 
   if (isUniqueViolation(insertError)) {
-    const raced = await loadRelayRow(db, input.messageId, input.targetPlatform)
+    const raced = await loadRelayRow(db, input)
     if (!raced) return null
-    if (raced.status === 'sent') {
-      log('info', 'Relay skipped — concurrent reservation', {
-        messageId: input.messageId,
-        targetPlatform: input.targetPlatform,
-        relayId: raced.id,
-        status: raced.status,
-      })
-      return { relayId: raced.id, shouldSend: false }
-    }
-    if (raced.status === 'pending' && !isStalePending(raced)) {
-      log('info', 'Relay skipped — concurrent reservation', {
-        messageId: input.messageId,
-        targetPlatform: input.targetPlatform,
-        relayId: raced.id,
-        status: raced.status,
-      })
-      return { relayId: raced.id, shouldSend: false }
-    }
-    return {
+    const skip = raced.status === 'sent' || raced.status === 'pending' || Boolean(raced.target_external_message_id)
+    log('info', skip ? 'Relay skipped — concurrent reservation' : 'Relay claim after conflict', {
+      messageId: input.messageId,
+      targetPlatform: input.targetPlatform,
       relayId: raced.id,
-      shouldSend: raced.status === 'failed' || isStalePending(raced),
-    }
+      status: raced.status,
+    })
+    return { relayId: raced.id, shouldSend: !skip && raced.status === 'failed' }
   }
 
   log('warn', 'Relay row insert failed', {
@@ -228,6 +229,7 @@ export async function relaySiblingChats(
 
   if (!targets?.length) return
 
+  const fingerprint = sourceFingerprint(input.sourcePlatform, input.sourceExternalMessageId)
   const relayText = formatRelayText(input)
   let anySent = false
 
@@ -246,14 +248,15 @@ export async function relaySiblingChats(
       messageId: input.messageId,
       targetPlatform,
       targetChatId,
+      fingerprint,
     })
-    if (!reserved) continue
-    if (!reserved.shouldSend) continue
+    if (!reserved?.shouldSend) continue
 
     const relayRowId = reserved.relayId
 
     try {
-      const delivered = await deliverWithRetry(db, config, {
+      // One POST only. Retrying after timeout duplicates the message on the platform.
+      const delivered = await deliverToBoundChat(db, config, {
         platform: targetPlatform,
         chatId: targetChatId,
         workGroupId: input.workGroupId,
@@ -266,21 +269,19 @@ export async function relaySiblingChats(
           status: 'sent',
           target_chat_id: delivered.chatId,
           target_external_message_id: delivered.externalMessageId,
+          source_fingerprint: fingerprint,
           relayed_at: new Date().toISOString(),
         })
         .eq('id', relayRowId)
 
-      // Mirror into site history for the target thread (skipRelay via payload).
       try {
         await ingestChannelMessage(db, {
           platform: targetPlatform,
           externalChatId: delivered.chatId,
           externalMessageId: delivered.externalMessageId,
-          authorName: input.fromOutbound
-            ? (input.authorName ?? 'АПСС')
-            : `↔ ${platformLabel(input.sourcePlatform)}`,
+          authorName: input.authorName?.trim() || null,
           authorExternalId: null,
-          text: relayText,
+          text: input.text.trim() || contentPlaceholder(input.contentType) || '[Сообщение]',
           contentType: input.contentType === 'text' ? 'text' : 'other',
           payload: {
             apss_relay: true,
@@ -311,6 +312,17 @@ export async function relaySiblingChats(
       })
     } catch (relayError) {
       const message = relayError instanceof Error ? relayError.message : String(relayError)
+      if (isAmbiguousSendError(relayError)) {
+        // May already be delivered. Leave `pending` so we never send a second copy.
+        log('warn', 'Relay send outcome unknown — not retrying', {
+          workGroupId: input.workGroupId,
+          from: input.sourcePlatform,
+          to: targetPlatform,
+          message,
+        })
+        continue
+      }
+
       await db.from('message_relays').update({ status: 'failed' }).eq('id', relayRowId)
       log('warn', 'Relay send failed', {
         workGroupId: input.workGroupId,
@@ -331,7 +343,7 @@ export async function relaySiblingChats(
 
 /**
  * Retry messages that were stored but never marked relayed (failed relay, crash mid-flight, etc.).
- * Called after each inbound message so Max/Telegram do not need another webhook retry.
+ * Ignores very fresh rows so a parallel webhook cannot send a second copy of the same message.
  */
 export async function retryUndeliveredRelaysForWorkGroup(
   db: DbClient,
@@ -354,11 +366,15 @@ export async function retryUndeliveredRelaysForWorkGroup(
   const platforms = new Set((connections ?? []).map((row) => row.platform))
   if (platforms.size < 2) return
 
+  const cutoff = new Date(Date.now() - BACKLOG_MIN_AGE_MS).toISOString()
   const { data: backlog, error: backlogError } = await db
     .from('messages')
-    .select('id, source, external_chat_id, text, content_type, author_name, payload')
+    .select(
+      'id, source, external_chat_id, external_message_id, text, content_type, author_name, payload',
+    )
     .eq('work_group_id', workGroupId)
     .eq('delivery_status', 'stored')
+    .lt('sent_at', cutoff)
     .order('sent_at', { ascending: true })
     .limit(15)
 
@@ -383,6 +399,7 @@ export async function retryUndeliveredRelaysForWorkGroup(
         workGroupId,
         sourcePlatform,
         sourceChatId: String(row.external_chat_id ?? ''),
+        sourceExternalMessageId: String(row.external_message_id ?? ''),
         messageId: row.id as string,
         text: String(row.text ?? ''),
         contentType: (row.content_type as MessageContentType) ?? 'text',

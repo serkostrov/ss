@@ -12,6 +12,7 @@ import {
 } from '@shared/ui'
 
 import {
+  crmDisplayText,
   deliveryStatusLabel,
   formatMessageDate,
   messageSourceLabel,
@@ -181,7 +182,7 @@ export function MessagesHistoryPanel({
         header: 'Текст',
         cell: ({ row }) => (
           <p className="text-muted-foreground max-w-[22rem] text-sm">
-            {truncateMessageText(row.original.text)}
+            {truncateMessageText(crmDisplayText(row.original.text, row.original.author_name))}
           </p>
         ),
       },

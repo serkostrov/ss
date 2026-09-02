@@ -2,7 +2,11 @@ import type { MessengerConfig } from '../config/index.js'
 import type { DbClient } from '../db.js'
 import { deleteLinkedAcrossPlatforms } from '../pipeline/delete-linked.js'
 import { ingestChannelMessage } from '../pipeline/ingest.js'
-import { relaySiblingChats, retryUndeliveredRelaysForWorkGroup } from '../pipeline/relay.js'
+import {
+  formatAttributedText,
+  relaySiblingChats,
+  retryUndeliveredRelaysForWorkGroup,
+} from '../pipeline/relay.js'
 import { log, type MessageContentType } from '../types.js'
 import { deliverToBoundChat, type DeliverFile } from './deliver.js'
 
@@ -64,17 +68,9 @@ export async function sendOutboundMessage(
   // Source of truth after Max rebinds — not the possibly stale client chatId.
   const boundChatId = await getBoundChatId(db, input.workGroupId, input.platform)
 
-  const delivered = await deliverToBoundChat(db, config, {
-    platform: input.platform,
-    chatId: boundChatId,
-    workGroupId: input.workGroupId,
-    text,
-    files: input.files,
-    chatKind: input.chatKind,
-  })
-
+  const authorName = input.authorName?.trim() || null
   const contentType = detectContentType(input.files, text)
-  const displayText =
+  const body =
     text ||
     (contentType === 'photo'
       ? '[Фото]'
@@ -83,14 +79,24 @@ export async function sendOutboundMessage(
         : contentType === 'document'
           ? '[Документ]'
           : '[Сообщение]')
+  const attributedText = formatAttributedText(authorName, body)
+
+  const delivered = await deliverToBoundChat(db, config, {
+    platform: input.platform,
+    chatId: boundChatId,
+    workGroupId: input.workGroupId,
+    text: attributedText,
+    files: input.files,
+    chatKind: input.chatKind,
+  })
 
   const ingested = await ingestChannelMessage(db, {
     platform: input.platform,
     externalChatId: delivered.chatId,
     externalMessageId: delivered.externalMessageId,
-    authorName: input.authorName ?? 'АПСС',
+    authorName,
     authorExternalId: null,
-    text: displayText,
+    text: body,
     contentType,
     payload: {
       outbound: true,
@@ -109,16 +115,17 @@ export async function sendOutboundMessage(
     const workGroups = new Set<string>()
     for (const item of ingested.items) {
       workGroups.add(item.workGroupId)
+      if (item.status !== 'stored') continue
       try {
         await relaySiblingChats(db, config, {
           workGroupId: item.workGroupId,
           sourcePlatform: input.platform,
           sourceChatId: delivered.chatId,
+          sourceExternalMessageId: delivered.externalMessageId,
           messageId: item.messageId,
-          text: displayText,
+          text: body,
           contentType,
-          authorName: input.authorName ?? 'АПСС',
-          fromOutbound: true,
+          authorName,
         })
       } catch (relayError) {
         log('warn', 'Outbound sibling relay failed', {

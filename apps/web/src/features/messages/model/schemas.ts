@@ -101,3 +101,24 @@ export function truncateMessageText(text: string, max = 120): string {
   if (normalized.length <= max) return normalized
   return `${normalized.slice(0, max - 1)}…`
 }
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * CRM already shows the author above the bubble. Messenger prefixes stay in Telegram/Max only.
+ */
+export function crmDisplayText(text: string, authorName?: string | null): string {
+  let body = text.replace(/^\uFEFF/, '').trimStart()
+  body = body.replace(/^\[(?:Telegram|Max|MAX)\s*[·\-–—:][^\]]*\]\s*\n?/, '')
+  body = body.replace(/^(?:↔\s*[^\n]+|АПСС)\s*:\s*\n?/, '')
+
+  const who = authorName?.trim()
+  if (who) {
+    const prefix = new RegExp(`^${escapeRegExp(who)}\\s*:\\s*\\n?`)
+    body = body.replace(prefix, '')
+  }
+
+  return body.trimStart() || text.trim()
+}

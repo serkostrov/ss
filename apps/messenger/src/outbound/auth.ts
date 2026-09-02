@@ -4,7 +4,7 @@ import { log } from '../types.js'
 export async function requireAdmin(
   db: DbClient,
   authorizationHeader: string | undefined,
-): Promise<{ userId: string }> {
+): Promise<{ userId: string; fullName: string | null }> {
   const raw = authorizationHeader?.trim() ?? ''
   const token = raw.toLowerCase().startsWith('bearer ')
     ? raw.slice(7).trim()
@@ -25,7 +25,7 @@ export async function requireAdmin(
 
   const { data: profile, error: profileError } = await db
     .from('users')
-    .select('role, status')
+    .select('role, status, full_name, representative_id')
     .eq('id', data.user.id)
     .maybeSingle()
 
@@ -36,5 +36,15 @@ export async function requireAdmin(
     throw err
   }
 
-  return { userId: data.user.id }
+  let fullName = typeof profile.full_name === 'string' ? profile.full_name.trim() : ''
+  if (!fullName && profile.representative_id) {
+    const { data: representative } = await db
+      .from('representatives')
+      .select('full_name')
+      .eq('id', profile.representative_id)
+      .maybeSingle()
+    fullName = typeof representative?.full_name === 'string' ? representative.full_name.trim() : ''
+  }
+
+  return { userId: data.user.id, fullName: fullName || null }
 }

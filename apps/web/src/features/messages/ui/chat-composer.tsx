@@ -1,6 +1,7 @@
 import { ImageIcon, Paperclip, SendHorizontal, X } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 
+import { useAuth } from '@app/providers'
 import type { MessageSource } from '@shared/api'
 import { Button, IconButton, Spinner, Textarea } from '@shared/ui'
 import { cn } from '@shared/lib/utils'
@@ -43,6 +44,7 @@ export function ChatComposer({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const [text, setText] = useState('')
   const [files, setFiles] = useState<PendingFile[]>([])
+  const { profile } = useAuth()
   const sendMutation = useSendMessengerMessageMutation(workGroupId)
 
   useEffect(() => {
@@ -120,6 +122,7 @@ export function ChatComposer({
       workGroupId,
       text: text.trim(),
       files: files.map((item) => item.file),
+      authorName: profile?.fullName?.trim() || null,
     })
     setText('')
     setFiles((prev) => {

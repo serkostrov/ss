@@ -14,6 +14,7 @@ import {
 import { cn } from '@shared/lib/utils'
 
 import {
+  crmDisplayText,
   dayKey,
   formatMessageDay,
   formatMessageTime,
@@ -88,7 +89,9 @@ function MessageBubble({ message, showGroup }: { message: Message; showGroup: bo
       {message.author_name ? (
         <p className="text-foreground/90 mb-1 text-sm font-medium">{message.author_name}</p>
       ) : null}
-      <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
+      <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">
+        {crmDisplayText(message.text, message.author_name)}
+      </p>
     </article>
   )
 }

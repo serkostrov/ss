@@ -267,14 +267,23 @@ export async function sendMaxText(
 
     const bodyText = await response.text()
     if (response.ok) {
-      let mid = `out-${Date.now()}`
+      let mid = ''
       try {
-        const json = JSON.parse(bodyText) as { message?: { body?: { mid?: string } } }
-        if (json.message?.body?.mid) mid = json.message.body.mid
+        const json = JSON.parse(bodyText) as {
+          message_id?: string
+          mid?: string
+          message?: { body?: { mid?: string }; message_id?: string }
+        }
+        mid =
+          json.message?.body?.mid?.trim() ||
+          json.message?.message_id?.trim() ||
+          json.message_id?.trim() ||
+          json.mid?.trim() ||
+          ''
       } catch {
         // ignore
       }
-      return { externalMessageId: mid }
+      return { externalMessageId: mid || `out-${Date.now()}` }
     }
 
     lastFailure = `Max send failed (${mode}=${trimmedId}, kind=${chatKind ?? 'unknown'}): ${response.status} ${bodyText}`

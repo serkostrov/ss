@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual as cryptoTimingSafeEqual } from 'node:crypto'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 
-import { handleMaxUpdate, type MaxUpdate } from '../adapters/max.js'
+import { collectMaxUpdates, handleMaxUpdate } from '../adapters/max.js'
 import {
   confirmPasswordReset,
   isPasswordResetConfigured,
@@ -178,7 +178,7 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
             workGroupId: body.workGroupId.trim(),
             text: body.text ?? '',
             files: parseOutboundFiles(body),
-            authorName: body.authorName ?? 'АПСС',
+            authorName: body.authorName?.trim() || admin.fullName,
             chatKind: body.chatKind?.trim() || null,
           })
 
@@ -344,26 +344,18 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
         }
 
         const body = await readJson(req)
-        const updateType =
-          body && typeof body === 'object' && 'update_type' in body
-            ? String((body as { update_type?: string }).update_type ?? 'unknown')
-            : Array.isArray(body)
-              ? `batch:${body.length}`
-              : 'unknown'
-        log('info', 'Max webhook received', { updateType })
+        const updates = collectMaxUpdates(body)
+        log('info', 'Max webhook received', {
+          updateType:
+            updates.length === 1
+              ? String(updates[0]?.update_type ?? 'unknown')
+              : `batch:${updates.length}`,
+          count: updates.length,
+        })
 
         const maxOptions = { accessToken: config.maxBotToken, config }
-        if (Array.isArray(body)) {
-          for (const item of body) {
-            await handleMaxUpdate(db, item as MaxUpdate, maxOptions)
-          }
-        } else if (body && typeof body === 'object' && 'updates' in body) {
-          const updates = (body as { updates?: MaxUpdate[] }).updates ?? []
-          for (const item of updates) {
-            await handleMaxUpdate(db, item, maxOptions)
-          }
-        } else {
-          await handleMaxUpdate(db, body as MaxUpdate, maxOptions)
+        for (const item of updates) {
+          await handleMaxUpdate(db, item, maxOptions)
         }
 
         send(res, 200, { ok: true })

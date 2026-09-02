@@ -1,14 +1,34 @@
 import type { DbClient } from '../db.js'
 import { log, type IngestMessageInput } from '../types.js'
+import { isUniqueViolation } from './dedup.js'
 
 export type IngestStoredItem = {
   workGroupId: string
   messageId: string
+  status: 'stored' | 'updated' | 'duplicate'
 }
 
 export type IngestResult =
   | { status: 'skipped' }
   | { status: 'stored' | 'updated' | 'duplicate'; items: IngestStoredItem[] }
+
+async function loadMessageId(
+  db: DbClient,
+  workGroupId: string,
+  source: string,
+  externalMessageId: string,
+): Promise<string | null> {
+  const { data, error } = await db
+    .from('messages')
+    .select('id')
+    .eq('work_group_id', workGroupId)
+    .eq('source', source)
+    .eq('external_message_id', externalMessageId)
+    .maybeSingle()
+
+  if (error) throw error
+  return data?.id ? (data.id as string) : null
+}
 
 async function persistForWorkGroup(
   db: DbClient,
@@ -30,17 +50,14 @@ async function persistForWorkGroup(
   }
 
   if (input.isEdit) {
-    const { data: existing, error: findError } = await db
-      .from('messages')
-      .select('id')
-      .eq('work_group_id', row.work_group_id)
-      .eq('source', row.source)
-      .eq('external_message_id', row.external_message_id)
-      .maybeSingle()
+    const existingId = await loadMessageId(
+      db,
+      workGroupId,
+      row.source,
+      row.external_message_id,
+    )
 
-    if (findError) throw findError
-
-    if (existing?.id) {
+    if (existingId) {
       const { error: updateError } = await db
         .from('messages')
         .update({
@@ -50,61 +67,58 @@ async function persistForWorkGroup(
           author_name: row.author_name,
           author_external_id: row.author_external_id,
           sent_at: row.sent_at,
-          delivery_status: 'stored',
         })
-        .eq('id', existing.id)
+        .eq('id', existingId)
 
       if (updateError) throw updateError
-      return { status: 'updated', messageId: existing.id as string }
-    }
-  } else {
-    const { data: existing, error: findError } = await db
-      .from('messages')
-      .select('id')
-      .eq('work_group_id', row.work_group_id)
-      .eq('source', row.source)
-      .eq('external_message_id', row.external_message_id)
-      .maybeSingle()
-
-    if (findError) throw findError
-
-    if (existing?.id) {
-      return { status: 'duplicate', messageId: existing.id as string }
+      return { status: 'updated', messageId: existingId }
     }
   }
 
-  const { error: upsertError } = await db.from('messages').upsert(row, {
-    onConflict: 'work_group_id,source,external_message_id',
-    ignoreDuplicates: false,
-  })
+  const { data: inserted, error: insertError } = await db
+    .from('messages')
+    .insert(row)
+    .select('id')
+    .maybeSingle()
 
-  if (upsertError) {
-    log('error', 'Failed to upsert message', {
+  if (!insertError && inserted?.id) {
+    return { status: 'stored', messageId: inserted.id as string }
+  }
+
+  if (isUniqueViolation(insertError)) {
+    const existingId = await loadMessageId(
+      db,
+      workGroupId,
+      row.source,
+      row.external_message_id,
+    )
+    if (existingId) {
+      return { status: 'duplicate', messageId: existingId }
+    }
+  }
+
+  if (insertError) {
+    log('error', 'Failed to insert message', {
       platform: input.platform,
       messageId: input.externalMessageId,
       workGroupId,
-      message: upsertError.message,
+      message: insertError.message,
+      code: insertError.code,
     })
-    throw upsertError
+    throw insertError
   }
 
-  const { data: stored, error: loadError } = await db
-    .from('messages')
-    .select('id')
-    .eq('work_group_id', row.work_group_id)
-    .eq('source', row.source)
-    .eq('external_message_id', row.external_message_id)
-    .maybeSingle()
-
-  if (loadError) throw loadError
-  if (!stored?.id) {
-    throw new Error('message_upsert_missing_id')
+  const storedId = await loadMessageId(
+    db,
+    workGroupId,
+    row.source,
+    row.external_message_id,
+  )
+  if (!storedId) {
+    throw new Error('message_insert_missing_id')
   }
 
-  return {
-    status: input.isEdit ? 'updated' : 'stored',
-    messageId: stored.id as string,
-  }
+  return { status: 'stored', messageId: storedId }
 }
 
 /**
@@ -140,7 +154,11 @@ export async function ingestChannelMessage(
     const workGroupId = connection.work_group_id as string
     const persisted = await persistForWorkGroup(db, workGroupId, input)
     lastStatus = persisted.status
-    items.push({ workGroupId, messageId: persisted.messageId })
+    items.push({
+      workGroupId,
+      messageId: persisted.messageId,
+      status: persisted.status,
+    })
 
     if (connection.bot_status !== 'connected') {
       await db
