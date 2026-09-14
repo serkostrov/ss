@@ -33,6 +33,7 @@ type DataTableProps<TData> = {
   total?: number
   onPageChange?: (page: number) => void
   onPageSizeChange?: (pageSize: number) => void
+  pageSizeOptions?: number[]
   className?: string
   getRowId?: (row: TData) => string
   /** Tighter row padding for dense admin lists. */
@@ -55,6 +56,7 @@ function DataTable<TData>({
   total,
   onPageChange,
   onPageSizeChange,
+  pageSizeOptions,
   className,
   getRowId,
   compact = false,
@@ -185,6 +187,7 @@ function DataTable<TData>({
           total={total}
           onPageChange={onPageChange}
           onPageSizeChange={onPageSizeChange}
+          pageSizeOptions={pageSizeOptions}
         />
       ) : null}
     </div>

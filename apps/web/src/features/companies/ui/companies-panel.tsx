@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { type ColumnDef } from '@tanstack/react-table'
 import { FileSpreadsheet, Plus } from 'lucide-react'
@@ -31,6 +31,8 @@ import { useActiveLevelsForSelect, useCompanies } from '../model/use-companies'
 import { CompanyFormDialog } from './company-form-dialog'
 import { CompanyImportDialog } from './company-import-dialog'
 
+const PAGE_SIZE_OPTIONS = [10, 50, 100]
+
 export function CompaniesPanel() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
@@ -38,6 +40,8 @@ export function CompaniesPanel() {
   const [levelId, setLevelId] = useState('all')
   const [balanceFilter, setBalanceFilter] = useState<CompanyBalanceFilterValue>('all')
   const [sortBy, setSortBy] = useState<CompanySortByValue>('name')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [formOpen, setFormOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
 
@@ -51,6 +55,17 @@ export function CompaniesPanel() {
     balanceFilter: balanceFilter as CompanyBalanceFilter,
     sortBy: sortBy as CompanySortBy,
   })
+
+  useEffect(() => {
+    setPage(1)
+  }, [search, accessStatus, levelId, balanceFilter, sortBy, pageSize])
+
+  const allItems = query.data ?? []
+  const total = allItems.length
+  const items = useMemo(
+    () => allItems.slice((page - 1) * pageSize, page * pageSize),
+    [allItems, page, pageSize],
+  )
 
   const filterFields: FilterFieldConfig[] = [
     {
@@ -217,6 +232,7 @@ export function CompaniesPanel() {
           setLevelId('all')
           setBalanceFilter('all')
           setSortBy('name')
+          setPage(1)
         }}
       />
 
@@ -226,12 +242,21 @@ export function CompaniesPanel() {
         <DataTable
           compact
           columns={columns}
-          data={query.data ?? []}
+          data={items}
           loading={query.isLoading}
           emptyTitle="Компаний нет"
           emptyDescription="Импортируйте Excel или создайте первую компанию."
           getRowId={(row) => row.id}
           onRowClick={(row) => navigate(routes.admin.company(row.id))}
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size)
+            setPage(1)
+          }}
+          pageSizeOptions={PAGE_SIZE_OPTIONS}
         />
       )}
 
