@@ -29,13 +29,47 @@ function assertSafeStoragePath(path: string): void {
   if (!path || path.includes('..') || path.startsWith('/')) {
     throw new ApiError('Некорректный путь файла в Storage', { code: 'validation' })
   }
+  // Supabase Storage rejects non-ASCII object keys ("Invalid key").
+  if (!/^[\x20-\x7E]+$/.test(path)) {
+    throw new ApiError('Некорректный путь файла в Storage', { code: 'validation' })
+  }
+}
+
+/**
+ * Object keys must be ASCII-safe. Keep a readable stem + extension when possible;
+ * original display names belong in DB fields (e.g. file_name), not in the key.
+ */
+function sanitizeStorageFileName(fileName: string): string {
+  const trimmed = fileName.trim() || 'file'
+  const lastDot = trimmed.lastIndexOf('.')
+  const hasExt = lastDot > 0 && lastDot < trimmed.length - 1
+  const baseRaw = hasExt ? trimmed.slice(0, lastDot) : trimmed
+  const extRaw = hasExt ? trimmed.slice(lastDot + 1) : ''
+
+  const base = baseRaw
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^[._-]+|[._-]+$/g, '')
+    .slice(0, 120)
+
+  const ext = extRaw
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '')
+    .slice(0, 16)
+    .toLowerCase()
+
+  const safeBase = base || 'file'
+  return ext ? `${safeBase}.${ext}` : safeBase
 }
 
 export const storageService = {
   buckets: STORAGE_BUCKETS,
 
   buildObjectPath(parts: Array<string | number>, fileName: string): string {
-    const safeName = fileName.replace(/[^\w.\-А-Яа-яЁё]+/g, '_').slice(0, 180)
+    const safeName = sanitizeStorageFileName(fileName)
     const uuid = crypto.randomUUID()
     return [...parts.map(String), `${uuid}_${safeName}`].join('/')
   },
