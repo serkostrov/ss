@@ -15,6 +15,10 @@ export const registeredUserRoleFilterSchema = z.enum(['all', 'admin', 'member'])
 
 export type RegisteredUserRoleFilter = z.infer<typeof registeredUserRoleFilterSchema>
 
+export const registeredUserCompanyLinkFilterSchema = z.enum(['all', 'with', 'without'])
+
+export type RegisteredUserCompanyLinkFilter = z.infer<typeof registeredUserCompanyLinkFilterSchema>
+
 export function registeredUserStatusFilterLabel(status: RegisteredUserStatusFilter): string {
   switch (status) {
     case 'pending':
@@ -36,6 +40,17 @@ export function registeredUserRoleFilterLabel(role: RegisteredUserRoleFilter): s
       return 'Представители'
     default:
       return 'Все роли'
+  }
+}
+
+export function registeredUserCompanyLinkFilterLabel(value: RegisteredUserCompanyLinkFilter): string {
+  switch (value) {
+    case 'with':
+      return 'С компанией'
+    case 'without':
+      return 'Без компании'
+    default:
+      return 'Все'
   }
 }
 

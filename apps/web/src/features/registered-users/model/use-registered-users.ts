@@ -12,6 +12,7 @@ const invalidateRegisteredUsers = [
   queryKeys.registeredUsers.all,
   queryKeys.staff.all,
   queryKeys.registrations.all,
+  queryKeys.representatives.all,
 ]
 
 function listKey(filters: RegisteredUsersListFilters) {
@@ -19,13 +20,18 @@ function listKey(filters: RegisteredUsersListFilters) {
     search: filters.search?.trim() || '',
     role: filters.role ?? 'all',
     status: filters.status ?? 'all',
+    companyLink: filters.companyLink ?? 'all',
   })
 }
 
-export function useRegisteredUsers(filters: RegisteredUsersListFilters = {}) {
+export function useRegisteredUsers(
+  filters: RegisteredUsersListFilters = {},
+  options?: { enabled?: boolean },
+) {
   return useSupabaseQuery(listKey(filters), () => registeredUsersService.list(filters), {
     ensureFreshSession: true,
     staleTime: 30_000,
+    enabled: options?.enabled !== false,
   })
 }
 

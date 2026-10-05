@@ -48,6 +48,8 @@ export type RegisteredUsersListFilters = {
   search?: string
   role?: UserRole | 'all'
   status?: UserStatus | 'all'
+  /** Users without linked representative/company (orphan registration accounts). */
+  companyLink?: 'all' | 'with' | 'without'
 }
 
 type QueryResult<T> = {
@@ -174,6 +176,12 @@ export const registeredUsersService = {
 
     if (filters.status && filters.status !== 'all') {
       query = query.eq('status', filters.status)
+    }
+
+    if (filters.companyLink === 'without') {
+      query = query.is('representative_id', null)
+    } else if (filters.companyLink === 'with') {
+      query = query.not('representative_id', 'is', null)
     }
 
     const search = filters.search?.trim()

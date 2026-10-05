@@ -1,4 +1,5 @@
 export { InvoicesPanel } from './ui/invoices-panel'
+export { CompanyInvoicesPanel } from './ui/company-invoices-panel'
 export { InvoiceFormDialog } from './ui/invoice-form-dialog'
 export { InvoiceDetailsCard } from './ui/invoice-details-card'
 

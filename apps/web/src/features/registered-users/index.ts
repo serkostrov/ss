@@ -5,3 +5,13 @@ export {
   useUpdateRegisteredUserMutation,
   useDeleteRegisteredUserMutation,
 } from './model/use-registered-users'
+export {
+  formatRegisteredUserDate,
+  registeredUserCompanyLabel,
+  registeredUserCompanyLinkFilterLabel,
+  registeredUserStatusFilterLabel,
+} from './model/schemas'
+export type {
+  RegisteredUserCompanyLinkFilter,
+  RegisteredUserStatusFilter,
+} from './model/schemas'

@@ -169,8 +169,12 @@ export const queryKeys = {
   },
   registeredUsers: {
     all: ['apss', 'registered-users'] as const,
-    list: (filters: { search?: string; role?: string; status?: string }) =>
-      ['apss', 'registered-users', 'list', filters] as const,
+    list: (filters: {
+      search?: string
+      role?: string
+      status?: string
+      companyLink?: string
+    }) => ['apss', 'registered-users', 'list', filters] as const,
   },
   cabinetMeta: {
     pollAccessHint: ['apss', 'cabinet', 'poll-access-hint'] as const,

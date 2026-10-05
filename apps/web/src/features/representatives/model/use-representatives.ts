@@ -26,9 +26,13 @@ const invalidateAll = [
   queryKeys.companies.all,
 ]
 
-export function useRepresentatives(filters: RepresentativesListFilters = {}) {
+export function useRepresentatives(
+  filters: RepresentativesListFilters = {},
+  options?: { enabled?: boolean },
+) {
   return useSupabaseQuery(listKey(filters), () => representativesService.list(filters), {
     ensureFreshSession: true,
+    enabled: options?.enabled !== false,
   })
 }
 

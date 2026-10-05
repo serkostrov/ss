@@ -22,9 +22,11 @@ import {
 import {
   formatRegisteredUserDate,
   registeredUserCompanyLabel,
+  registeredUserCompanyLinkFilterLabel,
   registeredUserRoleFilterLabel,
   registeredUserRoleLabel,
   registeredUserStatusFilterLabel,
+  type RegisteredUserCompanyLinkFilter,
   type RegisteredUserRoleFilter,
   type RegisteredUserStatusFilter,
 } from '../model/schemas'
@@ -39,10 +41,11 @@ export function RegisteredUsersPanel({ embedded = true }: { embedded?: boolean }
   const [search, setSearch] = useState('')
   const [role, setRole] = useState<RegisteredUserRoleFilter>('all')
   const [status, setStatus] = useState<RegisteredUserStatusFilter>('all')
+  const [companyLink, setCompanyLink] = useState<RegisteredUserCompanyLinkFilter>('all')
   const [editing, setEditing] = useState<RegisteredUser | null>(null)
   const [deleting, setDeleting] = useState<RegisteredUser | null>(null)
 
-  const query = useRegisteredUsers({ search, role, status })
+  const query = useRegisteredUsers({ search, role, status, companyLink })
   const deleteMutation = useDeleteRegisteredUserMutation()
 
   const filterFields: FilterFieldConfig[] = [
@@ -77,6 +80,18 @@ export function RegisteredUsersPanel({ embedded = true }: { embedded?: boolean }
         { value: 'pending', label: registeredUserStatusFilterLabel('pending') },
         { value: 'confirmed', label: registeredUserStatusFilterLabel('confirmed') },
         { value: 'blocked', label: registeredUserStatusFilterLabel('blocked') },
+      ],
+    },
+    {
+      id: 'companyLink',
+      label: 'Компания',
+      type: 'select',
+      value: companyLink,
+      onChange: (value) => setCompanyLink(value as RegisteredUserCompanyLinkFilter),
+      options: [
+        { value: 'all', label: registeredUserCompanyLinkFilterLabel('all') },
+        { value: 'with', label: registeredUserCompanyLinkFilterLabel('with') },
+        { value: 'without', label: registeredUserCompanyLinkFilterLabel('without') },
       ],
     },
   ]
@@ -227,6 +242,7 @@ export function RegisteredUsersPanel({ embedded = true }: { embedded?: boolean }
                 setSearch('')
                 setRole('all')
                 setStatus('all')
+                setCompanyLink('all')
               }}
             />
           }
@@ -241,6 +257,7 @@ export function RegisteredUsersPanel({ embedded = true }: { embedded?: boolean }
               setSearch('')
               setRole('all')
               setStatus('all')
+              setCompanyLink('all')
             }}
           />
           {listBody}

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ExternalLink, Pencil, Tags, Trash2 } from 'lucide-react'
 
 import { CompanyProductsPanel } from '@features/company-products'
+import { CompanyInvoicesPanel } from '@features/invoices'
 import {
   companyAccessStatusLabel,
   useCompanyAccessStatuses,
@@ -203,6 +204,8 @@ export function CompanyDetailsCard() {
       </div>
 
       <CompanyRepresentativesPanel companyId={company.id} companyName={company.name} />
+
+      <CompanyInvoicesPanel companyId={company.id} companyName={company.name} />
 
       <CompanyProductsPanel companyId={company.id} />
 

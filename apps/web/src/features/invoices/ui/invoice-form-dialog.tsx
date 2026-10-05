@@ -27,6 +27,10 @@ type InvoiceFormDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   defaultCompanyId?: string
+  /** When true, company field is shown read-only (used from company card). */
+  lockCompany?: boolean
+  /** Display name when company select is locked. */
+  lockedCompanyName?: string
 }
 
 const emptyValues = (companyId = ''): InvoiceFormValues => ({
@@ -43,6 +47,8 @@ export function InvoiceFormDialog({
   open,
   onOpenChange,
   defaultCompanyId = '',
+  lockCompany = false,
+  lockedCompanyName,
 }: InvoiceFormDialogProps) {
   const companies = useCompanies({ accessStatus: 'active' })
   const createMutation = useCreateInvoiceMutation()
@@ -56,6 +62,11 @@ export function InvoiceFormDialog({
     setErrors({})
     setFiles([])
   }, [open, defaultCompanyId])
+
+  const resolvedCompanyName =
+    lockedCompanyName ||
+    companies.data?.find((company) => company.id === defaultCompanyId)?.name ||
+    null
 
   const patch = <K extends keyof InvoiceFormValues>(key: K, value: InvoiceFormValues[K]) => {
     setValues((prev) => ({ ...prev, [key]: value }))
@@ -117,21 +128,25 @@ export function InvoiceFormDialog({
     >
       <div className="space-y-4">
         <FormField label="Компания" required error={errors.companyId}>
-          <Select
-            value={values.companyId || undefined}
-            onValueChange={(value) => patch('companyId', value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Выберите компанию" />
-            </SelectTrigger>
-            <SelectContent>
-              {(companies.data ?? []).map((company) => (
-                <SelectItem key={company.id} value={company.id}>
-                  {company.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {lockCompany && defaultCompanyId ? (
+            <Input value={resolvedCompanyName ?? '—'} disabled readOnly />
+          ) : (
+            <Select
+              value={values.companyId || undefined}
+              onValueChange={(value) => patch('companyId', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите компанию" />
+              </SelectTrigger>
+              <SelectContent>
+                {(companies.data ?? []).map((company) => (
+                  <SelectItem key={company.id} value={company.id}>
+                    {company.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </FormField>
 
         <FormField label="Название" required error={errors.title}>
