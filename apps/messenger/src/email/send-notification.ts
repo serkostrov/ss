@@ -26,13 +26,9 @@ function absoluteLink(appUrl: string, link: string | null): string | null {
   return `${base}${path}`
 }
 
+/** SMTP + webhook secret are enough to accept/dispatch mail. APP_URL only enriches links. */
 export function isEmailDispatchConfigured(config: MessengerConfig): boolean {
-  return Boolean(
-    isSmtpBzConfigured(config) &&
-      config.smtpFrom &&
-      config.emailWebhookSecret &&
-      config.appUrl,
-  )
+  return Boolean(isSmtpBzConfigured(config) && config.emailWebhookSecret)
 }
 
 export async function dispatchNotificationEmail(
@@ -74,7 +70,16 @@ export async function dispatchNotificationEmail(
     return { ok: true, skipped: true }
   }
 
-  const link = absoluteLink(config.appUrl!, row.link)
+  const link = config.appUrl
+    ? absoluteLink(config.appUrl, row.link)
+    : row.link && /^https?:\/\//i.test(row.link)
+      ? row.link
+      : null
+  if (!config.appUrl) {
+    log('warn', 'APP_URL not set — notification email sent without cabinet deep link', {
+      notificationId,
+    })
+  }
   const bodyText = row.body?.trim() || 'Откройте личный кабинет, чтобы посмотреть подробности.'
   const html = `
     <div style="font-family:Segoe UI,Arial,sans-serif;line-height:1.5;color:#111827">
