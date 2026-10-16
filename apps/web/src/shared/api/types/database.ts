@@ -1736,6 +1736,10 @@ export type Database = {
         Args: { p_enabled: boolean }
         Returns: Database['public']['Tables']['users']['Row']
       }
+      sync_notification_email_webhook: {
+        Args: { p_url: string; p_secret: string }
+        Returns: null
+      }
       import_companies: {
         Args: { p_rows: Json }
         Returns: Json

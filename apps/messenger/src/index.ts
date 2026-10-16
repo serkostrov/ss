@@ -4,6 +4,7 @@ loadEnvFiles()
 import { registerMaxWebhook, registerTelegramWebhook } from './adapters/index.js'
 import { loadConfig } from './config/index.js'
 import { createDb } from './db.js'
+import { syncNotificationEmailWebhookSettings } from './email/sync-webhook-settings.js'
 import { startHttpServer } from './http/server.js'
 import { log } from './types.js'
 
@@ -64,6 +65,14 @@ async function main() {
     }
   } else {
     log('warn', 'PUBLIC_WEBHOOK_BASE_URL not set — webhook registration skipped')
+  }
+
+  try {
+    await syncNotificationEmailWebhookSettings(db, config)
+  } catch (error) {
+    log('error', 'Notification email webhook sync failed', {
+      message: formatError(error),
+    })
   }
 
   log('info', 'Messenger worker ready')

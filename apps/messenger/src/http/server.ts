@@ -156,8 +156,9 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
         send(res, 200, {
           ok: true,
           service: 'messenger',
-          build: 'password-reset-smtpbz-2026-08-19',
+          build: 'notification-email-webhook-sync-2026-10-16',
           passwordReset: isPasswordResetConfigured(config),
+          notificationEmail: isEmailDispatchConfigured(config),
         })
         return
       }

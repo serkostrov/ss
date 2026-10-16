@@ -86,12 +86,3 @@ export function normalizeLevelResourceAccessRows(
     }
   })
 }
-
-export function toggleStatus(
-  statuses: CompanyAccessStatus[],
-  status: CompanyAccessStatus,
-): CompanyAccessStatus[] {
-  return statuses.includes(status)
-    ? statuses.filter((item) => item !== status)
-    : [...statuses, status]
-}

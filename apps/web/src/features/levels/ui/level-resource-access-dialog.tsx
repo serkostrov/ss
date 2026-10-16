@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { ShieldCheck } from 'lucide-react'
 
 import type { ParticipationLevel } from '@shared/api'
@@ -24,7 +24,6 @@ import {
   cabinetResourceLabel,
   defaultLevelResourceAccessRows,
   normalizeLevelResourceAccessRows,
-  toggleStatus,
   type LevelResourceAccessRow,
 } from '../model/resource-access'
 import { useCompanyAccessStatuses } from '@features/access-statuses'
@@ -37,6 +36,17 @@ type LevelResourceAccessDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   level: ParticipationLevel | null
+}
+
+function setStatusSelected(
+  selected: CompanyAccessStatus[],
+  status: CompanyAccessStatus,
+  checked: boolean,
+): CompanyAccessStatus[] {
+  if (checked) {
+    return selected.includes(status) ? selected : [...selected, status]
+  }
+  return selected.filter((item) => item !== status)
 }
 
 function StatusCheckboxes({
@@ -52,19 +62,30 @@ function StatusCheckboxes({
   options: Array<{ slug: string; name: string }>
   emptyLabel?: string
 }) {
+  const baseId = useId()
+
   return (
     <div className="space-y-1">
       <div className="flex flex-wrap gap-x-3 gap-y-1">
-        {options.map((status) => (
-          <label key={status.slug} className="inline-flex items-center gap-1.5 text-xs">
-            <Checkbox
-              checked={selected.includes(status.slug)}
-              disabled={disabled}
-              onCheckedChange={() => onChange(toggleStatus(selected, status.slug))}
-            />
-            {status.name}
-          </label>
-        ))}
+        {options.map((status) => {
+          const inputId = `${baseId}-${status.slug}`
+          const isChecked = selected.includes(status.slug)
+          return (
+            <div key={status.slug} className="inline-flex items-center gap-1.5 text-xs">
+              <Checkbox
+                id={inputId}
+                checked={isChecked}
+                disabled={disabled}
+                onCheckedChange={(value) => {
+                  onChange(setStatusSelected(selected, status.slug, value === true))
+                }}
+              />
+              <label htmlFor={inputId} className="cursor-pointer select-none">
+                {status.name}
+              </label>
+            </div>
+          )
+        })}
       </div>
       {selected.length === 0 ? (
         <p className="text-muted-foreground text-xs italic">{emptyLabel}</p>
@@ -87,11 +108,30 @@ export function LevelResourceAccessDialog({
   const [rows, setRows] = useState<LevelResourceAccessRow[]>(() =>
     defaultLevelResourceAccessRows(statusDefaults),
   )
+  const hydratedLevelIdRef = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      hydratedLevelIdRef.current = null
+    }
+  }, [open])
+
+  // Hydrate once per open session after data is ready — never while the user is editing.
+  useEffect(() => {
+    if (!open || !levelId) return
+    if (query.isLoading || statusesQuery.isLoading) return
+    if (hydratedLevelIdRef.current === levelId) return
+
     setRows(normalizeLevelResourceAccessRows(query.data, statusDefaults))
-  }, [open, query.data, statusDefaults])
+    hydratedLevelIdRef.current = levelId
+  }, [
+    open,
+    levelId,
+    query.isLoading,
+    query.data,
+    statusesQuery.isLoading,
+    statusDefaults,
+  ])
 
   const patchRow = (
     resource: LevelResourceAccessRow['resource'],

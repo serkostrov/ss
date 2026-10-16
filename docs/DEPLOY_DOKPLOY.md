@@ -132,30 +132,18 @@ SMTP_FROM=noreply@your-domain.example
 SMTP_FROM_NAME=АПСС(ЭР)
 APP_URL=https://app.example.com
 EMAIL_WEBHOOK_SECRET=случайная_длинная_строка
+PUBLIC_WEBHOOK_BASE_URL=https://hooks.example.com
 ```
 
-2. После миграции `000046` укажите webhook на messenger:
-
-```sql
-update public.app_settings
-set value = 'https://hooks.example.com/v1/notification-email'
-where key = 'notification_email_webhook_url';
-
-update public.app_settings
-set value = 'тот_же_EMAIL_WEBHOOK_SECRET'
-where key = 'notification_email_webhook_secret';
-```
-
-Пока URL пустой или secrets не заданы, in-app уведомления работают, письма не уходят.
-
-Те же `SMTPBZ_*` / `SMTP_FROM` / `APP_URL` нужны для **восстановления пароля**.
-После миграции `20260819000075_password_reset_tokens.sql` сделайте **Rebuild messenger** (не Restart).
+2. Примените миграцию `20261016000001_fix_notification_email_dispatch.sql` и сделайте
+   **Rebuild messenger**. При старте messenger сам запишет webhook URL/secret в
+   `public.app_settings` (раньше URL был пустой → in-app работал, письма молча не уходили).
 
 Проверка:
 
 ```bash
 curl -sS https://hooks.example.com/health
-# {"ok":true,"service":"messenger","build":"password-reset-smtpbz-2026-08-19","passwordReset":true}
+# {"ok":true,"service":"messenger","build":"notification-email-webhook-sync-2026-10-16","passwordReset":true,"notificationEmail":true}
 
 curl -sS -X POST https://hooks.example.com/v1/auth/password-reset/request \
   -H 'Content-Type: application/json' \
@@ -163,7 +151,7 @@ curl -sS -X POST https://hooks.example.com/v1/auth/password-reset/request \
 # {"ok":true}
 ```
 
-Если `/health` отдаёт старый `build` или `POST .../password-reset/request` отвечает `not_found` — задеплоен старый образ messenger.
+Если `/health` отдаёт старый `build` или `notificationEmail:false` — не хватает env или задеплоен старый образ.
 
 ---
 
