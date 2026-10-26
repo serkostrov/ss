@@ -2,6 +2,7 @@ import type { MessengerConfig } from '../config/index.js'
 import type { DbClient } from '../db.js'
 import { markBotChannelInactive, upsertBotChannel } from '../pipeline/channels.js'
 import { log } from '../types.js'
+import { platformFetchSignal } from './fetch-timeout.js'
 
 export type DeliverFile = {
   name: string
@@ -180,6 +181,7 @@ export async function sendTelegramText(
         text,
         disable_web_page_preview: true,
       }),
+      signal: platformFetchSignal(),
     })
     const json = (await response.json()) as {
       ok?: boolean
@@ -206,7 +208,11 @@ export async function sendTelegramText(
     })
     form.set(field, blob, file.name || (isImage ? 'photo.jpg' : 'file.bin'))
 
-    const response = await fetch(`${base}/${method}`, { method: 'POST', body: form })
+    const response = await fetch(`${base}/${method}`, {
+      method: 'POST',
+      body: form,
+      signal: platformFetchSignal(),
+    })
     const json = (await response.json()) as {
       ok?: boolean
       description?: string
@@ -262,6 +268,7 @@ export async function sendMaxText(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ text }),
+        signal: platformFetchSignal(),
       }),
     )
 

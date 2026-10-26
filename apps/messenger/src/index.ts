@@ -6,6 +6,7 @@ import { loadConfig } from './config/index.js'
 import { createDb } from './db.js'
 import { syncNotificationEmailWebhookSettings } from './email/sync-webhook-settings.js'
 import { startHttpServer } from './http/server.js'
+import { startRelaySweeper } from './pipeline/relay.js'
 import { log } from './types.js'
 
 function formatError(error: unknown): string {
@@ -75,6 +76,7 @@ async function main() {
     })
   }
 
+  startRelaySweeper(db, config)
   log('info', 'Messenger worker ready')
 }
 

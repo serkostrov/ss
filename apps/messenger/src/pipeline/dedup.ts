@@ -31,6 +31,13 @@ export function isBridgeEchoText(text: string): boolean {
 }
 
 export function isAmbiguousSendError(error: unknown): boolean {
+  const name =
+    error && typeof error === 'object' && 'name' in error
+      ? String((error as { name?: string }).name).toLowerCase()
+      : ''
+  if (name === 'aborterror' || name === 'timeouterror') {
+    return true
+  }
   const message = (error instanceof Error ? error.message : String(error)).toLowerCase()
   return (
     message.includes('fetch failed') ||

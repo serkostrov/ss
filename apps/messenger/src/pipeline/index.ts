@@ -1,1 +1,17 @@
-export {}
+export {
+  BACKLOG_MIN_AGE_MS,
+  LEASE_STALE_MS,
+  MAX_RELAY_ATTEMPTS,
+  enqueueRelayWork,
+  findExistingMirrorDelivery,
+  formatAttributedText,
+  getRelayHealthStats,
+  isLeaseStale,
+  relaySiblingChats,
+  reserveRelayRow,
+  retryUndeliveredRelaysForWorkGroup,
+  startRelaySweeper,
+  sweepUndeliveredRelays,
+  type RelayHealthStats,
+  type RelaySiblingInput,
+} from './relay.js'

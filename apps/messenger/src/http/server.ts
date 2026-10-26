@@ -20,6 +20,7 @@ import {
   sendOutboundMessage,
   type OutboundFile,
 } from '../outbound/send.js'
+import { getRelayHealthStats } from '../pipeline/relay.js'
 import { log } from '../types.js'
 
 async function readRaw(req: IncomingMessage): Promise<Buffer> {
@@ -156,10 +157,23 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
         send(res, 200, {
           ok: true,
           service: 'messenger',
-          build: 'notification-email-webhook-sync-2026-10-16',
+          build: 'relay-lease-reclaim-2026-10-26',
           passwordReset: isPasswordResetConfigured(config),
           notificationEmail: isEmailDispatchConfigured(config),
         })
+        return
+      }
+
+      if (req.method === 'GET' && path === '/health/relay') {
+        try {
+          const stats = await getRelayHealthStats(db)
+          send(res, 200, { ok: true, ...stats })
+        } catch (error) {
+          log('warn', 'Relay health failed', {
+            message: error instanceof Error ? error.message : String(error),
+          })
+          send(res, 500, { ok: false, error: 'relay_health_failed' })
+        }
         return
       }
 
@@ -328,6 +342,7 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
           updateId: body.update_id,
           kinds: kinds.length ? kinds : ['other'],
         })
+        // Persist (ingest) before ACK; sibling relay is queued async inside the adapter.
         await handleTelegramUpdate(db, body, config)
         send(res, 200, { ok: true })
         return
@@ -355,6 +370,7 @@ export function startHttpServer(config: MessengerConfig, db: DbClient) {
         })
 
         const maxOptions = { accessToken: config.maxBotToken, config }
+        // Persist each update before ACK; sibling relay is queued async inside the adapter.
         for (const item of updates) {
           await handleMaxUpdate(db, item, maxOptions)
         }

@@ -1,10 +1,15 @@
 import type { DbClient } from '../db.js'
 import type { MessengerConfig } from '../config/index.js'
+import { platformFetchSignal } from '../outbound/fetch-timeout.js'
 import { markBotChannelInactive, upsertBotChannel } from '../pipeline/channels.js'
 import { isBridgeEchoText, runExclusive } from '../pipeline/dedup.js'
 import { deleteLinkedByExternalMessageId } from '../pipeline/delete-linked.js'
 import { ingestChannelMessage } from '../pipeline/ingest.js'
-import { relaySiblingChats, retryUndeliveredRelaysForWorkGroup } from '../pipeline/relay.js'
+import {
+  enqueueRelayWork,
+  relaySiblingChats,
+  retryUndeliveredRelaysForWorkGroup,
+} from '../pipeline/relay.js'
 import {
   contentPlaceholder,
   log,
@@ -194,6 +199,7 @@ async function maxApiFetch(
   return withOptionalTlsInsecure(() =>
     fetch(`${MAX_API}${path}`, {
       ...init,
+      signal: init.signal ?? platformFetchSignal(),
       headers: {
         Authorization: token,
         ...(init.body ? { 'Content-Type': 'application/json' } : {}),
@@ -236,6 +242,7 @@ async function fetchMaxChat(accessToken: string, chatId: string): Promise<MaxCha
       fetch(`https://platform-api2.max.ru/chats/${encodeURIComponent(chatId)}`, {
         method: 'GET',
         headers: { Authorization: token },
+        signal: platformFetchSignal(),
       }),
     )
     if (!response.ok) {
@@ -376,6 +383,30 @@ async function enrichChatTitle(
   }
 }
 
+async function enrichChatTitleLater(
+  db: DbClient,
+  resolved: ResolvedMaxChat,
+  accessToken: string,
+): Promise<void> {
+  try {
+    const enriched = await enrichChatTitle(resolved, accessToken)
+    if (!enriched.title?.trim() || enriched.title === resolved.title) return
+    await upsertBotChannel(db, {
+      platform: 'max',
+      externalChatId: enriched.externalChatId,
+      title: enriched.title,
+      username: enriched.username,
+      chatKind: enriched.kind,
+      isActive: true,
+    })
+  } catch (error) {
+    log('warn', 'Max enrich chat title failed', {
+      chatId: resolved.externalChatId,
+      message: error instanceof Error ? error.message : String(error),
+    })
+  }
+}
+
 async function catalogChat(
   db: DbClient,
   resolved: ResolvedMaxChat,
@@ -384,31 +415,37 @@ async function catalogChat(
 ): Promise<ResolvedMaxChat | null> {
   if (resolved.kind === 'other') return null
 
-  const enriched = isActive ? await enrichChatTitle(resolved, accessToken) : resolved
-
   if (!isActive) {
-    await markBotChannelInactive(db, 'max', enriched.externalChatId)
-    if (enriched.legacyChatId) {
-      await markBotChannelInactive(db, 'max', enriched.legacyChatId)
+    await markBotChannelInactive(db, 'max', resolved.externalChatId)
+    if (resolved.legacyChatId) {
+      await markBotChannelInactive(db, 'max', resolved.legacyChatId)
     }
-    return enriched
+    return resolved
   }
 
+  // Persist catalog immediately; title enrichment must not block ingest/relay ACK.
   await upsertBotChannel(db, {
     platform: 'max',
-    externalChatId: enriched.externalChatId,
-    title: enriched.title,
-    username: enriched.username,
-    chatKind: enriched.kind,
+    externalChatId: resolved.externalChatId,
+    title: resolved.title,
+    username: resolved.username,
+    chatKind: resolved.kind,
     isActive: true,
   })
 
-  // Drop duplicate dialog rows that were stored under Max dialog chat_id.
-  if (enriched.legacyChatId) {
-    await markBotChannelInactive(db, 'max', enriched.legacyChatId)
+  if (resolved.legacyChatId) {
+    await markBotChannelInactive(db, 'max', resolved.legacyChatId)
   }
 
-  return enriched
+  if (
+    accessToken &&
+    resolved.kind !== 'private' &&
+    !resolved.title?.trim()
+  ) {
+    void enrichChatTitleLater(db, resolved, accessToken)
+  }
+
+  return resolved
 }
 
 async function handleBotMembership(
@@ -446,6 +483,7 @@ async function handleMessageCreated(
   if (!mid) {
     log('warn', 'Max message without mid', {
       chatType: message.recipient?.chat_type ?? update.chat?.type ?? null,
+      reason: 'no_mid',
     })
     return
   }
@@ -460,6 +498,7 @@ async function handleMessageCreated(
       log('info', 'Max bot message ignored', {
         mid,
         userId: message.sender?.user_id ?? null,
+        reason: 'bot',
       })
       return
     }
@@ -467,7 +506,7 @@ async function handleMessageCreated(
     const contentType = detectContentType(message)
     const text = resolveText(message, contentType)
     if (isBridgeEchoText(text)) {
-      log('info', 'Max bridge echo ignored', { mid })
+      log('info', 'Max bridge echo ignored', { mid, reason: 'echo' })
       return
     }
 
@@ -476,6 +515,7 @@ async function handleMessageCreated(
     if (!resolved) {
       log('warn', 'Max message without resolvable chat', {
         chatType: message.recipient?.chat_type ?? update.chat?.type ?? null,
+        reason: 'unresolvable_chat',
       })
       return
     }
@@ -504,40 +544,56 @@ async function handleMessageCreated(
       isEdit,
     })
 
-    if (result.status !== 'skipped' && !isEdit && options.config) {
-      const workGroups = new Set<string>()
-      for (const item of result.items) {
-        workGroups.add(item.workGroupId)
-        if (item.status !== 'stored') continue
-        try {
-          await relaySiblingChats(db, options.config, {
-            workGroupId: item.workGroupId,
-            sourcePlatform: 'max',
-            sourceChatId: chatId,
-            sourceExternalMessageId: mid,
-            messageId: item.messageId,
-            text,
-            contentType,
-            authorName: author.name,
-          })
-        } catch (relayError) {
-          log('warn', 'Max sibling relay failed', {
-            message: relayError instanceof Error ? relayError.message : String(relayError),
-            workGroupId: item.workGroupId,
-          })
-        }
-      }
+    if (result.status === 'skipped') {
+      log('info', 'Max message ingest skipped', {
+        chatId,
+        mid,
+        reason: 'unbound',
+      })
+    }
 
-      for (const workGroupId of workGroups) {
-        try {
-          await retryUndeliveredRelaysForWorkGroup(db, options.config, workGroupId)
-        } catch (retryError) {
-          log('warn', 'Max undelivered relay retry failed', {
-            message: retryError instanceof Error ? retryError.message : String(retryError),
-            workGroupId,
-          })
+    // Persist-first: schedule relay after ingest so webhook can ACK quickly.
+    // Also relay on `duplicate` so redelivery after a crash mid-flight recovers.
+    if (result.status !== 'skipped' && !isEdit && options.config) {
+      const config = options.config
+      const workGroups = new Set<string>()
+      const relayItems = result.items.filter(
+        (item) => item.status === 'stored' || item.status === 'duplicate',
+      )
+
+      enqueueRelayWork(async () => {
+        for (const item of relayItems) {
+          workGroups.add(item.workGroupId)
+          try {
+            await relaySiblingChats(db, config, {
+              workGroupId: item.workGroupId,
+              sourcePlatform: 'max',
+              sourceChatId: chatId,
+              sourceExternalMessageId: mid,
+              messageId: item.messageId,
+              text,
+              contentType,
+              authorName: author.name,
+            })
+          } catch (relayError) {
+            log('warn', 'Max sibling relay failed', {
+              message: relayError instanceof Error ? relayError.message : String(relayError),
+              workGroupId: item.workGroupId,
+            })
+          }
         }
-      }
+
+        for (const workGroupId of workGroups) {
+          try {
+            await retryUndeliveredRelaysForWorkGroup(db, config, workGroupId)
+          } catch (retryError) {
+            log('warn', 'Max undelivered relay retry failed', {
+              message: retryError instanceof Error ? retryError.message : String(retryError),
+              workGroupId,
+            })
+          }
+        }
+      })
     }
 
     log('info', 'Max message processed', {

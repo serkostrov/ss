@@ -3,7 +3,11 @@ import type { DbClient } from '../db.js'
 import { markBotChannelInactive, upsertBotChannel } from '../pipeline/channels.js'
 import { isBridgeEchoText, runExclusive } from '../pipeline/dedup.js'
 import { ingestChannelMessage } from '../pipeline/ingest.js'
-import { relaySiblingChats, retryUndeliveredRelaysForWorkGroup } from '../pipeline/relay.js'
+import {
+  enqueueRelayWork,
+  relaySiblingChats,
+  retryUndeliveredRelaysForWorkGroup,
+} from '../pipeline/relay.js'
 import {
   contentPlaceholder,
   log,
@@ -134,6 +138,7 @@ async function handleIncomingMessage(
       log('info', 'Telegram bot message ignored', {
         chatId: message.chat.id,
         messageId: message.message_id,
+        reason: 'bot',
       })
       return
     }
@@ -144,6 +149,7 @@ async function handleIncomingMessage(
       log('info', 'Telegram bridge echo ignored', {
         chatId: message.chat.id,
         messageId: message.message_id,
+        reason: 'echo',
       })
       return
     }
@@ -178,40 +184,55 @@ async function handleIncomingMessage(
       isEdit,
     })
 
+    if (result.status === 'skipped') {
+      log('info', 'Telegram message ingest skipped', {
+        chatId,
+        messageId: externalMessageId,
+        reason: 'unbound',
+      })
+    }
+
+    // Persist-first: schedule relay after ingest so webhook can ACK quickly.
+    // Also relay on `duplicate` so redelivery after a crash mid-flight recovers.
     if (result.status !== 'skipped' && !isEdit) {
       const workGroups = new Set<string>()
-      for (const item of result.items) {
-        workGroups.add(item.workGroupId)
-        if (item.status !== 'stored') continue
-        try {
-          await relaySiblingChats(db, config, {
-            workGroupId: item.workGroupId,
-            sourcePlatform: 'telegram',
-            sourceChatId: chatId,
-            sourceExternalMessageId: externalMessageId,
-            messageId: item.messageId,
-            text,
-            contentType,
-            authorName: author.name,
-          })
-        } catch (relayError) {
-          log('warn', 'Telegram sibling relay failed', {
-            message: relayError instanceof Error ? relayError.message : String(relayError),
-            workGroupId: item.workGroupId,
-          })
-        }
-      }
+      const relayItems = result.items.filter(
+        (item) => item.status === 'stored' || item.status === 'duplicate',
+      )
 
-      for (const workGroupId of workGroups) {
-        try {
-          await retryUndeliveredRelaysForWorkGroup(db, config, workGroupId)
-        } catch (retryError) {
-          log('warn', 'Telegram undelivered relay retry failed', {
-            message: retryError instanceof Error ? retryError.message : String(retryError),
-            workGroupId,
-          })
+      enqueueRelayWork(async () => {
+        for (const item of relayItems) {
+          workGroups.add(item.workGroupId)
+          try {
+            await relaySiblingChats(db, config, {
+              workGroupId: item.workGroupId,
+              sourcePlatform: 'telegram',
+              sourceChatId: chatId,
+              sourceExternalMessageId: externalMessageId,
+              messageId: item.messageId,
+              text,
+              contentType,
+              authorName: author.name,
+            })
+          } catch (relayError) {
+            log('warn', 'Telegram sibling relay failed', {
+              message: relayError instanceof Error ? relayError.message : String(relayError),
+              workGroupId: item.workGroupId,
+            })
+          }
         }
-      }
+
+        for (const workGroupId of workGroups) {
+          try {
+            await retryUndeliveredRelaysForWorkGroup(db, config, workGroupId)
+          } catch (retryError) {
+            log('warn', 'Telegram undelivered relay retry failed', {
+              message: retryError instanceof Error ? retryError.message : String(retryError),
+              workGroupId,
+            })
+          }
+        }
+      })
     }
 
     log('info', 'Telegram message processed', {
